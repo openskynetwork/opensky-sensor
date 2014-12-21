@@ -22,5 +22,7 @@ AC_PROG_MAKE_SET
 dnl test for std headers
 AC_HEADER_STDC
 
+AX_PTHREAD
+
 dnl output directive
 AC_OUTPUT(Makefile src/Makefile)

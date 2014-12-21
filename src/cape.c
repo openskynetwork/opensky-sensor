@@ -1,6 +1,10 @@
 
 #include <gpio.h>
 #include <watchdog.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <error.h>
+#include <errno.h>
 
 int main()
 {
@@ -8,7 +12,11 @@ int main()
 
 	WATCHDOG_init();
 
-	WATCHDOG_main();
+	pthread_t watchdog;
+	int success;
+	if (pthread_create(&watchdog, NULL, &WATCHDOG_main, NULL) != 0) {
+		error(-1, errno, "Could not create watchdog thread");
+	}
 
 	return 0;
 }

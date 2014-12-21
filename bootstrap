@@ -1,6 +1,6 @@
 #!/bin/sh
 
-mkdir config m4
+mkdir config
 aclocal
 autoheader
 autoconf
