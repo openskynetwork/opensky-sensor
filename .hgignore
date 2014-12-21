@@ -1,3 +1,4 @@
+[glob]
 COPYING
 Makefile.in
 aclocal.m4
