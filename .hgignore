@@ -1,0 +1,17 @@
+COPYING
+Makefile.in
+aclocal.m4
+autom4te.cache/
+config.h.in
+config/
+configure
+src/Makefile.in
+Makefile
+config.h
+config.log
+config.status
+src/.deps/
+src/Makefile
+stamp-h1
+src/cape
+src/*.o
