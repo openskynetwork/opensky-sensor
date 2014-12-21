@@ -1,5 +1,6 @@
 
 #include <gpio.h>
+#include <stdio.h>
 
 #define WD_GPIO 60
 #define WD_REPEAT 30
@@ -13,6 +14,7 @@ void WATCHDOG_init()
 void WATCHDOG_main()
 {
 	while (1) {
+		puts("WD: keepalive");
 		GPIO_set(WD_GPIO);
 		GPIO_clear(WD_GPIO);
 		sleep(WD_REPEAT);

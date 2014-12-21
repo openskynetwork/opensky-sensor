@@ -16,13 +16,14 @@ int main()
 	WATCHDOG_init();
 
 	pthread_t watchdog;
-	int success;
 	if (pthread_create(&watchdog, NULL, (PTHREAD_FN)&WATCHDOG_main, NULL)) {
 		error(-1, errno, "Could not create watchdog thread");
 	}
 
 	FPGA_init();
-	FPGA_program("cape.rtf");
+	FPGA_program("cape.rbf");
+
+	pthread_join(watchdog, NULL);
 
 	return 0;
 }
