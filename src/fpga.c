@@ -8,12 +8,13 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <stdio.h>
 
-#define FPGA_CONFD 13
-#define FPGA_DCLK 15
-#define FPGA_NSTAT 14
-#define FPGA_DATA0 12
-#define FPGA_NCONF 5
+#define FPGA_CONFD (32 + 6)
+#define FPGA_DCLK (32 + 7)
+#define FPGA_NSTAT (32 + 2)
+#define FPGA_DATA0 (32 + 12)
+#define FPGA_NCONF (32 + 5)
 
 void FPGA_init()
 {
@@ -28,11 +29,15 @@ void FPGA_init()
 
 void FPGA_reset()
 {
+	puts("FPGA: Reset");
 	GPIO_clear(FPGA_NCONF);
+	usleep(50000);
 	GPIO_clear(FPGA_DCLK);
 	GPIO_set(FPGA_NCONF);
 
-	while (GPIO_read(FPGA_NSTAT));
+	puts("FPGA: Synchronizing");
+	while (!GPIO_read(FPGA_NSTAT))
+		usleep(500000);
 }
 
 void FPGA_program(const char * file)
@@ -50,6 +55,9 @@ void FPGA_program(const char * file)
 	char * rfd = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
 	FPGA_reset();
+
+	puts("FPGA: Programming");
+
 	off_t pos;
 	for (pos = 0; pos < st.st_size; ++pos) {
 		char ch = rfd[pos];
@@ -73,6 +81,8 @@ void FPGA_program(const char * file)
 
 	munmap(rfd, st.st_size);
 	close(fd);
+
+	puts("FPGA: Done");
 
 	if (!GPIO_read(FPGA_CONFD))
 		error(-1, 0, "Could not program FPGA: CONF_DONE = 0 after last byte");
