@@ -22,6 +22,8 @@ AC_PROG_MAKE_SET
 dnl test for std headers
 AC_HEADER_STDC
 
+AC_SEARCH_LIBS([clock_gettime],[rt posix4])
+
 AX_PTHREAD
 
 dnl output directive

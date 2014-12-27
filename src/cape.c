@@ -7,6 +7,8 @@
 #include <error.h>
 #include <errno.h>
 #include <adsb.h>
+#include <inttypes.h>
+#include <stdio.h>
 
 typedef void*(*PTHREAD_FN)(void*);
 
@@ -31,6 +33,18 @@ int main()
 	pthread_t adsb;
 	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL)) {
 		error(-1, errno, "Could not create adsb main loop");
+	}
+
+	struct ADSB_Frame frame;
+	while (ADSB_getFrame(&frame, -1)) {
+		if (frame.type != 3)
+			continue;
+		printf("Got Mode-S long frame with mlat %15" PRIu64 " and level %+3" PRIi8 ": ",
+			frame.mlat, frame.siglevel);
+		int i;
+		for (i = 0; i < 14; ++i)
+			printf("%02x", frame.frame[i]);
+		putchar('\n');
 	}
 
 	/* wait until watchdog and adsb finish
