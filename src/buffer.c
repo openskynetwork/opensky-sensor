@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <pthread.h>
-#include <framebuffer.h>
+#include <buffer.h>
 
 static struct ADSB_Frame * listIn = NULL;
 static struct ADSB_Frame * listOut = NULL;

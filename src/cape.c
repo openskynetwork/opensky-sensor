@@ -9,7 +9,7 @@
 #include <adsb.h>
 #include <inttypes.h>
 #include <stdio.h>
-#include <framebuffer.h>
+#include <buffer.h>
 
 typedef void*(*PTHREAD_FN)(void*);
 

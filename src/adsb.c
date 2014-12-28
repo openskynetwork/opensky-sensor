@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <adsb.h>
-#include <framebuffer.h>
+#include <buffer.h>
 
 /** file descriptor for UART */
 static int fd;
