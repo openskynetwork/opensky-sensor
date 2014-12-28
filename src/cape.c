@@ -40,7 +40,11 @@ int main()
 
 	struct ADSB_Frame * frame;
 	while (1) {
-		frame = FB_get();
+		frame = FB_get(-1);
+		if (!frame) {
+			puts("Timeout");
+			continue;
+		}
 		if (frame->type != 3)
 			continue;
 		printf("Got Mode-S long frame with mlat %15" PRIu64 " and level %+3" PRIi8 ": ",

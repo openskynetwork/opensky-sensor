@@ -81,14 +81,38 @@ void FB_put(struct ADSB_Frame * frame)
 /** Get a frame from the queue.
  * \return adsb frame
  */
-struct ADSB_Frame * FB_get()
+struct ADSB_Frame * FB_get(int32_t timeout_ms)
 {
+	struct timespec ts;
+
+	if (timeout_ms >= 0) {
+		clock_gettime(CLOCK_REALTIME, &ts);
+		ts.tv_sec += timeout_ms / 1000;
+		ts.tv_nsec += (timeout_ms % 1000) * 1000000;
+		if (ts.tv_nsec >= 1000000000) {
+			++ts.tv_sec;
+			ts.tv_nsec -= 1000000000;
+		}
+	}
+
 	if (processingOut)
 		FB_done(processingOut);
 
 	pthread_mutex_lock(&mutex);
-	while (!listOut)
-		pthread_cond_wait(&cond, &mutex);
+	while (!listOut) {
+		int r;
+		if (timeout_ms < 0)
+			r = pthread_cond_wait(&cond, &mutex);
+		else {
+			r = pthread_cond_timedwait(&cond, &mutex, &ts);
+			if (r == ETIMEDOUT) {
+				pthread_mutex_unlock(&mutex);
+				return NULL;
+			}
+		}
+		if (r)
+			error(-1, r, "pthread_cond_wait failed");
+	}
 	processingOut = shift(&listOut, &listOutEnd);
 	pthread_mutex_unlock(&mutex);
 
