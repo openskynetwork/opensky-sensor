@@ -77,7 +77,7 @@ void ADSB_init(const char * uart)
 	write(fd, "\x1a""1J", 3);
 }
 
-/** ADSB main loop: receive, decode, distribute */
+/** ADSB main loop: receive, decode, buffer */
 void ADSB_main()
 {
 	struct ADSB_Frame * frame = FB_new();
@@ -137,26 +137,39 @@ decode_frame:
 		frame->mlat = be64toh(mlat);
 		frame->siglevel = header[6];
 
+		/* buffer frame */
 		FB_put(frame);
 		frame = FB_new();
 	}
 }
 
+/** Decode frame content.
+ * \param dst destination buffer
+ * \param len length of frame content to be decoded.
+ *  Must not exceed the buffers size
+ * \param rawPtrPtr pointer to pointer of raw buffer
+ * \param lenRawPtr pointer to raw buffer length
+ */
 static inline bool decode(char * dst, size_t len,
 	char ** rawPtrPtr, size_t * lenRawPtr)
 {
 	size_t i;
 	char * rawPtr = *rawPtrPtr;
 	for (i = 0; i < len; ++i) {
+		/* receive one character */
 		char c = next();
+		/* put into raw buffer */
 		*rawPtr++ = c;
 		++*lenRawPtr;
 		if (c == 0x1a) { /* escaped character */
 			c = peek();
 			if (c == 0x1a) {
+				/* consume character */
 				next();
+				/* put into raw buffer */
 				*rawPtr++ = c;
 				++*lenRawPtr;
+				/* put unescaped character into buffer */
 				*dst++ = 0x1a;
 			} else {
 				printf("ADSB: Out of Sync: got unescaped 0x1a in frame, "
@@ -164,6 +177,7 @@ static inline bool decode(char * dst, size_t len,
 				return false;
 			}
 		} else {
+			/* put into buffer */
 			*dst++ = c;
 		}
 	}
