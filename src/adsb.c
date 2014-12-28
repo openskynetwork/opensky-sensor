@@ -11,11 +11,12 @@
 #include <assert.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <endian.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include <pthread.h>
 #include <adsb.h>
+#include <framebuffer.h>
 
 /** file descriptor for UART */
 static int fd;
@@ -28,17 +29,12 @@ static size_t len;
 /** current pointer into buffer */
 static char * cur;
 
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-
-static struct ADSB_Frame * volatile subscribers = NULL;
-
 static inline void discardAndFill();
 static inline char peek();
 static inline char next();
 static inline void synchronize();
-
-static inline void publish(struct ADSB_Frame * frame);
+static inline bool decode(char * dst, size_t len,
+	char ** rawPtrPtr, size_t * lenRawPtr);
 
 /** Initialize ADSB UART.
  * \param uart path to uart to be used
@@ -84,37 +80,36 @@ void ADSB_init(const char * uart)
 /** ADSB main loop: receive, decode, distribute */
 void ADSB_main()
 {
+	struct ADSB_Frame * frame = FB_new();
 	while (1) {
-		struct ADSB_Frame frame;
-
-		char * rawPtr = frame.raw;
-
 		/* synchronize */
 		while (1) {
 			char sync = next();
-			if (sync == 0x1a) {
-				*rawPtr++ = sync;
+			if (sync == 0x1a)
 				break;
-			}
 			printf("ADSB: Out of Sync: got 0x%2d instead of 0x1a\n", sync);
 			synchronize();
 		}
 
-		/* decode frame type */
-		char type;
+		/* decode frame */
+		char * rawPtr;
 decode_frame:
-		type = next();
-		size_t frame_len;
+		rawPtr = frame->raw;
+		*rawPtr++ = 0x1a;
+
+		/* decode type */
+		char type = next();
+		size_t payload_len;
 		switch (type) {
 		case '1': /* mode-ac */
-			frame_len = 9;
+			payload_len = 2;
 			break;
 		case '2': /* mode-s short */
-			frame_len = 14;
+			payload_len = 7;
 			break;
 		case '3': /* mode-s long */
 		case '4': /* ?? */
-			frame_len = 21;
+			payload_len = 14;
 			break;
 		default:
 			printf("ADSB: Unknown frame type %c, resynchronizing\n", type);
@@ -122,113 +117,58 @@ decode_frame:
 			continue;
 		}
 		*rawPtr++ = type;
-		frame.type = type - '0';
-		frame.len = frame_len;
+		frame->type = type - '0';
+		frame->payload_len = payload_len;
 
-		frame.lenRaw = 2;
+		frame->raw_len = 2;
+
+		/* decode header */
+		char header[7];
+		if (!decode(header, sizeof header, &rawPtr, &frame->raw_len))
+			goto decode_frame;
 
 		/* decode payload */
-		char decoded[21];
-		char * decPtr = decoded;
-		size_t i;
-		for (i = 0; i < frame_len; ++i) {
-			char c = next();
-			*rawPtr++ = c;
-			++frame.lenRaw;
-			if (c == 0x1a) { /* escaped character */
-				c = peek();
-				if (c == 0x1a) {
-					next();
-					*rawPtr++ = c;
-					++frame.lenRaw;
-					*decPtr++ = 0x1a;
-				} else {
-					printf("ADSB: Out of Sync: got unescaped 0x1a in frame, "
-						"treating as resynchronization\n");
-					goto decode_frame;
-				}
-			} else {
-				*decPtr++ = c;
-			}
-		}
+		if (!decode(frame->payload, payload_len, &rawPtr, &frame->raw_len))
+			goto decode_frame;
 
+		/* process header */
 		uint64_t mlat = 0;
-		memcpy(((char*)&mlat) + 2, decoded, 6);
-		frame.mlat = be64toh(mlat);
-		frame.siglevel = decoded[6];
-		memcpy(frame.frame, decoded + 7, frame_len);
+		memcpy(((char*)&mlat) + 2, header, 6);
+		frame->mlat = be64toh(mlat);
+		frame->siglevel = header[6];
 
-		publish(&frame);
+		FB_put(frame);
+		frame = FB_new();
 	}
 }
 
-static inline void publish(struct ADSB_Frame * frame)
+static inline bool decode(char * dst, size_t len,
+	char ** rawPtrPtr, size_t * lenRawPtr)
 {
-	frame->valid = 1;
-	frame->next = frame->prev = NULL;
-
-	pthread_mutex_lock(&mutex);
-
-	struct ADSB_Frame * list, * next;
-	for (list = subscribers; list; list = next) {
-		next = list->next;
-		memcpy(list, frame, sizeof(struct ADSB_Frame));
-	}
-
-	subscribers = NULL;
-
-	pthread_cond_broadcast(&cond);
-
-	pthread_mutex_unlock(&mutex);
-}
-
-int ADSB_getFrame(struct ADSB_Frame * frame, int32_t timeout_ms)
-{
-	struct timespec ts;
-
-	if (timeout_ms >= 0) {
-		clock_gettime(CLOCK_REALTIME, &ts);
-		ts.tv_sec += timeout_ms / 1000;
-		ts.tv_nsec += (timeout_ms % 1000) * 10000000;
-		if (ts.tv_nsec >= 1000000000) {
-			++ts.tv_sec;
-			ts.tv_nsec -= 1000000000;
-		}
-	}
-
-	frame->prev = NULL;
-	pthread_mutex_lock(&mutex);
-	frame->next = subscribers;
-	if (subscribers)
-		subscribers->prev = frame;
-	subscribers = frame;
-
-	frame->valid = 0;
-
-	int r;
-	do {
-		if (timeout_ms < 0) {
-			r = pthread_cond_wait(&cond, &mutex);
-		} else {
-			r = pthread_cond_timedwait(&cond, &mutex, &ts);
-			if (r == ETIMEDOUT) {
-				if (frame->prev)
-					frame->prev->next = frame->next;
-				if (frame->next)
-					frame->next->prev = frame->prev;
-				if (frame == subscribers)
-					subscribers = frame->next;
-				pthread_mutex_unlock(&mutex);
-				return 0;
+	size_t i;
+	char * rawPtr = *rawPtrPtr;
+	for (i = 0; i < len; ++i) {
+		char c = next();
+		*rawPtr++ = c;
+		++*lenRawPtr;
+		if (c == 0x1a) { /* escaped character */
+			c = peek();
+			if (c == 0x1a) {
+				next();
+				*rawPtr++ = c;
+				++*lenRawPtr;
+				*dst++ = 0x1a;
+			} else {
+				printf("ADSB: Out of Sync: got unescaped 0x1a in frame, "
+					"treating as resynchronization\n");
+				return false;
 			}
+		} else {
+			*dst++ = c;
 		}
-		if (r)
-			error(-1, r, "pthread_cond_wait failed");
-	} while (!frame->valid);
-
-	pthread_mutex_unlock(&mutex);
-
-	return 1;
+	}
+	*rawPtrPtr = rawPtr;
+	return true;
 }
 
 /** Discard buffer content and fill it again. */

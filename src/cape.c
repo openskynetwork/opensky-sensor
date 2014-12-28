@@ -9,6 +9,7 @@
 #include <adsb.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <framebuffer.h>
 
 typedef void*(*PTHREAD_FN)(void*);
 
@@ -28,6 +29,8 @@ int main()
 	FPGA_init();
 	FPGA_program("cape.rbf");
 
+	FB_init(10);
+
 	/* start ADSB mainloop */
 	ADSB_init("/dev/ttyO5");
 	pthread_t adsb;
@@ -35,15 +38,16 @@ int main()
 		error(-1, errno, "Could not create adsb main loop");
 	}
 
-	struct ADSB_Frame frame;
-	while (ADSB_getFrame(&frame, -1)) {
-		if (frame.type != 3)
+	struct ADSB_Frame * frame;
+	while (1) {
+		frame = FB_get();
+		if (frame->type != 3)
 			continue;
 		printf("Got Mode-S long frame with mlat %15" PRIu64 " and level %+3" PRIi8 ": ",
-			frame.mlat, frame.siglevel);
+			frame->mlat, frame->siglevel);
 		int i;
 		for (i = 0; i < 14; ++i)
-			printf("%02x", frame.frame[i]);
+			printf("%02x", frame->payload[i]);
 		putchar('\n');
 	}
 
