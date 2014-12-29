@@ -80,7 +80,7 @@ void ADSB_init(const char * uart)
 /** ADSB main loop: receive, decode, buffer */
 void ADSB_main()
 {
-	struct ADSB_Frame * frame = FB_new();
+	struct ADSB_Frame * frame = BUF_pepareFrame();
 	while (1) {
 		/* synchronize */
 		while (1) {
@@ -138,8 +138,8 @@ decode_frame:
 		frame->siglevel = header[6];
 
 		/* buffer frame */
-		FB_put(frame);
-		frame = FB_new();
+		BUF_putFrame(frame);
+		frame = BUF_pepareFrame();
 	}
 }
 

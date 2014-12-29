@@ -24,6 +24,9 @@ static struct FB_FrameList * processingIn = NULL;
 /** Currently processed frame (by reader), for debugging purposes */
 static struct FB_FrameList * processingOut = NULL;
 
+/** Frame Filter */
+static uint8_t filter;
+
 /** Mutex */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Reader condition (for listOut) */
@@ -40,7 +43,7 @@ static inline void push(struct FB_FrameList ** listHead,
  * \param backlog Max number of frames in buffer before discarding the oldest
  *  one. Must be at least 2.
  */
-void FB_init(size_t backlog)
+void BUF_init(size_t backlog)
 {
 	size_t i;
 
@@ -55,10 +58,18 @@ void FB_init(size_t backlog)
 	}
 }
 
+/** Set a filter: discard all other frames.
+ * \param frameType frame type to accept or 0 to unset the filter
+ */
+void BUF_setFilter(uint8_t frameType)
+{
+	filter = frameType;
+}
+
 /** Get a frame from the unused frame pool for the writer in order to fill it.
  * \return new frame
  */
-struct ADSB_Frame * FB_new()
+struct ADSB_Frame * BUF_pepareFrame()
 {
 	assert (!processingIn);
 	pthread_mutex_lock(&mutex);
@@ -74,14 +85,18 @@ struct ADSB_Frame * FB_new()
 /** Put a filled frame from writer to reader queue.
  * \param frame filled frame to be delivered to the reader
  */
-void FB_put(struct ADSB_Frame * frame)
+void BUF_putFrame(struct ADSB_Frame * frame)
 {
 	assert (frame);
 	assert (&processingIn->frame == frame);
 
 	pthread_mutex_lock(&mutex);
-	push(&listOut, &listOutEnd, processingIn);
-	pthread_cond_broadcast(&cond);
+	if (filter && filter != frame->type) {
+		unshift(&listIn, NULL, processingIn);
+	} else {
+		push(&listOut, &listOutEnd, processingIn);
+		pthread_cond_broadcast(&cond);
+	}
 	pthread_mutex_unlock(&mutex);
 	processingIn = NULL;
 }
@@ -89,37 +104,51 @@ void FB_put(struct ADSB_Frame * frame)
 /** Get a frame from the queue.
  * \return adsb frame
  */
-struct ADSB_Frame * FB_get(int32_t timeout_ms)
+struct ADSB_Frame * BUF_getFrame()
 {
-	struct timespec ts;
-
-	if (timeout_ms >= 0) {
-		clock_gettime(CLOCK_REALTIME, &ts);
-		ts.tv_sec += timeout_ms / 1000;
-		ts.tv_nsec += (timeout_ms % 1000) * 1000000;
-		if (ts.tv_nsec >= 1000000000) {
-			++ts.tv_sec;
-			ts.tv_nsec -= 1000000000;
-		}
-	}
-
 	if (processingOut)
-		FB_done(&processingOut->frame);
+		BUF_releaseFrame(&processingOut->frame);
 
 	pthread_mutex_lock(&mutex);
 	while (!listOut) {
-		int r;
-		if (timeout_ms < 0)
-			r = pthread_cond_wait(&cond, &mutex);
-		else {
-			r = pthread_cond_timedwait(&cond, &mutex, &ts);
-			if (r == ETIMEDOUT) {
-				pthread_mutex_unlock(&mutex);
-				return NULL;
-			}
-		}
+		int r = pthread_cond_wait(&cond, &mutex);
 		if (r)
 			error(-1, r, "pthread_cond_wait failed");
+	}
+	processingOut = shift(&listOut, &listOutEnd);
+	pthread_mutex_unlock(&mutex);
+
+	return &processingOut->frame;
+}
+
+/** Get a frame from the queue.
+ * \param timeout_ms timeout in milliseconds
+ * \return adsb frame or NULL on timeout
+ */
+struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
+{
+	struct timespec ts;
+
+	clock_gettime(CLOCK_REALTIME, &ts);
+	ts.tv_sec += timeout_ms / 1000;
+	ts.tv_nsec += (timeout_ms % 1000) * 1000000;
+	if (ts.tv_nsec >= 1000000000) {
+		++ts.tv_sec;
+		ts.tv_nsec -= 1000000000;
+	}
+
+	if (processingOut)
+		BUF_releaseFrame(&processingOut->frame);
+
+	pthread_mutex_lock(&mutex);
+	while (!listOut) {
+		int r = pthread_cond_timedwait(&cond, &mutex, &ts);
+		if (r == ETIMEDOUT) {
+			pthread_mutex_unlock(&mutex);
+			return NULL;
+		} else if (r) {
+			error(-1, r, "pthread_cond_wait failed");
+		}
 	}
 	processingOut = shift(&listOut, &listOutEnd);
 	pthread_mutex_unlock(&mutex);
@@ -132,7 +161,7 @@ struct ADSB_Frame * FB_get(int32_t timeout_ms)
  *  put the frame into the pool again. If it is not called explicitly, it is
  *  called by the next call of FB_get implicitly.
  */
-void FB_done(struct ADSB_Frame * frame)
+void BUF_releaseFrame(struct ADSB_Frame * frame)
 {
 	assert (frame);
 	assert (frame == &processingOut->frame);

@@ -4,12 +4,14 @@
 #include <stdlib.h>
 #include <adsb.h>
 
-void FB_init(size_t backlog);
+void BUF_init(size_t backlog);
+void BUF_setFilter(uint8_t frameType);
 
-struct ADSB_Frame * FB_new();
-void FB_put(struct ADSB_Frame * frame);
+struct ADSB_Frame * BUF_pepareFrame();
+void BUF_putFrame(struct ADSB_Frame * frame);
 
-struct ADSB_Frame * FB_get(int32_t timeout_ms);
-void FB_done(struct ADSB_Frame * frame);
+struct ADSB_Frame * BUF_getFrame();
+struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms);
+void BUF_releaseFrame(struct ADSB_Frame * frame);
 
 #endif

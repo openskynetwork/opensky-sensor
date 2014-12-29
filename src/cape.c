@@ -29,7 +29,8 @@ int main()
 	FPGA_init();
 	FPGA_program("cape.rbf");
 
-	FB_init(10);
+	/* buffer up to 100 frames */
+	BUF_init(100);
 
 	/* start ADSB mainloop */
 	ADSB_init("/dev/ttyO5");
@@ -38,15 +39,16 @@ int main()
 		error(-1, errno, "Could not create adsb main loop");
 	}
 
+	/* only Mode-S long frames */
+	BUF_setFilter(3);
+
 	struct ADSB_Frame * frame;
 	while (1) {
-		frame = FB_get(-1);
+		frame = BUF_getFrameTimeout(500);
 		if (!frame) {
 			puts("Timeout");
 			continue;
 		}
-		if (frame->type != 3)
-			continue;
 		printf("Got Mode-S long frame with mlat %15" PRIu64 " and level %+3" PRIi8 ": ",
 			frame->mlat, frame->siglevel);
 		int i;
