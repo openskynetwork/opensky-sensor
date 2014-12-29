@@ -5,28 +5,36 @@
 #include <pthread.h>
 #include <buffer.h>
 
+/** Linked Frame List */
+struct FB_FrameList {
+	/** Frame */
+	struct ADSB_Frame frame;
+	/** Next Element */
+	struct FB_FrameList * next;
+};
+
 /** Pool of unused frames, can be used by the writer */
-static struct ADSB_Frame * listIn = NULL;
+static struct FB_FrameList * listIn = NULL;
 /** List for used frames, to be read by the reader */
-static struct ADSB_Frame * listOut = NULL;
+static struct FB_FrameList * listOut = NULL;
 /** End of List for used frames, in order to speed up push operation */
-static struct ADSB_Frame * listOutEnd = NULL;
+static struct FB_FrameList * listOutEnd = NULL;
 /** Currently filled frame (by writer), mainly for debugging purposes */
-static struct ADSB_Frame * processingIn = NULL;
+static struct FB_FrameList * processingIn = NULL;
 /** Currently processed frame (by reader), for debugging purposes */
-static struct ADSB_Frame * processingOut = NULL;
+static struct FB_FrameList * processingOut = NULL;
 
 /** Mutex */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Reader condition (for listOut) */
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
-static inline struct ADSB_Frame * shift(struct ADSB_Frame ** listHead,
-	struct ADSB_Frame ** listTail);
-static inline void unshift(struct ADSB_Frame ** listHead,
-	struct ADSB_Frame ** listTail, struct ADSB_Frame * frame);
-static inline void push(struct ADSB_Frame ** listHead,
-	struct ADSB_Frame ** listTail, struct ADSB_Frame * frame);
+static inline struct FB_FrameList * shift(struct FB_FrameList ** listHead,
+	struct FB_FrameList ** listTail);
+static inline void unshift(struct FB_FrameList ** listHead,
+	struct FB_FrameList ** listTail, struct FB_FrameList * frame);
+static inline void push(struct FB_FrameList ** listHead,
+	struct FB_FrameList ** listTail, struct FB_FrameList * frame);
 
 /** Initialize frame buffer.
  * \param backlog Max number of frames in buffer before discarding the oldest
@@ -39,7 +47,7 @@ void FB_init(size_t backlog)
 	assert (backlog > 2);
 
 	for (i = 0; i < backlog; ++i) {
-		struct ADSB_Frame * frame = malloc(sizeof *frame);
+		struct FB_FrameList * frame = malloc(sizeof *frame);
 		if (!frame)
 			error(-1, errno, "malloc failed");
 		frame->next = listIn;
@@ -60,7 +68,7 @@ struct ADSB_Frame * FB_new()
 		processingIn = shift(&listOut, &listOutEnd);
 	pthread_mutex_unlock(&mutex);
 	assert (processingIn);
-	return processingIn;
+	return &processingIn->frame;
 }
 
 /** Put a filled frame from writer to reader queue.
@@ -69,10 +77,10 @@ struct ADSB_Frame * FB_new()
 void FB_put(struct ADSB_Frame * frame)
 {
 	assert (frame);
-	assert (processingIn == frame);
+	assert (&processingIn->frame == frame);
 
 	pthread_mutex_lock(&mutex);
-	push(&listOut, &listOutEnd, frame);
+	push(&listOut, &listOutEnd, processingIn);
 	pthread_cond_broadcast(&cond);
 	pthread_mutex_unlock(&mutex);
 	processingIn = NULL;
@@ -96,7 +104,7 @@ struct ADSB_Frame * FB_get(int32_t timeout_ms)
 	}
 
 	if (processingOut)
-		FB_done(processingOut);
+		FB_done(&processingOut->frame);
 
 	pthread_mutex_lock(&mutex);
 	while (!listOut) {
@@ -116,7 +124,7 @@ struct ADSB_Frame * FB_get(int32_t timeout_ms)
 	processingOut = shift(&listOut, &listOutEnd);
 	pthread_mutex_unlock(&mutex);
 
-	return processingOut;
+	return &processingOut->frame;
 }
 
 /** Put a frame back into the pool.
@@ -127,7 +135,7 @@ struct ADSB_Frame * FB_get(int32_t timeout_ms)
 void FB_done(struct ADSB_Frame * frame)
 {
 	assert (frame);
-	assert (frame == processingOut);
+	assert (frame == &processingOut->frame);
 
 	pthread_mutex_lock(&mutex);
 	unshift(&listIn, NULL, processingOut);
@@ -140,12 +148,12 @@ void FB_done(struct ADSB_Frame * frame)
  * \param listTail pointer to list tail (if applicable)
  * \return first element of the list
  */
-static inline struct ADSB_Frame * shift(struct ADSB_Frame ** listHead,
-	struct ADSB_Frame ** listTail)
+static inline struct FB_FrameList * shift(struct FB_FrameList ** listHead,
+	struct FB_FrameList ** listTail)
 {
 	if (!*listHead)
 		return NULL;
-	struct ADSB_Frame * ret = *listHead;
+	struct FB_FrameList * ret = *listHead;
 	*listHead = ret->next;
 	if (listTail && *listTail == ret)
 		*listTail = NULL;
@@ -158,8 +166,8 @@ static inline struct ADSB_Frame * shift(struct ADSB_Frame ** listHead,
  * \param listTail pointer to list tail (if applicable)
  * \param frame the frame to be enqueued
  */
-static inline void unshift(struct ADSB_Frame ** listHead,
-	struct ADSB_Frame ** listTail, struct ADSB_Frame * frame)
+static inline void unshift(struct FB_FrameList ** listHead,
+	struct FB_FrameList ** listTail, struct FB_FrameList * frame)
 {
 	frame->next = *listHead;
 	*listHead = frame;
@@ -172,8 +180,8 @@ static inline void unshift(struct ADSB_Frame ** listHead,
  * \param listTail pointer to list tail, must not be NULL
  * \param frame frame to be appended to the list
  */
-static inline void push(struct ADSB_Frame ** listHead,
-	struct ADSB_Frame ** listTail, struct ADSB_Frame * frame)
+static inline void push(struct FB_FrameList ** listHead,
+	struct FB_FrameList ** listTail, struct FB_FrameList * frame)
 {
 	assert (listTail);
 	frame->next = NULL;

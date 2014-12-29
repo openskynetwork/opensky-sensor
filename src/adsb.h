@@ -13,8 +13,6 @@ struct ADSB_Frame {
 	uint64_t mlat;
 	int8_t siglevel;
 	char payload[14];
-
-	struct ADSB_Frame * next;
 };
 
 void ADSB_init(const char * uart);
