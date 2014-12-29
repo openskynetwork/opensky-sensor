@@ -69,7 +69,7 @@ void BUF_setFilter(uint8_t frameType)
 /** Get a frame from the unused frame pool for the writer in order to fill it.
  * \return new frame
  */
-struct ADSB_Frame * BUF_pepareFrame()
+struct ADSB_Frame * BUF_prepareFrame()
 {
 	assert (!processingIn);
 	pthread_mutex_lock(&mutex);
