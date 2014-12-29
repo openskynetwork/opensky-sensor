@@ -10,6 +10,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <buffer.h>
+#include <network.h>
 
 typedef void*(*PTHREAD_FN)(void*);
 
@@ -42,19 +43,34 @@ int main()
 	/* only Mode-S long frames */
 	BUF_setFilter(3);
 
-	struct ADSB_Frame * frame;
 	while (1) {
-		frame = BUF_getFrameTimeout(500);
-		if (!frame) {
-			puts("Timeout");
-			continue;
-		}
-		printf("Got Mode-S long frame with mlat %15" PRIu64 " and level %+3" PRIi8 ": ",
-			frame->mlat, frame->siglevel);
-		int i;
-		for (i = 0; i < 14; ++i)
-			printf("%02x", frame->payload[i]);
-		putchar('\n');
+		/* try to connect to the server */
+		while (!NET_connect("mrks", 30003))
+			sleep(10); /* in case of failure: retry every 10 seconds */
+
+		/* send serial number */
+		if (!NET_sendSerial())
+			continue; /* on error: reconnect */
+
+		bool success;
+		do {
+			/* read a frame from the buffer */
+			const struct ADSB_Frame * frame = BUF_getFrameTimeout(500);
+			if (!frame) {
+				/* timeout */
+				success = NET_sendTimeout();
+			} else {
+				/* got a frame */
+				printf("Mode-S long: mlat %15" PRIu64 ", level %+3" PRIi8 ": ",
+					frame->mlat, frame->siglevel);
+				int i;
+				for (i = 0; i < 14; ++i)
+					printf("%02x", frame->payload[i]);
+				putchar('\n');
+				success = NET_sendFrame(frame);
+			}
+		} while(success);
+		/* if sending failed, reconnect to the server */
 	}
 
 	/* wait until watchdog and adsb finish

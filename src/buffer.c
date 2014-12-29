@@ -104,7 +104,7 @@ void BUF_putFrame(struct ADSB_Frame * frame)
 /** Get a frame from the queue.
  * \return adsb frame
  */
-struct ADSB_Frame * BUF_getFrame()
+const struct ADSB_Frame * BUF_getFrame()
 {
 	if (processingOut)
 		BUF_releaseFrame(&processingOut->frame);
@@ -125,7 +125,7 @@ struct ADSB_Frame * BUF_getFrame()
  * \param timeout_ms timeout in milliseconds
  * \return adsb frame or NULL on timeout
  */
-struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
+const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 {
 	struct timespec ts;
 
