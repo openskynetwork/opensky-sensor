@@ -42,7 +42,7 @@ static inline bool decode(char * dst, size_t len,
 void ADSB_init(const char * uart)
 {
 	/* open uart */
-	fd = open(uart, O_RDWR, O_NONBLOCK);
+	fd = open(uart, O_RDWR, O_NONBLOCK | O_NOCTTY);
 	if (fd < 0)
 		error(-1, errno, "ADSB: Could not open UART at '%s'", uart);
 
@@ -51,7 +51,12 @@ void ADSB_init(const char * uart)
 	if (tcgetattr(fd, &t) == -1)
 		error(-1, errno, "ADSB: tcgetattr failed");
 
-	/* TOOD: really modify options to needs */
+	t.c_iflag = IGNPAR;
+	t.c_oflag = ONLCR;
+	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | CRTSCTS | B3000000;
+	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
+	t.c_ispeed = B3000000;
+	t.c_ospeed = B3000000;
 
 	if (tcsetattr(fd, TCSANOW, &t))
 		error(-1, errno, "ADSB: tcsetattr failed");
