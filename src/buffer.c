@@ -14,11 +14,11 @@ struct FB_FrameList {
 };
 
 /** Pool of unused frames, can be used by the writer */
-static struct FB_FrameList * listIn = NULL;
+static struct FB_FrameList * volatile listIn = NULL;
 /** List for used frames, to be read by the reader */
-static struct FB_FrameList * listOut = NULL;
+static struct FB_FrameList * volatile listOut = NULL;
 /** End of List for used frames, in order to speed up push operation */
-static struct FB_FrameList * listOutEnd = NULL;
+static struct FB_FrameList * volatile listOutEnd = NULL;
 /** Currently filled frame (by writer), mainly for debugging purposes */
 static struct FB_FrameList * processingIn = NULL;
 /** Currently processed frame (by reader), for debugging purposes */
@@ -32,12 +32,13 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Reader condition (for listOut) */
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
-static inline struct FB_FrameList * shift(struct FB_FrameList ** listHead,
-	struct FB_FrameList ** listTail);
-static inline void unshift(struct FB_FrameList ** listHead,
-	struct FB_FrameList ** listTail, struct FB_FrameList * frame);
-static inline void push(struct FB_FrameList ** listHead,
-	struct FB_FrameList ** listTail, struct FB_FrameList * frame);
+static inline struct FB_FrameList * shift(
+	struct FB_FrameList * volatile * listHead,
+	struct FB_FrameList * volatile * listTail);
+static inline void unshift(struct FB_FrameList * volatile * listHead,
+	struct FB_FrameList * volatile * listTail, struct FB_FrameList * frame);
+static inline void push(struct FB_FrameList * volatile * listHead,
+	struct FB_FrameList * volatile * listTail, struct FB_FrameList * frame);
 
 /** Initialize frame buffer.
  * \param backlog Max number of frames in buffer before discarding the oldest
@@ -177,8 +178,8 @@ void BUF_releaseFrame(struct ADSB_Frame * frame)
  * \param listTail pointer to list tail (if applicable)
  * \return first element of the list
  */
-static inline struct FB_FrameList * shift(struct FB_FrameList ** listHead,
-	struct FB_FrameList ** listTail)
+static inline struct FB_FrameList * shift(struct FB_FrameList * volatile * listHead,
+	struct FB_FrameList * volatile * listTail)
 {
 	if (!*listHead)
 		return NULL;
@@ -195,8 +196,8 @@ static inline struct FB_FrameList * shift(struct FB_FrameList ** listHead,
  * \param listTail pointer to list tail (if applicable)
  * \param frame the frame to be enqueued
  */
-static inline void unshift(struct FB_FrameList ** listHead,
-	struct FB_FrameList ** listTail, struct FB_FrameList * frame)
+static inline void unshift(struct FB_FrameList * volatile * listHead,
+	struct FB_FrameList * volatile * listTail, struct FB_FrameList * frame)
 {
 	frame->next = *listHead;
 	*listHead = frame;
@@ -209,8 +210,8 @@ static inline void unshift(struct FB_FrameList ** listHead,
  * \param listTail pointer to list tail, must not be NULL
  * \param frame frame to be appended to the list
  */
-static inline void push(struct FB_FrameList ** listHead,
-	struct FB_FrameList ** listTail, struct FB_FrameList * frame)
+static inline void push(struct FB_FrameList * volatile * listHead,
+	struct FB_FrameList * volatile * listTail, struct FB_FrameList * frame)
 {
 	assert (listTail);
 	frame->next = NULL;
