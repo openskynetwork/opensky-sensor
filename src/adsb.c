@@ -126,6 +126,9 @@ void ADSB_init(const char * uart)
 	setOption(ADSB_OPTION_MODE_AC_DECODING_ENABLED);
 }
 
+/** Set an option for the ADSB decoder.
+ * \param option option to be set
+ */
 static inline void setOption(enum ADSB_OPTION option)
 {
 	char w[3] = { '\x1a', '1', (char)option };
