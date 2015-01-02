@@ -6,23 +6,23 @@
 #include <buffer.h>
 
 /** Linked Frame List */
-struct FB_FrameList {
+struct BUF_FrameList {
 	/** Frame */
 	struct ADSB_Frame frame;
 	/** Next Element */
-	struct FB_FrameList * next;
+	struct BUF_FrameList * next;
 };
 
 /** Pool of unused frames, can be used by the writer */
-static struct FB_FrameList * volatile pool = NULL;
+static struct BUF_FrameList * volatile pool = NULL;
 /** List for used frames, to be read by the reader */
-static struct FB_FrameList * volatile queueHead = NULL;
+static struct BUF_FrameList * volatile queueHead = NULL;
 /** End of List for used frames, in order to speed up push operation */
-static struct FB_FrameList * volatile queueTail = NULL;
+static struct BUF_FrameList * volatile queueTail = NULL;
 /** Currently filled frame (by writer), mainly for debugging purposes */
-static struct FB_FrameList * newFrame = NULL;
+static struct BUF_FrameList * newFrame = NULL;
 /** Currently processed frame (by reader), for debugging purposes */
-static struct FB_FrameList * currentFrame = NULL;
+static struct BUF_FrameList * currentFrame = NULL;
 
 /** Frame Filter */
 static uint8_t filter;
@@ -32,13 +32,13 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Reader condition (for listOut) */
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
-static inline struct FB_FrameList * shift(
-	struct FB_FrameList * volatile * listHead,
-	struct FB_FrameList * volatile * listTail);
-static inline void unshift(struct FB_FrameList * volatile * listHead,
-	struct FB_FrameList * volatile * listTail, struct FB_FrameList * frame);
-static inline void push(struct FB_FrameList * volatile * listHead,
-	struct FB_FrameList * volatile * listTail, struct FB_FrameList * frame);
+static inline struct BUF_FrameList * shift(
+	struct BUF_FrameList * volatile * listHead,
+	struct BUF_FrameList * volatile * listTail);
+static inline void unshift(struct BUF_FrameList * volatile * listHead,
+	struct BUF_FrameList * volatile * listTail, struct BUF_FrameList * frame);
+static inline void push(struct BUF_FrameList * volatile * listHead,
+	struct BUF_FrameList * volatile * listTail, struct BUF_FrameList * frame);
 
 /** Initialize frame buffer.
  * \param backlog Max number of frames in buffer before discarding the oldest
@@ -51,7 +51,7 @@ void BUF_init(size_t backlog)
 	assert (backlog > 2);
 
 	for (i = 0; i < backlog; ++i) {
-		struct FB_FrameList * frame = malloc(sizeof *frame);
+		struct BUF_FrameList * frame = malloc(sizeof *frame);
 		if (!frame)
 			error(-1, errno, "malloc failed");
 		frame->next = pool;
@@ -196,13 +196,13 @@ void BUF_putFrame(const struct ADSB_Frame * frame)
  * \param listTail pointer to list tail (if applicable)
  * \return first element of the list
  */
-static inline struct FB_FrameList * shift(
-	struct FB_FrameList * volatile * listHead,
-	struct FB_FrameList * volatile * listTail)
+static inline struct BUF_FrameList * shift(
+	struct BUF_FrameList * volatile * listHead,
+	struct BUF_FrameList * volatile * listTail)
 {
 	if (!*listHead)
 		return NULL;
-	struct FB_FrameList * ret = *listHead;
+	struct BUF_FrameList * ret = *listHead;
 	*listHead = ret->next;
 	if (listTail && *listTail == ret)
 		*listTail = NULL;
@@ -215,8 +215,8 @@ static inline struct FB_FrameList * shift(
  * \param listTail pointer to list tail (if applicable)
  * \param frame the frame to be enqueued
  */
-static inline void unshift(struct FB_FrameList * volatile * listHead,
-	struct FB_FrameList * volatile * listTail, struct FB_FrameList * frame)
+static inline void unshift(struct BUF_FrameList * volatile * listHead,
+	struct BUF_FrameList * volatile * listTail, struct BUF_FrameList * frame)
 {
 	frame->next = *listHead;
 	*listHead = frame;
@@ -229,8 +229,8 @@ static inline void unshift(struct FB_FrameList * volatile * listHead,
  * \param listTail pointer to list tail, must not be NULL
  * \param frame frame to be appended to the list
  */
-static inline void push(struct FB_FrameList * volatile * listHead,
-	struct FB_FrameList * volatile * listTail, struct FB_FrameList * frame)
+static inline void push(struct BUF_FrameList * volatile * listHead,
+	struct BUF_FrameList * volatile * listTail, struct BUF_FrameList * frame)
 {
 	assert (listTail);
 	frame->next = NULL;
