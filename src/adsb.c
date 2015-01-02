@@ -18,6 +18,49 @@
 #include <adsb.h>
 #include <buffer.h>
 
+/** ADSB Options */
+enum ADSB_OPTION {
+	/** Output Format: AVR */
+	ADSB_OPTION_OUTPUT_FORMAT_AVR = 'c',
+	/** Output Format: Binary */
+	ADSB_OPTION_OUTPUT_FORMAT_BIN = 'C',
+
+	/** Filter: output DF-11/17/18 frames only */
+	ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY = 'D',
+	/** Filter: output all frames */
+	ADSB_OPTION_FRAME_FILTER_ALL = 'd',
+
+	/** MLAT Information: include MLAT when using AVR Output format */
+	ADSB_OPTION_AVR_FORMAT_MLAT = 'E',
+	/** MLAT Information: don't include MLAT when using AVR Output format */
+	ADSB_OPTION_AVR_FORMAT_NO_MLAT = 'e',
+
+	/** CRC: check DF-11/17/18 frames */
+	ADSB_OPTION_DF_11_17_18_CRC_ENABLED ='f',
+	/** CRC: don't check DF-11/17/18 frames */
+	ADSB_OPTION_DF_11_17_18_CRC_DISABLED ='F',
+
+	/** Timestamp Source: GPS */
+	ADSB_OPTION_TIMESTAMP_SOURCE_GPS = 'G',
+	/** Timestamp Source: Legacy 12 MHz Clock */
+	ADSB_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ = 'g',
+
+	/** RTS Handshake: enabled */
+	ADSB_OPTION_RTS_HANDSHAKE_ENABLED = 'H',
+	/** RTS Handshake: disabled */
+	ADSB_OPTION_RTS_HANDSHAKE_DISABLED = 'h',
+
+	/** FEC: enable error correction on DF-11/17/18 frames */
+	ADSB_OPTION_DF_17_18_FEC_ENABLED = 'i',
+	/** FEC: disable error correction on DF-11/17/18 frames */
+	ADSB_OPTION_DF_17_18_FEC_DISABLED = 'I',
+
+	/** Mode-AC messages: enable decoding */
+	ADSB_OPTION_MODE_AC_DECODING_ENABLED = 'J',
+	/** Mode-AC messages: disable decoding */
+	ADSB_OPTION_MODE_AC_DECODING_DISABLED = 'j'
+};
+
 /** file descriptor for UART */
 static int fd;
 /** poll set when waiting for data */
@@ -35,6 +78,7 @@ static inline char next();
 static inline void synchronize();
 static inline bool decode(char * dst, size_t len,
 	char ** rawPtrPtr, size_t * lenRawPtr);
+static inline void setOption(enum ADSB_OPTION option);
 
 /** Initialize ADSB UART.
  * \param uart path to uart to be used
@@ -72,14 +116,20 @@ void ADSB_init(const char * uart)
 	len = 0;
 
 	/* setup ADSB */
-	write(fd, "\x1a""1C", 3);
-	write(fd, "\x1a""1d", 3);
-	write(fd, "\x1a""1E", 3);
-	write(fd, "\x1a""1f", 3);
-	write(fd, "\x1a""1G", 3);
-	write(fd, "\x1a""1H", 3);
-	write(fd, "\x1a""1i", 3);
-	write(fd, "\x1a""1J", 3);
+	setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN);
+	setOption(ADSB_OPTION_FRAME_FILTER_ALL);
+	setOption(ADSB_OPTION_AVR_FORMAT_MLAT);
+	setOption(ADSB_OPTION_DF_11_17_18_CRC_ENABLED);
+	setOption(ADSB_OPTION_TIMESTAMP_SOURCE_GPS);
+	setOption(ADSB_OPTION_RTS_HANDSHAKE_ENABLED);
+	setOption(ADSB_OPTION_DF_17_18_FEC_ENABLED);
+	setOption(ADSB_OPTION_MODE_AC_DECODING_ENABLED);
+}
+
+static inline void setOption(enum ADSB_OPTION option)
+{
+	char w[3] = { '\x1a', '1', (char)option };
+	write(fd, w, sizeof w);
 }
 
 /** ADSB main loop: receive, decode, buffer */
