@@ -138,7 +138,7 @@ static inline void setOption(enum ADSB_OPTION option)
 /** ADSB main loop: receive, decode, buffer */
 void ADSB_main()
 {
-	struct ADSB_Frame * frame = BUF_prepareFrame();
+	struct ADSB_Frame * frame = BUF_newFrame();
 	while (1) {
 		/* synchronize */
 		while (1) {
@@ -196,8 +196,8 @@ decode_frame:
 		frame->siglevel = header[6];
 
 		/* buffer frame */
-		BUF_putFrame(frame);
-		frame = BUF_prepareFrame();
+		BUF_commitFrame(frame);
+		frame = BUF_newFrame();
 	}
 }
 

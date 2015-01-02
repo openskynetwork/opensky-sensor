@@ -68,6 +68,10 @@ int main()
 					printf("%02x", frame->payload[i]);
 				putchar('\n');
 				success = NET_sendFrame(frame);
+				if (success)
+					BUF_releaseFrame(frame);
+				else
+					BUF_putFrame(frame);
 			}
 		} while(success);
 		/* if sending failed, reconnect to the server */

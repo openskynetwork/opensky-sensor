@@ -14,15 +14,15 @@ struct FB_FrameList {
 };
 
 /** Pool of unused frames, can be used by the writer */
-static struct FB_FrameList * volatile listIn = NULL;
+static struct FB_FrameList * volatile pool = NULL;
 /** List for used frames, to be read by the reader */
-static struct FB_FrameList * volatile listOut = NULL;
+static struct FB_FrameList * volatile queueHead = NULL;
 /** End of List for used frames, in order to speed up push operation */
-static struct FB_FrameList * volatile listOutEnd = NULL;
+static struct FB_FrameList * volatile queueTail = NULL;
 /** Currently filled frame (by writer), mainly for debugging purposes */
-static struct FB_FrameList * processingIn = NULL;
+static struct FB_FrameList * newFrame = NULL;
 /** Currently processed frame (by reader), for debugging purposes */
-static struct FB_FrameList * processingOut = NULL;
+static struct FB_FrameList * currentFrame = NULL;
 
 /** Frame Filter */
 static uint8_t filter;
@@ -54,8 +54,8 @@ void BUF_init(size_t backlog)
 		struct FB_FrameList * frame = malloc(sizeof *frame);
 		if (!frame)
 			error(-1, errno, "malloc failed");
-		frame->next = listIn;
-		listIn = frame;
+		frame->next = pool;
+		pool = frame;
 	}
 }
 
@@ -70,36 +70,36 @@ void BUF_setFilter(uint8_t frameType)
 /** Get a frame from the unused frame pool for the writer in order to fill it.
  * \return new frame
  */
-struct ADSB_Frame * BUF_prepareFrame()
+struct ADSB_Frame * BUF_newFrame()
 {
-	assert (!processingIn);
+	assert (!newFrame);
 	pthread_mutex_lock(&mutex);
-	if (listIn) /* pool is not empty, get a frame */
-		processingIn = shift(&listIn, NULL);
+	if (pool) /* pool is not empty, get a frame */
+		newFrame = shift(&pool, NULL);
 	else /* pool is empty, sacrifice oldest frame */
-		processingIn = shift(&listOut, &listOutEnd);
+		newFrame = shift(&queueHead, &queueTail);
 	pthread_mutex_unlock(&mutex);
-	assert (processingIn);
-	return &processingIn->frame;
+	assert (newFrame);
+	return &newFrame->frame;
 }
 
-/** Put a filled frame from writer to reader queue.
+/** Commit a filled frame from writer to reader queue.
  * \param frame filled frame to be delivered to the reader
  */
-void BUF_putFrame(struct ADSB_Frame * frame)
+void BUF_commitFrame(struct ADSB_Frame * frame)
 {
 	assert (frame);
-	assert (&processingIn->frame == frame);
+	assert (&newFrame->frame == frame);
 
 	pthread_mutex_lock(&mutex);
 	if (filter && filter != frame->type) {
-		unshift(&listIn, NULL, processingIn);
+		unshift(&pool, NULL, newFrame);
 	} else {
-		push(&listOut, &listOutEnd, processingIn);
+		push(&queueHead, &queueTail, newFrame);
 		pthread_cond_broadcast(&cond);
 	}
 	pthread_mutex_unlock(&mutex);
-	processingIn = NULL;
+	newFrame = NULL;
 }
 
 /** Get a frame from the queue.
@@ -107,19 +107,18 @@ void BUF_putFrame(struct ADSB_Frame * frame)
  */
 const struct ADSB_Frame * BUF_getFrame()
 {
-	if (processingOut)
-		BUF_releaseFrame(&processingOut->frame);
+	assert (!currentFrame);
 
 	pthread_mutex_lock(&mutex);
-	while (!listOut) {
+	while (!queueHead) {
 		int r = pthread_cond_wait(&cond, &mutex);
 		if (r)
 			error(-1, r, "pthread_cond_wait failed");
 	}
-	processingOut = shift(&listOut, &listOutEnd);
+	currentFrame = shift(&queueHead, &queueTail);
 	pthread_mutex_unlock(&mutex);
 
-	return &processingOut->frame;
+	return &currentFrame->frame;
 }
 
 /** Get a frame from the queue.
@@ -138,11 +137,10 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 		ts.tv_nsec -= 1000000000;
 	}
 
-	if (processingOut)
-		BUF_releaseFrame(&processingOut->frame);
+	assert (!currentFrame);
 
 	pthread_mutex_lock(&mutex);
-	while (!listOut) {
+	while (!queueHead) {
 		int r = pthread_cond_timedwait(&cond, &mutex, &ts);
 		if (r == ETIMEDOUT) {
 			pthread_mutex_unlock(&mutex);
@@ -151,26 +149,46 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 			error(-1, r, "pthread_cond_wait failed");
 		}
 	}
-	processingOut = shift(&listOut, &listOutEnd);
+	currentFrame = shift(&queueHead, &queueTail);
 	pthread_mutex_unlock(&mutex);
 
-	return &processingOut->frame;
+	return &currentFrame->frame;
 }
 
 /** Put a frame back into the pool.
  * \note Can be called by the reader after a frame is processed in order to
  *  put the frame into the pool again. If it is not called explicitly, it is
  *  called by the next call of FB_get implicitly.
+ * \param frame frame to be put, must be the last one returned by one of
+ *  BUF_getFrame() or BUF_getFrameTimeout()
  */
-void BUF_releaseFrame(struct ADSB_Frame * frame)
+void BUF_releaseFrame(const struct ADSB_Frame * frame)
 {
 	assert (frame);
-	assert (frame == &processingOut->frame);
+	assert (frame == &currentFrame->frame);
 
 	pthread_mutex_lock(&mutex);
-	unshift(&listIn, NULL, processingOut);
+	unshift(&pool, NULL, currentFrame);
 	pthread_mutex_unlock(&mutex);
-	processingOut = NULL;
+	currentFrame = NULL;
+}
+
+/** Put a frame back into the queue.
+ * \note This is meant for unsuccessful behavior of the reader. It should be
+ *  called if the reader wants to get that frame again next time when
+ *  BUF_getFrame() or BUF_getFrameTimeout() is called.
+ * \param frame frame to be put, must be the last one returned by one of
+ *  BUF_getFrame() or BUF_getFrameTimeout()
+ */
+void BUF_putFrame(const struct ADSB_Frame * frame)
+{
+	assert (frame);
+	assert (frame == &currentFrame->frame);
+
+	pthread_mutex_lock(&mutex);
+	unshift(&queueHead, &queueTail, currentFrame);
+	pthread_mutex_unlock(&mutex);
+	currentFrame = NULL;
 }
 
 /** Unqueue the first element of a list and return it.
@@ -178,7 +196,8 @@ void BUF_releaseFrame(struct ADSB_Frame * frame)
  * \param listTail pointer to list tail (if applicable)
  * \return first element of the list
  */
-static inline struct FB_FrameList * shift(struct FB_FrameList * volatile * listHead,
+static inline struct FB_FrameList * shift(
+	struct FB_FrameList * volatile * listHead,
 	struct FB_FrameList * volatile * listTail)
 {
 	if (!*listHead)
