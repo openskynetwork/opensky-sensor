@@ -6,6 +6,8 @@
 
 void BUF_init(size_t staticBacklog, size_t dynamicBacklog,
 	size_t dynamicIncrements);
+void BUF_main();
+
 void BUF_setFilter(uint8_t frameType);
 
 struct ADSB_Frame * BUF_newFrame();

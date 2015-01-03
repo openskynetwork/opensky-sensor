@@ -31,7 +31,13 @@ int main()
 	FPGA_program("cape.rbf");
 
 	/* buffer up to 10 + 10 * 1 frames */
-	BUF_init(10, 10, 2);
+	BUF_init(10, 10, 20);
+
+	/* start Buffer Garbage Collection */
+	pthread_t buf;
+	if (pthread_create(&buf, NULL, (PTHREAD_FN)&BUF_main, NULL)) {
+		error(-1, errno, "Could not start buffering garbage collector");
+	}
 
 	/* start ADSB mainloop */
 	ADSB_init("/dev/ttyO5");

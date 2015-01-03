@@ -8,12 +8,16 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+struct Pool;
+
 /** Linked Frame List */
 struct FrameLink {
 	/** Frame */
 	struct ADSB_Frame frame;
 	/** Next Element */
 	struct FrameLink * next;
+	/** Containing pool */
+	struct Pool * pool;
 };
 
 /** Linked List Container */
@@ -30,6 +34,8 @@ struct FrameList {
 struct Pool {
 	/** Pool start */
 	struct FrameLink * pool;
+	/** Pool size */
+	size_t size;
 	/** Linked List: next pool */
 	struct Pool * next;
 	/** Garbage collection: collected frames */
@@ -119,6 +125,7 @@ static bool deployPool(struct Pool * newPool, size_t size)
 
 	/* initialize pool */
 	newPool->pool = initFrames;
+	newPool->size = size;
 	newPool->next = NULL;
 	newPool->collect.head = NULL;
 	newPool->collect.tail = NULL;
@@ -130,8 +137,10 @@ static bool deployPool(struct Pool * newPool, size_t size)
 	list.tail = initFrames + size - 1;
 	size_t i;
 	struct FrameLink * frame = initFrames;
-	for (i = 0; i < size; ++i, ++frame)
+	for (i = 0; i < size; ++i, ++frame) {
 		frame->next = frame + 1;
+		frame->pool = newPool;
+	}
 	list.tail->next = NULL;
 	list.size = size;
 
@@ -163,6 +172,112 @@ static bool createDynPool()
 	return true;
 }
 
+/** Collect unused frames from the overall pool to their own pool.
+ * \note used for garbage collection
+ */
+static void collectPools()
+{
+	struct FrameLink * frame, * prev = NULL, * next;
+	
+	/* iterate over all frames of the pool and keep a pointer to the
+	 * predecessor */
+	for (frame = pool.head; frame; frame = next) {
+		next = frame->next;
+		if (frame->pool != &staticPool) {
+			/* collect only frames of dynamic pools */
+
+			/* unlink from the overall pool */
+			if (prev)
+				prev->next = next;
+			else
+				pool.head = next;
+			if (frame == pool.tail)
+				pool.tail = prev;
+			--pool.size;
+
+			/* add them to their pools' collection */
+			unshift(&frame->pool->collect, frame);
+		} else {
+			prev = frame;
+		}
+	}
+}
+
+/** Revert effects of the garbage collection.
+ * \return true if a dynamic pool was uncollected
+ *  (i.e. there are new elements in the overall pool)
+ */
+static bool uncollectPools()
+{
+	struct Pool * p;
+
+	/* iterate over all dynamic pools */
+	for (p = dynPools; p; p = p->next) {
+		if (p->collect.head) {
+			/* pools' collection was not empty, put frames back into the
+			 * overall pool */
+			append(&pool, &p->collect);
+			/* clear collection */
+			p->collect.head = p->collect.tail = NULL;
+			p->collect.size = 0;
+			puts("BUF: Uncollected pool");
+			return true;
+		}
+	}
+	/* no such pool found */
+	return false;
+}
+
+/** Free all fully collected pools.
+ * \note used for garbage collection
+ */
+static void destroyUnusedPools()
+{
+	struct Pool * pool, * prev = NULL, * next;
+	
+	size_t gc = 0;
+
+	/* iterate over all dynamic pools */
+	for (pool = dynPools; pool; pool = next) {
+		next = pool->next;
+		if (pool->collect.size == pool->size) {
+			/* fully collected pool */
+
+			/* unlink from the list of pools */
+			if (prev)
+				prev->next = next;
+			else
+				dynPools = next;
+			--dynIncrements;
+
+			++gc;
+
+			/* delete frames */
+			free(pool->pool);
+			/* delete pool itself */
+			free(pool);
+		} else {
+			prev = pool;
+		}
+	}
+	printf("BUF: Garbage collected %zu pools\n", gc);
+}
+
+void BUF_main()
+{
+	while (true) {
+		sleep(15);
+		pthread_mutex_lock(&mutex);
+		printf("BUF: checking garbage collection: %zu %zu\n", queue.size, pool.size);
+		if (queue.size < (pool.size + queue.size + 2 - staticPool.size) / 4) {
+			puts("BUF: running garbage collection");
+			collectPools();
+			destroyUnusedPools();
+		}
+		pthread_mutex_unlock(&mutex);
+	}
+}
+
 /** Get a new frame from the pool. Extend the pool if there are more dynamic
  *  pools to get. Discard oldest frame if there is no more dynamic pool
  * \return a frame, which can be filled
@@ -174,6 +289,8 @@ static struct FrameLink * getFrameFromPool()
 	if (pool.head) {
 		/* pool is not empty -> unlink and return first frame */
 		ret = shift(&pool);
+	} else if (uncollectPools()) {
+		ret = shift(&pool);
 	} else if (dynIncrements < dynMaxIncrements && createDynPool()) {
 		/* pool was empty, but we just created another one */
 		++dynIncrements;
@@ -181,6 +298,7 @@ static struct FrameLink * getFrameFromPool()
 	} else {
 		/* no more space in the pool and no more pools
 		 * -> sacrifice oldest frame */
+		puts("BUF: Sacrifice");
 		ret = shift(&queue);
 	}
 
