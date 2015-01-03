@@ -4,7 +4,6 @@
 #include <assert.h>
 #include <pthread.h>
 #include <buffer.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -116,8 +115,6 @@ void BUF_setFilter(uint8_t frameType)
  */
 static bool deployPool(struct Pool * newPool, size_t size)
 {
-	printf("BUF: deploying new pool (%d) of size %zu\n", dynIncrements, size);
-
 	/* allocate new frames */
 	struct FrameLink * initFrames = malloc(size * sizeof *initFrames);
 	if (!initFrames)
@@ -220,7 +217,6 @@ static bool uncollectPools()
 			/* clear collection */
 			p->collect.head = p->collect.tail = NULL;
 			p->collect.size = 0;
-			puts("BUF: Uncollected pool");
 			return true;
 		}
 	}
@@ -235,8 +231,6 @@ static void destroyUnusedPools()
 {
 	struct Pool * pool, * prev = NULL, * next;
 	
-	size_t gc = 0;
-
 	/* iterate over all dynamic pools */
 	for (pool = dynPools; pool; pool = next) {
 		next = pool->next;
@@ -250,8 +244,6 @@ static void destroyUnusedPools()
 				dynPools = next;
 			--dynIncrements;
 
-			++gc;
-
 			/* delete frames */
 			free(pool->pool);
 			/* delete pool itself */
@@ -260,17 +252,14 @@ static void destroyUnusedPools()
 			prev = pool;
 		}
 	}
-	printf("BUF: Garbage collected %zu pools\n", gc);
 }
 
 void BUF_main()
 {
 	while (true) {
-		sleep(15);
+		sleep(120);
 		pthread_mutex_lock(&mutex);
-		printf("BUF: checking garbage collection: %zu %zu\n", queue.size, pool.size);
 		if (queue.size < (pool.size + queue.size + 2 - staticPool.size) / 4) {
-			puts("BUF: running garbage collection");
 			collectPools();
 			destroyUnusedPools();
 		}
@@ -298,7 +287,6 @@ static struct FrameLink * getFrameFromPool()
 	} else {
 		/* no more space in the pool and no more pools
 		 * -> sacrifice oldest frame */
-		puts("BUF: Sacrifice");
 		ret = shift(&queue);
 	}
 
@@ -405,7 +393,6 @@ void BUF_releaseFrame(const struct ADSB_Frame * frame)
 
 	pthread_mutex_lock(&mutex);
 	unshift(&pool, currentFrame);
-	//printf("Release: %zu, %lu\n", queue.size, (intptr_t)queue.head);
 	pthread_mutex_unlock(&mutex);
 	currentFrame = NULL;
 }
@@ -424,7 +411,6 @@ void BUF_putFrame(const struct ADSB_Frame * frame)
 
 	pthread_mutex_lock(&mutex);
 	unshift(&queue, currentFrame);
-	//printf("Put: %zu, %lu\n", queue.size, (intptr_t)queue.head);
 	pthread_mutex_unlock(&mutex);
 	currentFrame = NULL;
 }

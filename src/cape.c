@@ -30,8 +30,8 @@ int main()
 	FPGA_init();
 	FPGA_program("cape.rbf");
 
-	/* buffer up to 10 + 10 * 1 frames */
-	BUF_init(10, 10, 20);
+	/* buffer up to 10 + 1000 * 1080 frames */
+	BUF_init(10, 1000, 1080);
 
 	/* start Buffer Garbage Collection */
 	pthread_t buf;
