@@ -30,8 +30,8 @@ int main()
 	FPGA_init();
 	FPGA_program("cape.rbf");
 
-	/* buffer up to 100 frames */
-	BUF_init(10, 10, 1);
+	/* buffer up to 10 + 10 * 1 frames */
+	BUF_init(10, 10, 2);
 
 	/* start ADSB mainloop */
 	ADSB_init("/dev/ttyO5");

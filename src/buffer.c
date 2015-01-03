@@ -5,6 +5,8 @@
 #include <pthread.h>
 #include <buffer.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 /** Linked Frame List */
 struct FrameLink {
@@ -14,27 +16,41 @@ struct FrameLink {
 	struct FrameLink * next;
 };
 
+/** Linked List Container */
 struct FrameList {
+	/** Head Pointer or NULL if empty */
 	struct FrameLink * head;
+	/** Tail Pointer or NULL if empty */
 	struct FrameLink * tail;
+	/** Size of list */
 	size_t size;
 };
 
+/** Buffer Pool */
 struct Pool {
+	/** Pool start */
 	struct FrameLink * pool;
+	/** Linked List: next pool */
 	struct Pool * next;
-	size_t collect;
+	/** Garbage collection: collected frames */
+	struct FrameList collect;
 };
 
-static struct Pool mainPool;
+/** Static Pool (those frames are always allocated in advance) */
+static struct Pool staticPool;
 
-static size_t poolIncrement;
-static size_t poolMaxSteps;
-static size_t poolSteps = 0;
-static struct Pool * pools = NULL;
+/** Dynamic Pool backlog size */
+static size_t dynBacklog;
+/** Dynamic Pool max. increments */
+static size_t dynMaxIncrements;
+/** Dynamic Pool increments */
+static size_t dynIncrements = 0;
+/** Dynamic Pool List */
+static struct Pool * dynPools = NULL;
 
-static size_t poolSize = 0;
+/** Overall Pool */
 static volatile struct FrameList pool = { NULL, NULL };
+/** Output Queue */
 static volatile struct FrameList queue = { NULL, NULL };
 
 /** Currently filled frame (by writer), mainly for debugging purposes */
@@ -50,30 +66,33 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Reader condition (for listOut) */
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
-static void deployPool(struct Pool * newPool, size_t size);
+static bool deployPool(struct Pool * newPool, size_t size);
 
 static inline struct FrameLink * shift(volatile struct FrameList * list);
-static inline void unshift(volatile struct FrameList * list, struct FrameLink * frame);
-static inline void push(volatile struct FrameList * list, struct FrameLink * frame);
-static inline void append(volatile struct FrameList * list, struct FrameList * newList);
+static inline void unshift(volatile struct FrameList * list,
+	struct FrameLink * frame);
+static inline void push(volatile struct FrameList * list,
+	struct FrameLink * frame);
+static inline void append(volatile struct FrameList * dstList,
+	const struct FrameList * srcList);
 
 /** Initialize frame buffer.
- * \param initialBacklog number of empty frames for the steady state. Must be
+ * \param staticBacklog number of empty frames for the steady state. Must be
  *  more than 2, should be about 10
- * \param increment number of empty frames to allocate additionally
+ * \param dynamicBacklog number of empty frames to allocate additionally
  *  when the pool is empty
- * \param maxSteps max number of increments
+ * \param dynamicIncrements max number of increments
  */
-void BUF_init(size_t initialBacklog, size_t increment, size_t maxSteps)
+void BUF_init(size_t staticBacklog, size_t dynamicBacklog,
+	size_t dynamicIncrements)
 {
-	size_t i;
+	assert (staticBacklog > 2);
 
-	assert (initialBacklog > 2);
+	dynBacklog = dynamicBacklog;
+	dynMaxIncrements = dynamicIncrements;
 
-	poolIncrement = increment;
-	poolMaxSteps = maxSteps;
-
-	deployPool(&mainPool, initialBacklog);
+	if (!deployPool(&staticPool, staticBacklog))
+		error(-1, errno, "malloc failed");
 }
 
 /** Set a filter: discard all other frames.
@@ -84,18 +103,28 @@ void BUF_setFilter(uint8_t frameType)
 	filter = frameType;
 }
 
-static void deployPool(struct Pool * newPool, size_t size)
+/** Deploy a new pool: allocate frames and append them to the overall pool.
+ * \param newPool pool to be deployed
+ * \param size number of frames in that pool
+ * \return true if deployment succeeded, false if allocation failed
+ */
+static bool deployPool(struct Pool * newPool, size_t size)
 {
-	printf("BUF: deploying new pool (%d) of size %zu\n", poolSteps, size);
+	printf("BUF: deploying new pool (%d) of size %zu\n", dynIncrements, size);
 
+	/* allocate new frames */
 	struct FrameLink * initFrames = malloc(size * sizeof *initFrames);
 	if (!initFrames)
-		error(-1, errno, "malloc failed");
+		return false;
 
+	/* initialize pool */
 	newPool->pool = initFrames;
 	newPool->next = NULL;
-	newPool->collect = 0;
+	newPool->collect.head = NULL;
+	newPool->collect.tail = NULL;
+	newPool->collect.size = 0;
 
+	/* setup frame list */
 	struct FrameList list;
 	list.head = initFrames;
 	list.tail = initFrames + size - 1;
@@ -106,40 +135,56 @@ static void deployPool(struct Pool * newPool, size_t size)
 	list.tail->next = NULL;
 	list.size = size;
 
-	poolSize += size;
+	/* append frames to the overall pool */
 	append(&pool, &list);
+
+	return true;
 }
 
-static void createPool()
+/** Create a new pool, deploy it and add it to the list of pools.
+ * \return true if operation succeeded, false if allocation failed
+ */
+static bool createDynPool()
 {
 	struct Pool * newPool = malloc(sizeof *newPool);
 	if (!newPool)
-		error(-1, errno, "malloc failed");
+		return false;
 
-	deployPool(newPool, poolIncrement);
-	newPool->next = pools;
-	pools = newPool;
-}
-
-static struct FrameLink * getFrame()
-{
-	if (pool.head)
-		return shift(&pool);
-
-	printf("BUF: Pool empty, checking for more pools (%zu to %zu)\n", poolSteps, poolMaxSteps);
-	if (poolSteps < poolMaxSteps) {
-		createPool();
-		++poolSteps;
-		assert (pool.head);
-		return shift(&pool);
+	/* deployment */
+	if (!deployPool(newPool, dynBacklog)) {
+		free(newPool);
+		return false;
 	}
 
-	printf("BUF: sacrificing oldest frame\n");
+	/* add pool into the list of dynamic pools */
+	newPool->next = dynPools;
+	dynPools = newPool;
 
-	/* no more space in the pool and no more pools -> sacrifice oldest frame */
-	printf("Test S1: %zu, %lu\n", queue.size, (intptr_t)queue.head);
-	struct FrameLink * ret = shift(&queue);
-	printf("Test S2: %zu, %lu\n", queue.size, (intptr_t)queue.head);
+	return true;
+}
+
+/** Get a new frame from the pool. Extend the pool if there are more dynamic
+ *  pools to get. Discard oldest frame if there is no more dynamic pool
+ * \return a frame, which can be filled
+ */
+static struct FrameLink * getFrameFromPool()
+{
+	struct FrameLink * ret;
+
+	if (pool.head) {
+		/* pool is not empty -> unlink and return first frame */
+		ret = shift(&pool);
+	} else if (dynIncrements < dynMaxIncrements && createDynPool()) {
+		/* pool was empty, but we just created another one */
+		++dynIncrements;
+		ret = shift(&pool);
+	} else {
+		/* no more space in the pool and no more pools
+		 * -> sacrifice oldest frame */
+		ret = shift(&queue);
+	}
+
+	assert (ret);
 	return ret;
 }
 
@@ -150,7 +195,7 @@ struct ADSB_Frame * BUF_newFrame()
 {
 	assert (!newFrame);
 	pthread_mutex_lock(&mutex);
-	newFrame = getFrame();
+	newFrame = getFrameFromPool();
 	pthread_mutex_unlock(&mutex);
 	assert (newFrame);
 	return &newFrame->frame;
@@ -267,85 +312,91 @@ void BUF_putFrame(const struct ADSB_Frame * frame)
 }
 
 /** Unqueue the first element of a list and return it.
- * \param listHead pointer to list head
- * \param listTail pointer to list tail (if applicable)
- * \return first element of the list
+ * \param list list container
+ * \return first element of the list or NULL if list was empty
  */
 static inline struct FrameLink * shift(volatile struct FrameList * list)
 {
 	assert(!!list->head == !!list->tail);
-	/*if (list == &queue)
-		printf("S: Old List Head: %lu\n", (intptr_t)list->head);*/
-	if (!list->head)
+
+	if (!list->head) /* empty list */
 		return NULL;
+
+	/* first element */
 	struct FrameLink * ret = list->head;
+
+	/* unlink */
 	list->head = ret->next;
 	if (list->tail == ret)
 		list->tail = NULL;
 	ret->next = NULL;
 	--list->size;
-	/*if (list == &queue)
-		printf("S: New List Head: %lu\n", (intptr_t)list->head);*/
+
 	assert(!!list->head == !!list->tail);
 	return ret;
 }
 
 /** Enqueue a new frame at front of a list.
- * \param listHead pointer to list head
- * \param listTail pointer to list tail (if applicable)
+ * \param list list container
  * \param frame the frame to be enqueued
  */
-static inline void unshift(volatile struct FrameList * list, struct FrameLink * frame)
+static inline void unshift(volatile struct FrameList * list,
+	struct FrameLink * frame)
 {
 	assert(!!list->head == !!list->tail);
-	/*if (list == &queue)
-		printf("U: Old List Head: %lu\n", (intptr_t)list->head);*/
+
+	/* frame will be the new head */
 	frame->next = list->head;
+
+	/* link into container */
 	list->head = frame;
 	if (!list->tail)
 		list->tail = frame;
-	/*if (list == &queue)
-		printf("U: New List Head: %lu\n", (intptr_t)list->head);*/
 	++list->size;
+
 	assert(!!list->head == !!list->tail);
 }
 
 /** Enqueue a new frame at the end of a list.
- * \param listHead pointer to list head
- * \param listTail pointer to list tail, must not be NULL
+ * \param list list container
  * \param frame frame to be appended to the list
  */
-static inline void push(volatile struct FrameList * list, struct FrameLink * frame)
+static inline void push(volatile struct FrameList * list,
+	struct FrameLink * frame)
 {
 	assert(!!list->head == !!list->tail);
+
+	/* frame will be new tail */
 	frame->next = NULL;
-	/*if (list == &queue)
-		printf("P: Old List Head: %lu\n", (intptr_t)list->head);*/
+
+	/* link into container */
 	if (!list->head) {
 		list->head = list->tail = frame;
 	} else {
 		list->tail->next = frame;
 		list->tail = frame;
 	}
-	/*if (list == &queue)
-		printf("P: New List Head: %lu\n", (intptr_t)list->head);*/
-	assert(!!list->head == !!list->tail);
 	++list->size;
+
+	assert(!!list->head == !!list->tail);
 }
 
 /** Append a new frame list at the end of a list.
- * \param listHead pointer to list head
- * \param listTail pointer to list tail, must not be NULL
- * \param frame frame to be appended to the list
+ * \param dstList destination list container
+ * \param srcList source list container to be appended to the first list
  */
-static inline void append(volatile struct FrameList * list, struct FrameList * newList)
+static inline void append(volatile struct FrameList * dstList,
+	const struct FrameList * srcList)
 {
-	assert(!!list->head == !!list->tail);
-	if (!list->head)
-		list->head = newList->head;
-	else
-		list->tail->next = newList->head;
-	list->tail = newList->tail;
-	list->size += newList->size;
-	assert(!!list->head == !!list->tail);
+	assert(!!dstList->head == !!dstList->tail);
+
+	if (!dstList->head) /* link head if dst is empty */
+		dstList->head = srcList->head;
+	else /* link last element otherwise */
+		dstList->tail->next = srcList->head;
+	/* link tail */
+	dstList->tail = srcList->tail;
+	dstList->size += srcList->size;
+
+	assert(!!dstList->head == !!dstList->tail);
 }

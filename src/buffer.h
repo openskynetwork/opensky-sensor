@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <adsb.h>
 
-void BUF_init(size_t initialBacklog, size_t increment, size_t maxSteps);
+void BUF_init(size_t staticBacklog, size_t dynamicBacklog,
+	size_t dynamicIncrements);
 void BUF_setFilter(uint8_t frameType);
 
 struct ADSB_Frame * BUF_newFrame();
