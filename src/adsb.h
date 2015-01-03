@@ -18,6 +18,4 @@ struct ADSB_Frame {
 void ADSB_init(const char * uart);
 void ADSB_main();
 
-int ADSB_getFrame(struct ADSB_Frame * frame, int32_t timeout_ms);
-
 #endif
