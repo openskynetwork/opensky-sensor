@@ -66,18 +66,18 @@ static int fd;
 /** poll set when waiting for data */
 static struct pollfd fds;
 /** receive buffer */
-static char buf[128];
+static uint8_t buf[128];
 /** current buffer length (max sizeof buf) */
 static size_t len;
 /** current pointer into buffer */
-static char * cur;
+static uint8_t * cur;
 
 static inline void discardAndFill();
 static inline char peek();
 static inline char next();
 static inline void synchronize();
-static inline bool decode(char * dst, size_t len,
-	char ** rawPtrPtr, size_t * lenRawPtr);
+static inline bool decode(uint8_t * dst, size_t len,
+		uint8_t ** rawPtrPtr, size_t * lenRawPtr);
 static inline void setOption(enum ADSB_OPTION option);
 
 /** Initialize ADSB UART.
@@ -131,7 +131,7 @@ void ADSB_init(const char * uart)
  */
 static inline void setOption(enum ADSB_OPTION option)
 {
-	char w[3] = { '\x1a', '1', (char)option };
+	uint8_t w[3] = { '\x1a', '1', (char)option };
 	write(fd, w, sizeof w);
 }
 
@@ -142,7 +142,7 @@ void ADSB_main()
 	while (1) {
 		/* synchronize */
 		while (1) {
-			char sync = next();
+			uint8_t sync = next();
 			if (sync == 0x1a)
 				break;
 			printf("ADSB: Out of Sync: got 0x%2d instead of 0x1a\n", sync);
@@ -150,13 +150,13 @@ void ADSB_main()
 		}
 
 		/* decode frame */
-		char * rawPtr;
+		uint8_t * rawPtr;
 decode_frame:
 		rawPtr = frame->raw;
 		*rawPtr++ = 0x1a;
 
 		/* decode type */
-		char type = next();
+		uint8_t type = next();
 		size_t payload_len;
 		switch (type) {
 		case '1': /* mode-ac */
@@ -181,7 +181,7 @@ decode_frame:
 		frame->raw_len = 2;
 
 		/* decode header */
-		char header[7];
+		uint8_t header[7];
 		if (!decode(header, sizeof header, &rawPtr, &frame->raw_len))
 			goto decode_frame;
 
@@ -191,7 +191,7 @@ decode_frame:
 
 		/* process header */
 		uint64_t mlat = 0;
-		memcpy(((char*)&mlat) + 2, header, 6);
+		memcpy(((uint8_t*)&mlat) + 2, header, 6);
 		frame->mlat = be64toh(mlat);
 		frame->siglevel = header[6];
 
@@ -208,14 +208,14 @@ decode_frame:
  * \param rawPtrPtr pointer to pointer of raw buffer
  * \param lenRawPtr pointer to raw buffer length
  */
-static inline bool decode(char * dst, size_t len,
-	char ** rawPtrPtr, size_t * lenRawPtr)
+static inline bool decode(uint8_t * dst, size_t len,
+		uint8_t ** rawPtrPtr, size_t * lenRawPtr)
 {
 	size_t i;
-	char * rawPtr = *rawPtrPtr;
+	uint8_t * rawPtr = *rawPtrPtr;
 	for (i = 0; i < len; ++i) {
 		/* receive one character */
-		char c = next();
+		uint8_t c = next();
 		/* put into raw buffer */
 		*rawPtr++ = c;
 		++*lenRawPtr;
@@ -293,7 +293,7 @@ static inline char next()
 static inline void synchronize()
 {
 	while (1) {
-		char * esc = memchr(cur, 0x1a, len - (cur - buf));
+		uint8_t * esc = memchr(cur, 0x1a, len - (cur - buf));
 		if (esc) {
 			cur = esc;
 			return;

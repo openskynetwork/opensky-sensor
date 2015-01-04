@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <unistd.h>
 
 static int sock = -1;
 
@@ -46,6 +47,8 @@ bool NET_connect(const char * server, int port)
 			strerror(errno));
 		return false;
 	}
+
+	printf("NET: connected to '%s:%d'\n", server, port);
 	return true;
 }
 

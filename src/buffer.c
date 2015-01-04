@@ -6,6 +6,10 @@
 #include <buffer.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#define BUF_DEBUG
 
 struct Pool;
 
@@ -162,9 +166,10 @@ static bool createDynPool()
 		return false;
 	}
 
-	/* add pool into the list of dynamic pools */
+	/* add pool to the list of dynamic pools */
 	newPool->next = dynPools;
 	dynPools = newPool;
+	++dynIncrements;
 
 	return true;
 }
@@ -175,6 +180,9 @@ static bool createDynPool()
 static void collectPools()
 {
 	struct FrameLink * frame, * prev = NULL, * next;
+#ifdef BUF_DEBUG
+	const size_t prevSize = pool.size;
+#endif
 	
 	/* iterate over all frames of the pool and keep a pointer to the
 	 * predecessor */
@@ -198,6 +206,10 @@ static void collectPools()
 			prev = frame;
 		}
 	}
+#ifdef BUF_DEBUG
+	printf("BUF: Collected %zu of %zu frames from overall pool to their "
+		"dynamic pools\n", prevSize - pool.size, prevSize);
+#endif
 }
 
 /** Revert effects of the garbage collection.
@@ -230,6 +242,7 @@ static bool uncollectPools()
 static void destroyUnusedPools()
 {
 	struct Pool * pool, * prev = NULL, * next;
+	const size_t prevSize = dynIncrements;
 	
 	/* iterate over all dynamic pools */
 	for (pool = dynPools; pool; pool = next) {
@@ -252,14 +265,21 @@ static void destroyUnusedPools()
 			prev = pool;
 		}
 	}
+#ifdef BUF_DEBUG
+	printf("BUF: Destroyed %zu of %zu dynamic pools\n",
+		prevSize - dynIncrements, prevSize);
+#endif
 }
 
 void BUF_main()
 {
 	while (true) {
-		sleep(120);
+		sleep(20);
 		pthread_mutex_lock(&mutex);
-		if (queue.size < (pool.size + queue.size + 2 - staticPool.size) / 4) {
+		if (queue.size < (dynIncrements * dynBacklog) / 2) {
+#ifdef BUF_DEBUG
+			puts("BUF: Running Garbage Collector");
+#endif
 			collectPools();
 			destroyUnusedPools();
 		}
@@ -279,14 +299,25 @@ static struct FrameLink * getFrameFromPool()
 		/* pool is not empty -> unlink and return first frame */
 		ret = shift(&pool);
 	} else if (uncollectPools()) {
+		/* pool was empty, but we could uncollect a pool which was about to be
+		 *  garbage collected */
+#ifdef BUF_DEBUG
+		puts("BUF: Uncollected pool");
+#endif
 		ret = shift(&pool);
 	} else if (dynIncrements < dynMaxIncrements && createDynPool()) {
 		/* pool was empty, but we just created another one */
-		++dynIncrements;
+#ifdef BUF_DEBUG
+		printf("BUF: Created another pool (%zu/%zu)\n", dynIncrements,
+			dynMaxIncrements);
+#endif
 		ret = shift(&pool);
 	} else {
 		/* no more space in the pool and no more pools
 		 * -> sacrifice oldest frame */
+#ifdef BUF_DEBUG
+		puts("BUF: Sacrificing oldest frame\n");
+#endif
 		ret = shift(&queue);
 	}
 
@@ -317,7 +348,7 @@ void BUF_commitFrame(struct ADSB_Frame * frame)
 
 	pthread_mutex_lock(&mutex);
 	if (filter && filter != frame->type) {
-		unshift(&pool, newFrame);
+		push(&pool, newFrame);
 	} else {
 		push(&queue, newFrame);
 		pthread_cond_broadcast(&cond);
@@ -392,7 +423,7 @@ void BUF_releaseFrame(const struct ADSB_Frame * frame)
 	assert (frame == &currentFrame->frame);
 
 	pthread_mutex_lock(&mutex);
-	unshift(&pool, currentFrame);
+	push(&pool, currentFrame);
 	pthread_mutex_unlock(&mutex);
 	currentFrame = NULL;
 }

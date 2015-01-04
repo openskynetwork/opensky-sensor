@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <buffer.h>
 #include <network.h>
+#include <unistd.h>
 
 typedef void*(*PTHREAD_FN)(void*);
 
@@ -33,6 +34,9 @@ int main()
 	/* buffer up to 10 + 1000 * 1080 frames */
 	BUF_init(10, 1000, 1080);
 
+	/* only Mode-S long frames */
+	BUF_setFilter(3);
+
 	/* start Buffer Garbage Collection */
 	pthread_t buf;
 	if (pthread_create(&buf, NULL, (PTHREAD_FN)&BUF_main, NULL)) {
@@ -46,9 +50,6 @@ int main()
 		error(-1, errno, "Could not create adsb main loop");
 	}
 
-	/* only Mode-S long frames */
-	BUF_setFilter(3);
-
 	while (1) {
 		/* try to connect to the server */
 		while (!NET_connect("mrks", 30003))
@@ -61,18 +62,20 @@ int main()
 		bool success;
 		do {
 			/* read a frame from the buffer */
-			const struct ADSB_Frame * frame = BUF_getFrameTimeout(500);
+			const struct ADSB_Frame * frame = BUF_getFrameTimeout(5000);
 			if (!frame) {
 				/* timeout */
 				success = NET_sendTimeout();
 			} else {
 				/* got a frame */
+#if 0
 				printf("Mode-S long: mlat %15" PRIu64 ", level %+3" PRIi8 ": ",
 					frame->mlat, frame->siglevel);
 				int i;
 				for (i = 0; i < 14; ++i)
 					printf("%02x", frame->payload[i]);
 				putchar('\n');
+#endif
 				success = NET_sendFrame(frame);
 				if (success)
 					BUF_releaseFrame(frame);

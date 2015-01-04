@@ -6,7 +6,7 @@
 
 struct ADSB_Frame {
 	size_t raw_len;
-	char raw[23 * 2];
+	uint8_t raw[23 * 2];
 
 	size_t payload_len;
 	uint8_t type;
