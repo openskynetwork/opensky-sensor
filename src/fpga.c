@@ -55,7 +55,7 @@ void FPGA_reset()
 void FPGA_program(const char * file)
 {
 	/* open input file */
-	int fd = open(file, O_RDWR);
+	int fd = open(file, O_RDONLY);
 	if (fd < 0)
 		error(-1, errno, "Could not open '%s'", file);
 
@@ -68,7 +68,10 @@ void FPGA_program(const char * file)
 
 	/* mmap input file */
 	char * rfd = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-
+	if (rfd == MAP_FAILED) {
+		close(fd);
+		error(-1, errno, "Could not mmap '%s'", file);
+	}
 
 	/* reset FPGA */
 	FPGA_reset();
