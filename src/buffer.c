@@ -540,16 +540,22 @@ static inline void append(volatile struct FrameList * dstList,
 	const volatile struct FrameList * srcList)
 {
 	assert(!!dstList->head == !!dstList->tail);
+	assert(!!srcList->head == !!srcList->tail);
 
 	if (!dstList->head) /* link head if dst is empty */
 		dstList->head = srcList->head;
 	else /* link last element otherwise */
 		dstList->tail->next = srcList->head;
-	/* link tail */
-	dstList->tail = srcList->tail;
+	if (srcList->tail) {
+		/* link tail */
+		dstList->tail = srcList->tail;
+	}
 	dstList->size += srcList->size;
 
-	assert(!!dstList->head == !!dstList->tail);
+	if(!!dstList->head != !!dstList->tail) {
+		while(1);
+		assert(!!dstList->head == !!dstList->tail);
+	}
 }
 
 static inline void clear(volatile struct FrameList * list)

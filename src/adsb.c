@@ -29,6 +29,50 @@ static size_t len;
 /** current pointer into buffer */
 static uint8_t * cur;
 
+/** ADSB Options */
+enum ADSB_OPTION {
+	/** Output Format: AVR */
+	ADSB_OPTION_OUTPUT_FORMAT_AVR = 'c',
+	/** Output Format: Binary */
+	ADSB_OPTION_OUTPUT_FORMAT_BIN = 'C',
+
+	/** Filter: output DF-11/17/18 frames only */
+	ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY = 'D',
+	/** Filter: output all frames */
+	ADSB_OPTION_FRAME_FILTER_ALL = 'd',
+
+	/** MLAT Information: include MLAT when using AVR Output format */
+	ADSB_OPTION_AVR_FORMAT_MLAT = 'E',
+	/** MLAT Information: don't include MLAT when using AVR Output format */
+	ADSB_OPTION_AVR_FORMAT_NO_MLAT = 'e',
+
+	/** CRC: check DF-11/17/18 frames */
+	ADSB_OPTION_DF_11_17_18_CRC_ENABLED ='f',
+	/** CRC: don't check DF-11/17/18 frames */
+	ADSB_OPTION_DF_11_17_18_CRC_DISABLED ='F',
+
+	/** Timestamp Source: GPS */
+	ADSB_OPTION_TIMESTAMP_SOURCE_GPS = 'G',
+	/** Timestamp Source: Legacy 12 MHz Clock */
+	ADSB_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ = 'g',
+
+	/** RTS Handshake: enabled */
+	ADSB_OPTION_RTS_HANDSHAKE_ENABLED = 'H',
+	/** RTS Handshake: disabled */
+	ADSB_OPTION_RTS_HANDSHAKE_DISABLED = 'h',
+
+	/** FEC: enable error correction on DF-11/17/18 frames */
+	ADSB_OPTION_DF_17_18_FEC_ENABLED = 'i',
+	/** FEC: disable error correction on DF-11/17/18 frames */
+	ADSB_OPTION_DF_17_18_FEC_DISABLED = 'I',
+
+	/** Mode-AC messages: enable decoding */
+	ADSB_OPTION_MODE_AC_DECODING_ENABLED = 'J',
+	/** Mode-AC messages: disable decoding */
+	ADSB_OPTION_MODE_AC_DECODING_DISABLED = 'j'
+};
+
+
 static inline void discardAndFill();
 static inline char peek();
 static inline char next();
@@ -39,8 +83,10 @@ static inline void setOption(enum ADSB_OPTION option);
 
 /** Initialize ADSB UART.
  * \param uart path to uart to be used
+ * \param rtscts use RTS/CTS handshake on uart. Must be set in the receiver
+ *  also.
  */
-void ADSB_init(const char * uart)
+void ADSB_init(const char * uart, bool rtscts)
 {
 	/* open uart */
 	fd = open(uart, O_RDWR, O_NONBLOCK | O_NOCTTY);
@@ -54,7 +100,9 @@ void ADSB_init(const char * uart)
 
 	t.c_iflag = IGNPAR;
 	t.c_oflag = ONLCR;
-	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | CRTSCTS | B3000000;
+	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3000000;
+	if (rtscts)
+		t.c_cflag |= CRTSCTS;
 	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
 	t.c_ispeed = B3000000;
 	t.c_ospeed = B3000000;
@@ -71,16 +119,28 @@ void ADSB_init(const char * uart)
 	/* setup buffer */
 	cur = buf;
 	len = 0;
+}
 
+void ADSB_setup(bool outputFormatBin, bool avrMLAT, bool crc,
+	bool fec, bool frameFilter, bool modeAC, bool rts, bool gps)
+{
 	/* setup ADSB */
-	setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN);
-	setOption(ADSB_OPTION_FRAME_FILTER_ALL);
-	setOption(ADSB_OPTION_AVR_FORMAT_MLAT);
-	setOption(ADSB_OPTION_DF_11_17_18_CRC_ENABLED);
-	setOption(ADSB_OPTION_TIMESTAMP_SOURCE_GPS);
-	setOption(ADSB_OPTION_RTS_HANDSHAKE_ENABLED);
-	setOption(ADSB_OPTION_DF_17_18_FEC_ENABLED);
-	setOption(ADSB_OPTION_MODE_AC_DECODING_ENABLED);
+	setOption(outputFormatBin ? ADSB_OPTION_OUTPUT_FORMAT_BIN:
+		ADSB_OPTION_OUTPUT_FORMAT_AVR);
+	setOption(frameFilter ? ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
+		ADSB_OPTION_FRAME_FILTER_ALL);
+	setOption(avrMLAT ? ADSB_OPTION_AVR_FORMAT_MLAT :
+		ADSB_OPTION_AVR_FORMAT_NO_MLAT);
+	setOption(crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
+		ADSB_OPTION_DF_11_17_18_CRC_DISABLED);
+	setOption(gps ? ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
+		ADSB_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ);
+	setOption(rts ? ADSB_OPTION_RTS_HANDSHAKE_ENABLED :
+		ADSB_OPTION_RTS_HANDSHAKE_DISABLED);
+	setOption(fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
+		ADSB_OPTION_DF_17_18_FEC_DISABLED);
+	setOption(modeAC ? ADSB_OPTION_MODE_AC_DECODING_ENABLED :
+		ADSB_OPTION_MODE_AC_DECODING_DISABLED);
 }
 
 /** Set an option for the ADSB decoder.

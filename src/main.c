@@ -18,6 +18,9 @@ typedef void*(*PTHREAD_FN)(void*);
 
 int main()
 {
+	struct CFG_Config config;
+	CFG_read("cfg", &config);
+
 	/* initialize GPIO subsystem */
 	GPIO_init();
 
@@ -30,42 +33,57 @@ int main()
 
 	/* initialize and reprogram FPGA */
 	FPGA_init();
-	FPGA_program("cape.rbf", 10, 3);
+	if (config.fpga.configure)
+		FPGA_program(config.fpga.file, config.fpga.timeout,
+			config.fpga.retries);
 
-	/* buffer up to 10 + 1000 * 1080 frames */
-	BUF_init(10, 1000, 1080);
+	/* setup buffer */
+	BUF_init(config.buf.statBacklog, config.buf.dynBacklog,
+		config.buf.dynIncrement);
+
+	/* setup buffer garbage collection */
+	BUF_initGC(config.buf.gcInterval, config.buf.gcLevel);
 
 	/* only Mode-S long frames */
 	BUF_setFilter(3);
 
-	BUF_initGC(120, 2);
-
-	/* start Buffer Garbage Collection */
-	pthread_t buf;
-	if (pthread_create(&buf, NULL, (PTHREAD_FN)&BUF_main, NULL)) {
-		error(-1, errno, "Could not start buffering garbage collector");
+	if (config.buf.gcEnable) {
+		/* start Buffer Garbage Collection */
+		pthread_t buf;
+		if (pthread_create(&buf, NULL, (PTHREAD_FN)&BUF_main, NULL))
+			error(-1, errno, "Could not start buffering garbage collector");
 	}
 
-	/* start ADSB mainloop */
-	ADSB_init("/dev/ttyO5");
+	/* init ADSB receiver */
+	ADSB_init(config.adsb.uart, config.adsb.rts);
+
+	/* setup ADSB receiver */
+	ADSB_setup(config.adsb.outputFormatBin, config.adsb.avrMLAT,
+		config.adsb.crc, config.adsb.fec, config.adsb.frameFilter,
+		config.adsb.modeac, config.adsb.rts, config.adsb.timestampGPS);
+
+	/* start ADSB receiver mainloop */
 	pthread_t adsb;
-	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL)) {
+	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL))
 		error(-1, errno, "Could not create adsb main loop");
-	}
 
 	while (1) {
 		/* try to connect to the server */
-		while (!NET_connect("mrks", 30003))
-			sleep(10); /* in case of failure: retry every 10 seconds */
+		while (!NET_connect(config.net.host, config.net.port))
+			sleep(config.net.reconnectInterval); /* in case of failure: retry */
 
 		/* send serial number */
-		if (!NET_sendSerial(0xdeadbeef))
+		if (!NET_sendSerial(config.dev.serial))
 			continue; /* on error: reconnect */
+
+		if (!config.buf.history)
+			BUF_flush();
 
 		bool success;
 		do {
 			/* read a frame from the buffer */
-			const struct ADSB_Frame * frame = BUF_getFrameTimeout(5000);
+			const struct ADSB_Frame * frame =
+				BUF_getFrameTimeout(config.net.timeout);
 			if (!frame) {
 				/* timeout */
 				success = NET_sendTimeout();
@@ -88,11 +106,6 @@ int main()
 		} while(success);
 		/* if sending failed, reconnect to the server */
 	}
-
-	/* wait until watchdog and adsb finish
-	 * (they'll never do, so wait endless) */
-	pthread_join(watchdog, NULL);
-	pthread_join(adsb, NULL);
 
 	return 0;
 }
