@@ -8,6 +8,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <unistd.h>
+#include <endian.h>
 
 static int sock = -1;
 
@@ -69,21 +70,30 @@ static inline bool sendData(const void * data, size_t len)
 
 /** Send the serial number of the device to the server.
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
- * \TODO implement
  */
 bool NET_sendSerial(uint32_t serial)
 {
-	const char to[] = "Serial\n";
-	return sendData(to, sizeof to - 1);
+	char buf[10] = { '\x1a', '\x35' };
+
+	uint8_t ca[4];
+	*(uint32_t*)ca = htobe32(serial);
+
+	char * cur = buf + 2;
+
+	uint32_t n;
+	for (n = 0; n < 4; ++n)
+		if ((*cur++ = ca[n]) == '\x1a')
+			*cur++ = '\x1a';
+
+	return sendData(buf, cur - buf);
 }
 
 /** Send an ADSB frame to the server.
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
- * \TODO implement
  */
 bool NET_sendFrame(const struct ADSB_Frame * frame)
 {
-	char buf[250];
+	/*char buf[250];
 	size_t len = snprintf(buf, 250 - 29,
 		"Mode-S long: mlat %15" PRIu64 ", level %+3" PRIi8 ": ",
 		frame->mlat, frame->siglevel);
@@ -93,16 +103,15 @@ bool NET_sendFrame(const struct ADSB_Frame * frame)
 		snprintf(p += 2, 3, "%02x", frame->payload[i]);
 	len += 28;
 	buf[len++] = '\n';
-	return sendData(buf, len);
-	//return sendData(frame->raw, frame->raw_len);
+	return sendData(buf, len);*/
+	return sendData(frame->raw, frame->raw_len);
 }
 
 /** Send a timeout message to the server.
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
- * \TODO implement
  */
 bool NET_sendTimeout()
 {
-	const char to[] = "Timeout\n";
-	return sendData(to, sizeof to - 1);
+	char buf[] = { '\x1a', '\x36' };
+	return sendData(buf, sizeof buf);
 }

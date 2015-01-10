@@ -19,7 +19,7 @@ typedef void*(*PTHREAD_FN)(void*);
 int main()
 {
 	struct CFG_Config config;
-	CFG_read("cfg", &config);
+	CFG_read("config.cfg", &config);
 
 	/* initialize GPIO subsystem */
 	GPIO_init();
