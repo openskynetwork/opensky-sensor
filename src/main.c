@@ -19,7 +19,7 @@ typedef void*(*PTHREAD_FN)(void*);
 int main()
 {
 	struct CFG_Config config;
-	CFG_read("config.cfg", &config);
+	CFG_read("cape.cfg", &config);
 
 	/* initialize GPIO subsystem */
 	GPIO_init();
@@ -47,7 +47,7 @@ int main()
 	/* only Mode-S long frames */
 	BUF_setFilter(3);
 
-	if (config.buf.gcEnable) {
+	if (config.buf.gcEnabled) {
 		/* start Buffer Garbage Collection */
 		pthread_t buf;
 		if (pthread_create(&buf, NULL, (PTHREAD_FN)&BUF_main, NULL))
@@ -60,7 +60,7 @@ int main()
 	/* setup ADSB receiver */
 	ADSB_setup(config.adsb.outputFormatBin, config.adsb.avrMLAT,
 		config.adsb.crc, config.adsb.fec, config.adsb.frameFilter,
-		config.adsb.modeac, config.adsb.rts, config.adsb.timestampGPS);
+		config.adsb.modeAC, config.adsb.rts, config.adsb.timestampGPS);
 
 	/* start ADSB receiver mainloop */
 	pthread_t adsb;
