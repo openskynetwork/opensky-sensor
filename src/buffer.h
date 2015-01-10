@@ -6,7 +6,11 @@
 
 void BUF_init(size_t staticBacklog, size_t dynamicBacklog,
 	size_t dynamicIncrements);
+
+void BUF_initGC(uint32_t interval, uint32_t level);
 void BUF_main();
+
+void BUF_flush();
 
 void BUF_setFilter(uint8_t frameType);
 

@@ -70,6 +70,9 @@ static struct FrameLink * currentFrame = NULL;
 /** Frame Filter */
 static uint8_t filter;
 
+static uint32_t GC_interval;
+static uint32_t GC_level;
+
 /** Mutex */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Reader condition (for listOut) */
@@ -83,7 +86,8 @@ static inline void unshift(volatile struct FrameList * list,
 static inline void push(volatile struct FrameList * list,
 	struct FrameLink * frame);
 static inline void append(volatile struct FrameList * dstList,
-	const struct FrameList * srcList);
+	const volatile struct FrameList * srcList);
+static inline void clear(volatile struct FrameList * list);
 
 /** Initialize frame buffer.
  * \param staticBacklog number of empty frames for the steady state. Must be
@@ -102,6 +106,12 @@ void BUF_init(size_t staticBacklog, size_t dynamicBacklog,
 
 	if (!deployPool(&staticPool, staticBacklog))
 		error(-1, errno, "malloc failed");
+}
+
+void BUF_initGC(uint32_t interval, uint32_t level)
+{
+	GC_interval = interval;
+	GC_level = level;
 }
 
 /** Set a filter: discard all other frames.
@@ -128,9 +138,7 @@ static bool deployPool(struct Pool * newPool, size_t size)
 	newPool->pool = initFrames;
 	newPool->size = size;
 	newPool->next = NULL;
-	newPool->collect.head = NULL;
-	newPool->collect.tail = NULL;
-	newPool->collect.size = 0;
+	clear(&newPool->collect);
 
 	/* setup frame list */
 	struct FrameList list;
@@ -274,9 +282,9 @@ static void destroyUnusedPools()
 void BUF_main()
 {
 	while (true) {
-		sleep(20);
+		sleep(GC_interval);
 		pthread_mutex_lock(&mutex);
-		if (queue.size < (dynIncrements * dynBacklog) / 2) {
+		if (queue.size < (dynIncrements * dynBacklog) / GC_level) {
 #ifdef BUF_DEBUG
 			puts("BUF: Running Garbage Collector");
 #endif
@@ -285,6 +293,14 @@ void BUF_main()
 		}
 		pthread_mutex_unlock(&mutex);
 	}
+}
+
+void BUF_flush()
+{
+	pthread_mutex_lock(&mutex);
+	append(&pool, &queue);
+	clear(&queue);
+	pthread_mutex_unlock(&mutex);
 }
 
 /** Get a new frame from the pool. Extend the pool if there are more dynamic
@@ -521,7 +537,7 @@ static inline void push(volatile struct FrameList * list,
  * \param srcList source list container to be appended to the first list
  */
 static inline void append(volatile struct FrameList * dstList,
-	const struct FrameList * srcList)
+	const volatile struct FrameList * srcList)
 {
 	assert(!!dstList->head == !!dstList->tail);
 
@@ -534,4 +550,10 @@ static inline void append(volatile struct FrameList * dstList,
 	dstList->size += srcList->size;
 
 	assert(!!dstList->head == !!dstList->tail);
+}
+
+static inline void clear(volatile struct FrameList * list)
+{
+	list->head = list->tail = NULL;
+	list->size = 0;
 }

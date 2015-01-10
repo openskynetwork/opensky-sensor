@@ -1,5 +1,6 @@
 
 #include <gpio.h>
+#include <watchdog.h>
 #include <stdio.h>
 #include <unistd.h>
 

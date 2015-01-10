@@ -71,7 +71,7 @@ static inline bool sendData(const void * data, size_t len)
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
  * \TODO implement
  */
-bool NET_sendSerial()
+bool NET_sendSerial(uint32_t serial)
 {
 	const char to[] = "Serial\n";
 	return sendData(to, sizeof to - 1);

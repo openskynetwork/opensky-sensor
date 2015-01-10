@@ -12,6 +12,7 @@
 #include <buffer.h>
 #include <network.h>
 #include <unistd.h>
+#include <cfgfile.h>
 
 typedef void*(*PTHREAD_FN)(void*);
 
@@ -29,13 +30,15 @@ int main()
 
 	/* initialize and reprogram FPGA */
 	FPGA_init();
-	FPGA_program("cape.rbf");
+	FPGA_program("cape.rbf", 10, 3);
 
 	/* buffer up to 10 + 1000 * 1080 frames */
 	BUF_init(10, 1000, 1080);
 
 	/* only Mode-S long frames */
 	BUF_setFilter(3);
+
+	BUF_initGC(120, 2);
 
 	/* start Buffer Garbage Collection */
 	pthread_t buf;
@@ -56,7 +59,7 @@ int main()
 			sleep(10); /* in case of failure: retry every 10 seconds */
 
 		/* send serial number */
-		if (!NET_sendSerial())
+		if (!NET_sendSerial(0xdeadbeef))
 			continue; /* on error: reconnect */
 
 		bool success;
