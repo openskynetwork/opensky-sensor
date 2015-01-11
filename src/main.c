@@ -54,8 +54,7 @@ int main()
 
 	/* ADSB: initialize and setup receiver */
 	ADSB_init(config.adsb.uart, config.adsb.rts);
-	ADSB_setup(config.adsb.outputFormatBin, config.adsb.avrMLAT,
-		config.adsb.crc, config.adsb.fec, config.adsb.frameFilter,
+	ADSB_setup(config.adsb.crc, config.adsb.fec, config.adsb.frameFilter,
 		config.adsb.modeAC, config.adsb.rts, config.adsb.timestampGPS);
 	/* ADSB: start receiver mainloop */
 	pthread_t adsb;

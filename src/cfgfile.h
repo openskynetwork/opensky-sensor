@@ -19,9 +19,7 @@ struct CFG_FPGA {
 struct CFG_ADSB {
 	char uart[PATH_MAX];
 
-	bool outputFormatBin;
 	bool frameFilter;
-	bool avrMLAT;
 	bool crc;
 	bool timestampGPS;
 	bool rts;

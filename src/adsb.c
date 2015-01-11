@@ -77,8 +77,8 @@ static inline void discardAndFill();
 static inline char peek();
 static inline char next();
 static inline void synchronize();
-static inline bool decode(uint8_t * dst, size_t len,
-		uint8_t ** rawPtrPtr, size_t * lenRawPtr);
+static inline bool decode(uint8_t * dst, size_t len, uint8_t ** rawPtrPtr,
+	size_t * lenRawPtr);
 static inline void setOption(enum ADSB_OPTION option);
 
 /** Initialize ADSB UART.
@@ -121,16 +121,22 @@ void ADSB_init(const char * uart, bool rtscts)
 	len = 0;
 }
 
-void ADSB_setup(bool outputFormatBin, bool avrMLAT, bool crc,
-	bool fec, bool frameFilter, bool modeAC, bool rts, bool gps)
+/** Setup ADSB receiver with some options.
+ * \param crc enable CRC
+ * \param fec enable forward error correction
+ * \param frameFilter receive DF-11/17/18 frames only
+ * \param modeAC receive Mode-A/C additionally
+ * \param rts use RTS/CTS handshake on UART
+ * \param gps use GPS for timestamps
+ */
+void ADSB_setup(bool crc, bool fec, bool frameFilter, bool modeAC, bool rts,
+	bool gps)
 {
 	/* setup ADSB */
-	setOption(outputFormatBin ? ADSB_OPTION_OUTPUT_FORMAT_BIN:
-		ADSB_OPTION_OUTPUT_FORMAT_AVR);
+	setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN);
 	setOption(frameFilter ? ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
 		ADSB_OPTION_FRAME_FILTER_ALL);
-	setOption(avrMLAT ? ADSB_OPTION_AVR_FORMAT_MLAT :
-		ADSB_OPTION_AVR_FORMAT_NO_MLAT);
+	setOption(ADSB_OPTION_AVR_FORMAT_MLAT);
 	setOption(crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
 		ADSB_OPTION_DF_11_17_18_CRC_DISABLED);
 	setOption(gps ? ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
@@ -148,7 +154,7 @@ void ADSB_setup(bool outputFormatBin, bool avrMLAT, bool crc,
  */
 static inline void setOption(enum ADSB_OPTION option)
 {
-	uint8_t w[3] = { '\x1a', '1', (char)option };
+	uint8_t w[3] = { '\x1a', '1', (uint8_t)option };
 	write(fd, w, sizeof w);
 }
 
@@ -225,8 +231,8 @@ decode_frame:
  * \param rawPtrPtr pointer to pointer of raw buffer
  * \param lenRawPtr pointer to raw buffer length
  */
-static inline bool decode(uint8_t * dst, size_t len,
-		uint8_t ** rawPtrPtr, size_t * lenRawPtr)
+static inline bool decode(uint8_t * dst, size_t len, uint8_t ** rawPtrPtr,
+	size_t * lenRawPtr)
 {
 	size_t i;
 	uint8_t * rawPtr = *rawPtrPtr;

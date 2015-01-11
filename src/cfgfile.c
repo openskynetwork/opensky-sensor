@@ -232,20 +232,10 @@ static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg)
 		cfg->adsb.frameFilter = parseBool(opt);
 	else if (isOption(opt, "ModeAC"))
 		cfg->adsb.modeAC = parseBool(opt);
-	else if (isOption(opt, "Format")) {
-		if (isSame("avr", opt->val, opt->valLen))
-			cfg->adsb.outputFormatBin = false;
-		else if (isSame("bin", opt->val, opt->valLen))
-			cfg->adsb.outputFormatBin = true;
-		else
-			error(-1, 0, "Configuration error: Line %" PRIu32
-				": Output format must be AVR or BIN", bufferLine);
-	} else if (isOption(opt, "RTS"))
+	else if (isOption(opt, "RTS"))
 		cfg->adsb.rts = parseBool(opt);
 	else if (isOption(opt, "GPS"))
 		cfg->adsb.timestampGPS = parseBool(opt);
-	else if (isOption(opt, "AVR_MLAT"))
-		cfg->adsb.avrMLAT = parseBool(opt);
 	else
 		unknownKey(opt);
 }
@@ -367,9 +357,7 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->fpga.timeout = 10;
 
 	strncpy(cfg->adsb.uart, "/dev/ttyO5", sizeof cfg->adsb.uart);
-	cfg->adsb.outputFormatBin = true;
 	cfg->adsb.frameFilter = true;
-	cfg->adsb.avrMLAT = true;
 	cfg->adsb.crc = true;
 	cfg->adsb.timestampGPS = true;
 	cfg->adsb.rts = true;
@@ -396,10 +384,6 @@ static void check(struct CFG_Config * cfg)
 {
 	if (cfg->fpga.configure && cfg->fpga.file[0] == '\0')
 			error(-1, 0, "Configuration error: FPGA.file is empty");
-
-	if (!cfg->adsb.outputFormatBin)
-		error(-1, 0, "Configuration error: ADSB.OutputFormat = AVR is not "
-			"supported");
 
 	if (cfg->net.host[0] == '\0')
 		error(-1, 0, "Configuration error: NET.host is empty");

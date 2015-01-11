@@ -18,7 +18,7 @@ struct ADSB_Frame {
 
 void ADSB_init(const char * uart, bool rtscts);
 void ADSB_main();
-void ADSB_setup(bool outputFormatBin, bool avrMLAT, bool crc,
-	bool fec, bool frameFilter, bool modeAC, bool rts, bool gps);
+void ADSB_setup(bool crc, bool fec, bool frameFilter, bool modeAC, bool rts,
+	bool gps);
 
 #endif
