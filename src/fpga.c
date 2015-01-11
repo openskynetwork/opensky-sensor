@@ -54,7 +54,7 @@ void FPGA_reset(uint32_t timeout)
 	while (timeout--) {
 		if (GPIO_read(FPGA_NSTAT))
 			return;
-		usleep(500000);
+		usleep(50);
 	}
 	error(-1, 0, "FPGA: could not synchronize with the FPGA");
 }
@@ -129,7 +129,7 @@ void FPGA_program(const char * file, uint32_t timeout, uint32_t retries)
 
 		uint32_t spin = timeout;
 		while (GPIO_read(FPGA_CONFD) && spin--)
-			usleep(50000);
+			usleep(50);
 		if (!GPIO_read(FPGA_CONFD)) {
 			fprintf(stderr, "FPGA: could not program: CONF_DONE = 0 after "
 				"last byte");
