@@ -83,6 +83,10 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 static bool deployPool(struct Pool * newPool, size_t size);
+static bool createDynPool();
+static void collectPools();
+static bool uncollectPools();
+static void destroyUnusedPools();
 
 static inline struct FrameLink * shift(volatile struct FrameList * list);
 static inline void unshift(volatile struct FrameList * list,
@@ -128,163 +132,6 @@ void BUF_initGC(uint32_t interval, uint32_t level)
 void BUF_setFilter(uint8_t frameType)
 {
 	filter = frameType;
-}
-
-/** Deploy a new pool: allocate frames and append them to the overall pool.
- * \param newPool pool to be deployed
- * \param size number of frames in that pool
- * \return true if deployment succeeded, false if allocation failed
- */
-static bool deployPool(struct Pool * newPool, size_t size)
-{
-	/* allocate new frames */
-	struct FrameLink * initFrames = malloc(size * sizeof *initFrames);
-	if (!initFrames)
-		return false;
-
-	/* initialize pool */
-	newPool->pool = initFrames;
-	newPool->size = size;
-	newPool->next = NULL;
-	clear(&newPool->collect);
-
-	/* setup frame list */
-	struct FrameList list;
-	list.head = initFrames;
-	list.tail = initFrames + size - 1;
-	size_t i;
-	struct FrameLink * frame = initFrames;
-	for (i = 0; i < size; ++i, ++frame) {
-		frame->next = frame + 1;
-		frame->pool = newPool;
-	}
-	list.tail->next = NULL;
-	list.size = size;
-
-	/* append frames to the overall pool */
-	append(&pool, &list);
-
-	return true;
-}
-
-/** Create a new pool, deploy it and add it to the list of pools.
- * \return true if operation succeeded, false if allocation failed
- */
-static bool createDynPool()
-{
-	struct Pool * newPool = malloc(sizeof *newPool);
-	if (!newPool)
-		return false;
-
-	/* deployment */
-	if (!deployPool(newPool, dynBacklog)) {
-		free(newPool);
-		return false;
-	}
-
-	/* add pool to the list of dynamic pools */
-	newPool->next = dynPools;
-	dynPools = newPool;
-	++dynIncrements;
-
-	return true;
-}
-
-/** Collect unused frames from the overall pool to their own pool.
- * \note used for garbage collection
- */
-static void collectPools()
-{
-	struct FrameLink * frame, * prev = NULL, * next;
-#ifdef BUF_DEBUG
-	const size_t prevSize = pool.size;
-#endif
-	
-	/* iterate over all frames of the pool and keep a pointer to the
-	 * predecessor */
-	for (frame = pool.head; frame; frame = next) {
-		next = frame->next;
-		if (frame->pool != &staticPool) {
-			/* collect only frames of dynamic pools */
-
-			/* unlink from the overall pool */
-			if (prev)
-				prev->next = next;
-			else
-				pool.head = next;
-			if (frame == pool.tail)
-				pool.tail = prev;
-			--pool.size;
-
-			/* add them to their pools' collection */
-			unshift(&frame->pool->collect, frame);
-		} else {
-			prev = frame;
-		}
-	}
-#ifdef BUF_DEBUG
-	printf("BUF: Collected %zu of %zu frames from overall pool to their "
-		"dynamic pools\n", prevSize - pool.size, prevSize);
-#endif
-}
-
-/** Revert effects of the garbage collection.
- * \return true if a dynamic pool was uncollected
- *  (i.e. there are new elements in the overall pool)
- */
-static bool uncollectPools()
-{
-	struct Pool * p;
-
-	/* iterate over all dynamic pools */
-	for (p = dynPools; p; p = p->next) {
-		if (p->collect.head) {
-			/* pools' collection was not empty, put frames back into the
-			 * overall pool */
-			append(&pool, &p->collect);
-			/* clear collection */
-			p->collect.head = p->collect.tail = NULL;
-			p->collect.size = 0;
-			return true;
-		}
-	}
-	/* no such pool found */
-	return false;
-}
-
-/** Free all fully collected pools.
- * \note used for garbage collection
- */
-static void destroyUnusedPools()
-{
-	struct Pool * pool, * prev = NULL, * next;
-	const size_t prevSize = dynIncrements;
-	
-	/* iterate over all dynamic pools */
-	for (pool = dynPools; pool; pool = next) {
-		next = pool->next;
-		if (pool->collect.size == pool->size) {
-			/* fully collected pool */
-
-			/* unlink from the list of pools */
-			if (prev)
-				prev->next = next;
-			else
-				dynPools = next;
-			--dynIncrements;
-
-			/* delete frames */
-			free(pool->pool);
-			/* delete pool itself */
-			free(pool);
-		} else {
-			prev = pool;
-		}
-	}
-#ifdef BUF_DEBUG
-	printf("BUF: Destroyed %zu of %zu dynamic pools\n",
-		prevSize - dynIncrements, prevSize);
-#endif
 }
 
 /** Gargabe collector mainloop.
@@ -471,6 +318,163 @@ void BUF_putFrame(const struct ADSB_Frame * frame)
 	unshift(&queue, currentFrame);
 	pthread_mutex_unlock(&mutex);
 	currentFrame = NULL;
+}
+
+/** Deploy a new pool: allocate frames and append them to the overall pool.
+ * \param newPool pool to be deployed
+ * \param size number of frames in that pool
+ * \return true if deployment succeeded, false if allocation failed
+ */
+static bool deployPool(struct Pool * newPool, size_t size)
+{
+	/* allocate new frames */
+	struct FrameLink * initFrames = malloc(size * sizeof *initFrames);
+	if (!initFrames)
+		return false;
+
+	/* initialize pool */
+	newPool->pool = initFrames;
+	newPool->size = size;
+	newPool->next = NULL;
+	clear(&newPool->collect);
+
+	/* setup frame list */
+	struct FrameList list;
+	list.head = initFrames;
+	list.tail = initFrames + size - 1;
+	size_t i;
+	struct FrameLink * frame = initFrames;
+	for (i = 0; i < size; ++i, ++frame) {
+		frame->next = frame + 1;
+		frame->pool = newPool;
+	}
+	list.tail->next = NULL;
+	list.size = size;
+
+	/* append frames to the overall pool */
+	append(&pool, &list);
+
+	return true;
+}
+
+/** Create a new pool, deploy it and add it to the list of pools.
+ * \return true if operation succeeded, false if allocation failed
+ */
+static bool createDynPool()
+{
+	struct Pool * newPool = malloc(sizeof *newPool);
+	if (!newPool)
+		return false;
+
+	/* deployment */
+	if (!deployPool(newPool, dynBacklog)) {
+		free(newPool);
+		return false;
+	}
+
+	/* add pool to the list of dynamic pools */
+	newPool->next = dynPools;
+	dynPools = newPool;
+	++dynIncrements;
+
+	return true;
+}
+
+/** Collect unused frames from the overall pool to their own pool.
+ * \note used for garbage collection
+ */
+static void collectPools()
+{
+	struct FrameLink * frame, * prev = NULL, * next;
+#ifdef BUF_DEBUG
+	const size_t prevSize = pool.size;
+#endif
+
+	/* iterate over all frames of the pool and keep a pointer to the
+	 * predecessor */
+	for (frame = pool.head; frame; frame = next) {
+		next = frame->next;
+		if (frame->pool != &staticPool) {
+			/* collect only frames of dynamic pools */
+
+			/* unlink from the overall pool */
+			if (prev)
+				prev->next = next;
+			else
+				pool.head = next;
+			if (frame == pool.tail)
+				pool.tail = prev;
+			--pool.size;
+
+			/* add them to their pools' collection */
+			unshift(&frame->pool->collect, frame);
+		} else {
+			prev = frame;
+		}
+	}
+#ifdef BUF_DEBUG
+	printf("BUF: Collected %zu of %zu frames from overall pool to their "
+		"dynamic pools\n", prevSize - pool.size, prevSize);
+#endif
+}
+
+/** Revert effects of the garbage collection.
+ * \return true if a dynamic pool was uncollected
+ *  (i.e. there are new elements in the overall pool)
+ */
+static bool uncollectPools()
+{
+	struct Pool * p;
+
+	/* iterate over all dynamic pools */
+	for (p = dynPools; p; p = p->next) {
+		if (p->collect.head) {
+			/* pools' collection was not empty, put frames back into the
+			 * overall pool */
+			append(&pool, &p->collect);
+			/* clear collection */
+			p->collect.head = p->collect.tail = NULL;
+			p->collect.size = 0;
+			return true;
+		}
+	}
+	/* no such pool found */
+	return false;
+}
+
+/** Free all fully collected pools.
+ * \note used for garbage collection
+ */
+static void destroyUnusedPools()
+{
+	struct Pool * pool, * prev = NULL, * next;
+	const size_t prevSize = dynIncrements;
+
+	/* iterate over all dynamic pools */
+	for (pool = dynPools; pool; pool = next) {
+		next = pool->next;
+		if (pool->collect.size == pool->size) {
+			/* fully collected pool */
+
+			/* unlink from the list of pools */
+			if (prev)
+				prev->next = next;
+			else
+				dynPools = next;
+			--dynIncrements;
+
+			/* delete frames */
+			free(pool->pool);
+			/* delete pool itself */
+			free(pool);
+		} else {
+			prev = pool;
+		}
+	}
+#ifdef BUF_DEBUG
+	printf("BUF: Destroyed %zu of %zu dynamic pools\n",
+		prevSize - dynIncrements, prevSize);
+#endif
 }
 
 /** Unqueue the first element of a list and return it.
