@@ -9,8 +9,10 @@
 #include <stdio.h>
 #include <unistd.h>
 
+/** Define to 1 to enable debugging messages */
 #define BUF_DEBUG
 
+/* Forward declaration */
 struct Pool;
 
 /** Linked Frame List */
@@ -70,7 +72,9 @@ static struct FrameLink * currentFrame = NULL;
 /** Frame Filter */
 static uint8_t filter;
 
+/** Garbage Collector interval */
 static uint32_t GC_interval;
+/** Garbage Collector threshold level */
 static uint32_t GC_level;
 
 /** Mutex */
@@ -108,6 +112,10 @@ void BUF_init(size_t staticBacklog, size_t dynamicBacklog,
 		error(-1, errno, "malloc failed");
 }
 
+/** Initialize the garbage collector.
+ * \param interval interval between two garbage collector runs
+ * \param level threshold when to actually run the collector
+ */
 void BUF_initGC(uint32_t interval, uint32_t level)
 {
 	GC_interval = interval;
@@ -279,6 +287,8 @@ static void destroyUnusedPools()
 #endif
 }
 
+/** Gargabe collector mainloop.
+ * \note intialize garbage collection first using BUF_initGC */
 void BUF_main()
 {
 	while (true) {
@@ -295,6 +305,7 @@ void BUF_main()
 	}
 }
 
+/** Flush Buffer queue. This discards all buffered but not processed frames */
 void BUF_flush()
 {
 	pthread_mutex_lock(&mutex);
