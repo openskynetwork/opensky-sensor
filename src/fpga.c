@@ -40,7 +40,7 @@ void FPGA_init()
 }
 
 /** Reset the FPGA configuration.
- * \param timeout waiting time for the reset to happen in units of 50 ms
+ * \param timeout waiting time for the reset to happen in units of 50 us
  */
 void FPGA_reset(uint32_t timeout)
 {
@@ -59,6 +59,11 @@ void FPGA_reset(uint32_t timeout)
 	error(-1, 0, "FPGA: could not synchronize with the FPGA");
 }
 
+/** Transfer data to the FPGA's configuration interface
+ * \param rfd data to transfer
+ * \param size size of data
+ * \param true if transfer done without any error
+ */
 static bool transfer(const uint8_t * rfd, off_t size)
 {
 	/* transfer until done */
@@ -85,12 +90,13 @@ static bool transfer(const uint8_t * rfd, off_t size)
 			return false;
 		}
 	}
+	/* done */
 	return true;
 }
 
 /** (Re-)Program the FPGA.
  * \param file path to file which is transferred to the FPGA
- * \param timeout timeout for I/O waiting loops in units of 50 ms
+ * \param timeout timeout for I/O waiting loops in units of 50 us
  * \param retries number of retries. 0 means "one try"
  */
 void FPGA_program(const char * file, uint32_t timeout, uint32_t retries)
