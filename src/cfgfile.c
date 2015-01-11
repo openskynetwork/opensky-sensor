@@ -44,6 +44,8 @@ enum SECTION {
 	SECTION_BUF,
 	/** Section Device */
 	SECTION_DEVICE,
+	/** Section Statistics */
+	SECTION_STAT,
 
 	/** Number of sections */
 	SECTIONS
@@ -74,6 +76,7 @@ static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg);
+static void scanOptionSTAT(const struct Option * opt, struct CFG_Config * cfg);
 
 /** Description of all sections */
 static const struct Section sections[] = {
@@ -83,7 +86,8 @@ static const struct Section sections[] = {
 	[SECTION_ADSB] = { "ADSB", &scanOptionADSB },
 	[SECTION_NET] = { "NETWORK", &scanOptionNET },
 	[SECTION_BUF] = { "BUFFER", &scanOptionBUF },
-	[SECTION_DEVICE] = { "DEVICE", &scanOptionDEV }
+	[SECTION_DEVICE] = { "DEVICE", &scanOptionDEV },
+	[SECTION_STAT] = { "STATISTICS", &scanOptionSTAT },
 };
 
 /** Read and check a configuration file.
@@ -386,6 +390,20 @@ static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg)
 		unknownKey(opt);
 }
 
+/** Scan Statistics Section.
+ * \param opt option to be parsed
+ * \param cfg configuration to be filled
+ */
+static void scanOptionSTAT(const struct Option * opt, struct CFG_Config * cfg)
+{
+	if (isOption(opt, "enabled"))
+		cfg->stats.enabled = parseBool(opt);
+	else if (isOption(opt, "interval"))
+		cfg->stats.interval = parseInt(opt);
+	else
+		unknownKey(opt);
+}
+
 /** Scan an option line.
  * \param sect index to current section
  * \param cfg configuration to be filled
@@ -499,6 +517,9 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->buf.gcLevel = 2;
 
 	cfg->dev.serialSet = false;
+
+	cfg->stats.enabled = true;
+	cfg->stats.interval = 600;
 }
 
 /** Check configuration for sanity.
@@ -516,6 +537,9 @@ static void check(struct CFG_Config * cfg)
 
 	if (!cfg->dev.serialSet)
 		error(-1, 0, "Configuration error: DEVICE.serial is missing");
+
+	if (cfg->stats.interval == 0)
+		error(-1, 0, "Configuration error: STATISTICS.interval is 0");
 }
 
 

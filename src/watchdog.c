@@ -3,6 +3,7 @@
 #include <watchdog.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <statistics.h>
 
 /** Watchdog GPIO number */
 #define WD_GPIO 60
@@ -24,6 +25,7 @@ void WATCHDOG_main()
 	while (1) {
 		GPIO_set(WD_GPIO);
 		GPIO_clear(WD_GPIO);
+		++STAT_stats.WD_events;
 		sleep(WD_REPEAT);
 	}
 }

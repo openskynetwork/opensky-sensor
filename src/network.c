@@ -9,6 +9,7 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <endian.h>
+#include <statistics.h>
 
 /** Networking socket */
 static int sock = -1;
@@ -32,6 +33,7 @@ bool NET_connect(const char * server, int port)
 	if (!host) {
 		fprintf(stderr, "NET: could not resolve '%s': %s\n", server,
 			hstrerror(h_errno));
+		++STAT_stats.NET_connectsFail;
 		return false;
 	}
 	struct sockaddr_in addr;
@@ -52,10 +54,12 @@ bool NET_connect(const char * server, int port)
 			strerror(errno));
 		close(sock);
 		sock = -1;
+		++STAT_stats.NET_connectsFail;
 		return false;
 	}
 
 	printf("NET: connected to '%s:%d'\n", server, port);
+	++STAT_stats.NET_connectsSuccess;
 	return true;
 }
 
@@ -69,8 +73,10 @@ static inline bool sendData(const void * data, size_t len)
 	ssize_t r = send(sock, data, len, MSG_NOSIGNAL);
 	if (r < 0) {
 		fprintf(stderr, "NET: could not send: %s\n", strerror(errno));
+		++STAT_stats.NET_framesFailed;
 		return false;
 	}
+	++STAT_stats.NET_framesSent;
 	return true;
 }
 
@@ -119,5 +125,6 @@ bool NET_sendFrame(const struct ADSB_Frame * frame)
 bool NET_sendTimeout()
 {
 	char buf[] = { '\x1a', '\x36' };
+	++STAT_stats.NET_keepAlives;
 	return sendData(buf, sizeof buf);
 }

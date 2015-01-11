@@ -17,6 +17,7 @@
 #include <inttypes.h>
 #include <adsb.h>
 #include <buffer.h>
+#include <statistics.h>
 
 /** file descriptor for UART */
 static int fd;
@@ -185,7 +186,9 @@ void ADSB_main()
 			uint8_t sync = next();
 			if (sync == 0x1a)
 				break;
-			printf("ADSB: Out of Sync: got 0x%2d instead of 0x1a\n", sync);
+			fprintf(stderr, "ADSB: Out of Sync: got 0x%2d instead of 0x1a\n",
+				sync);
+			++STAT_stats.ADSB_outOfSync;
 			synchronize();
 		}
 
@@ -210,7 +213,9 @@ decode_frame:
 			payload_len = 14;
 			break;
 		default:
-			printf("ADSB: Unknown frame type %c, resynchronizing\n", type);
+			fprintf(stderr, "ADSB: Unknown frame type %c, resynchronizing\n",
+				type);
+			++STAT_stats.ADSB_frameTypeUnknown;
 			synchronize();
 			continue;
 		}
@@ -230,8 +235,12 @@ decode_frame:
 			goto decode_frame;
 
 		/* apply filter */
-		if (!(frame->frameType & frameFilter))
+		if (!(frame->frameType & frameFilter)) {
+			++STAT_stats.ADSB_framesFiltered;
 			continue;
+		}
+		++STAT_stats.ADSB_frameType[type - '0'];
+
 
 		/* process header */
 		uint64_t mlat = 0;
@@ -276,6 +285,7 @@ static inline bool decode(uint8_t * dst, size_t len, uint8_t ** rawPtrPtr,
 			} else {
 				printf("ADSB: Out of Sync: got unescaped 0x1a in frame, "
 					"treating as resynchronization\n");
+				++STAT_stats.ADSB_outOfSync;
 				return false;
 			}
 		} else {

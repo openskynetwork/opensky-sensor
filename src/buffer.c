@@ -8,9 +8,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <statistics.h>
 
 /** Define to 1 to enable debugging messages */
-#define BUF_DEBUG
+#define BUF_DEBUG 1
 
 /* Forward declaration */
 struct Pool;
@@ -58,6 +59,10 @@ static size_t dynMaxIncrements;
 static size_t dynIncrements = 0;
 /** Dynamic Pool List */
 static struct Pool * dynPools = NULL;
+
+/** Number of frames discarded in an overflow situation */
+static uint64_t overCapacity;
+static uint64_t overCapacityMax;
 
 /** Overall Pool */
 static volatile struct FrameList pool = { NULL, NULL };
@@ -131,6 +136,7 @@ void BUF_main()
 		sleep(GC_interval);
 		pthread_mutex_lock(&mutex);
 		if (queue.size < (dynIncrements * dynBacklog) / GC_level) {
+			++STAT_stats.BUF_GCRuns;
 #ifdef BUF_DEBUG
 			puts("BUF: Running Garbage Collector");
 #endif
@@ -148,6 +154,16 @@ void BUF_flush()
 	append(&pool, &queue);
 	clear(&queue);
 	pthread_mutex_unlock(&mutex);
+	++STAT_stats.BUF_flushes;
+}
+
+/** Fill missing statistics */
+void BUF_fillStatistics()
+{
+	STAT_stats.BUF_pools = dynIncrements;
+	STAT_stats.BUF_queue = queue.size;
+	STAT_stats.BUF_pool = pool.size;
+	STAT_stats.BUF_sacrificeMax = overCapacityMax;
 }
 
 /** Get a new frame from the pool. Extend the pool if there are more dynamic
@@ -161,12 +177,15 @@ static struct FrameLink * getFrameFromPool()
 	if (pool.head) {
 		/* pool is not empty -> unlink and return first frame */
 		ret = shift(&pool);
+		overCapacity = 0;
 	} else if (uncollectPools()) {
 		/* pool was empty, but we could uncollect a pool which was about to be
 		 *  garbage collected */
 #ifdef BUF_DEBUG
 		puts("BUF: Uncollected pool");
 #endif
+		++STAT_stats.BUF_uncollects;
+		overCapacity = 0;
 		ret = shift(&pool);
 	} else if (dynIncrements < dynMaxIncrements && createDynPool()) {
 		/* pool was empty, but we just created another one */
@@ -174,13 +193,17 @@ static struct FrameLink * getFrameFromPool()
 		printf("BUF: Created another pool (%zu/%zu)\n", dynIncrements,
 			dynMaxIncrements);
 #endif
+		overCapacity = 0;
 		ret = shift(&pool);
 	} else {
 		/* no more space in the pool and no more pools
 		 * -> sacrifice oldest frame */
-#ifdef BUF_DEBUG
+#if defined(BUF_DEBUG) && BUF_DEBUG > 1
 		puts("BUF: Sacrificing oldest frame\n");
 #endif
+		if (++overCapacity > overCapacityMax)
+			overCapacityMax = overCapacity;
+		++STAT_stats.BUF_sacrifices;
 		ret = shift(&queue);
 	}
 
@@ -213,6 +236,10 @@ void BUF_commitFrame(struct ADSB_Frame * frame)
 	push(&queue, newFrame);
 	pthread_cond_broadcast(&cond);
 	pthread_mutex_unlock(&mutex);
+
+	if (queue.size > STAT_stats.BUF_maxQueue)
+		STAT_stats.BUF_maxQueue = queue.size;
+
 	newFrame = NULL;
 }
 
@@ -361,6 +388,10 @@ static bool createDynPool()
 	newPool->next = dynPools;
 	dynPools = newPool;
 	++dynIncrements;
+
+	++STAT_stats.BUF_poolsCreated;
+	if (dynIncrements > STAT_stats.BUF_maxPools)
+		STAT_stats.BUF_maxPools = dynIncrements;
 
 	return true;
 }

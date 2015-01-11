@@ -52,6 +52,11 @@ struct CFG_DEV {
 	bool serialSet;
 };
 
+struct CFG_STATS {
+	bool enabled;
+	uint32_t interval;
+};
+
 struct CFG_Config {
 	struct CFG_WD wd;
 	struct CFG_FPGA fpga;
@@ -59,6 +64,7 @@ struct CFG_Config {
 	struct CFG_NET net;
 	struct CFG_BUF buf;
 	struct CFG_DEV dev;
+	struct CFG_STATS stats;
 };
 
 void CFG_read(const char * file, struct CFG_Config * cfg);

@@ -13,11 +13,15 @@
 #include <network.h>
 #include <unistd.h>
 #include <cfgfile.h>
+#include <statistics.h>
 
 typedef void*(*PTHREAD_FN)(void*);
 
 int main()
 {
+	/* force flushing of stdout and stderr on newline */
+	setlinebuf(stdout);
+
 	struct CFG_Config config;
 	/* read & check configuration */
 	CFG_read("cape.cfg", &config);
@@ -25,6 +29,14 @@ int main()
 	/* initialize GPIO subsystem */
 	GPIO_init();
 
+
+	/* initialize and start statistics */
+	if (config.stats.enabled) {
+		STAT_init(config.stats.interval);
+		pthread_t stats;
+		if (pthread_create(&stats, NULL, (PTHREAD_FN)&STAT_main, NULL))
+			error(-1, errno, "Could not create watchdog thread");
+	}
 
 	/* Watchdog: initialize and start */
 	if (config.wd.enabled) {
