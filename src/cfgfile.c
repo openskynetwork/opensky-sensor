@@ -203,7 +203,7 @@ static void scanComment()
 static inline uint32_t parseInt(const struct Option * opt)
 {
 	char buf[20];
-	if (opt->valLen + 1 > sizeof buf)
+	if (opt->valLen + 1 > sizeof buf || opt->valLen == 0)
 		error(-1, 0, "Configuration error: Line %" PRIu32
 			": Not a number", bufferLine);
 	strncpy(buf, opt->val, opt->valLen);
@@ -320,6 +320,10 @@ static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg)
 		cfg->adsb.rts = parseBool(opt);
 	else if (isOption(opt, "GPS"))
 		cfg->adsb.timestampGPS = parseBool(opt);
+	else if (isOption(opt, "ModeS_Short"))
+		cfg->adsb.modeSShort = true;
+	else if (isOption(opt, "ModeS_Long"))
+		cfg->adsb.modeSLong = true;
 	else
 		unknownKey(opt);
 }
@@ -477,7 +481,9 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->adsb.timestampGPS = true;
 	cfg->adsb.rts = true;
 	cfg->adsb.fec = true;
-	cfg->adsb.modeAC = true;
+	cfg->adsb.modeAC = false;
+	cfg->adsb.modeSShort = false;
+	cfg->adsb.modeSLong = true;
 
 	cfg->net.host[0] = '\0';
 	cfg->net.port = 30003;

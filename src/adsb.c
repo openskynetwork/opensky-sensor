@@ -29,6 +29,8 @@ static size_t len;
 /** current pointer into buffer */
 static uint8_t * cur;
 
+static enum ADSB_FRAME_TYPE frameFilter;
+
 /** ADSB Options */
 enum ADSB_OPTION {
 	/** Output Format: AVR */
@@ -119,6 +121,9 @@ void ADSB_init(const char * uart, bool rtscts)
 	/* setup buffer */
 	cur = buf;
 	len = 0;
+
+	/* setup filter */
+	frameFilter = ADSB_FRAME_TYPE_ALL;
 }
 
 /** Setup ADSB receiver with some options.
@@ -147,6 +152,18 @@ void ADSB_setup(bool crc, bool fec, bool frameFilter, bool modeAC, bool rts,
 		ADSB_OPTION_DF_17_18_FEC_DISABLED);
 	setOption(modeAC ? ADSB_OPTION_MODE_AC_DECODING_ENABLED :
 		ADSB_OPTION_MODE_AC_DECODING_DISABLED);
+}
+
+/** Set a filter for all received frames.
+ * \param frameType types which pass the filter, or'ed together
+ *  All other frames will be discarded.
+ * \note This is a software filter. If frames are discarded by the receiver
+ *  already, they won't show here. So if Mode-A/C messages should pass, be also
+ *  sure to not filter them with ADSB_setup
+ */
+void ADSB_setFilter(enum ADSB_FRAME_TYPE frameType)
+{
+	frameFilter = frameType;
 }
 
 /** Set an option for the ADSB decoder.
@@ -198,7 +215,7 @@ decode_frame:
 			continue;
 		}
 		*rawPtr++ = type;
-		frame->type = type - '0';
+		frame->frameType = 1 << (type - '0');
 		frame->payload_len = payload_len;
 
 		frame->raw_len = 2;
@@ -211,6 +228,10 @@ decode_frame:
 		/* decode payload */
 		if (!decode(frame->payload, payload_len, &rawPtr, &frame->raw_len))
 			goto decode_frame;
+
+		/* apply filter */
+		if (!(frame->frameType & frameFilter))
+			continue;
 
 		/* process header */
 		uint64_t mlat = 0;

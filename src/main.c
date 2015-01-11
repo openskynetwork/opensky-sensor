@@ -43,9 +43,8 @@ int main()
 
 	/* Buffer: initialize buffer, setup garbage collection and filtering */
 	BUF_init(config.buf.statBacklog, config.buf.dynBacklog,
-		config.buf.dynIncrement);
+		config.buf.history ? config.buf.dynIncrement : 0);
 	BUF_initGC(config.buf.gcInterval, config.buf.gcLevel);
-	BUF_setFilter(3);
 	if (config.buf.gcEnabled) {
 		pthread_t buf;
 		if (pthread_create(&buf, NULL, (PTHREAD_FN)&BUF_main, NULL))
@@ -56,6 +55,14 @@ int main()
 	ADSB_init(config.adsb.uart, config.adsb.rts);
 	ADSB_setup(config.adsb.crc, config.adsb.fec, config.adsb.frameFilter,
 		config.adsb.modeAC, config.adsb.rts, config.adsb.timestampGPS);
+	enum ADSB_FRAME_TYPE frameFilter = ADSB_FRAME_TYPE_NONE;
+	if (config.adsb.modeAC)
+		frameFilter |= ADSB_FRAME_TYPE_MODE_AC;
+	if (config.adsb.modeSShort)
+		frameFilter |= ADSB_FRAME_TYPE_MODE_S_SHORT;
+	if (config.adsb.modeSLong)
+		frameFilter |= ADSB_FRAME_TYPE_MODE_S_LONG;
+	ADSB_setFilter(frameFilter);
 	/* ADSB: start receiver mainloop */
 	pthread_t adsb;
 	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL))

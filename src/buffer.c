@@ -69,9 +69,6 @@ static struct FrameLink * newFrame = NULL;
 /** Currently processed frame (by reader), for debugging purposes */
 static struct FrameLink * currentFrame = NULL;
 
-/** Frame Filter */
-static uint8_t filter;
-
 /** Garbage Collector interval */
 static uint32_t GC_interval;
 /** Garbage Collector threshold level */
@@ -124,14 +121,6 @@ void BUF_initGC(uint32_t interval, uint32_t level)
 {
 	GC_interval = interval;
 	GC_level = level;
-}
-
-/** Set a filter: discard all other frames.
- * \param frameType frame type to accept or 0 to unset the filter
- */
-void BUF_setFilter(uint8_t frameType)
-{
-	filter = frameType;
 }
 
 /** Gargabe collector mainloop.
@@ -221,12 +210,8 @@ void BUF_commitFrame(struct ADSB_Frame * frame)
 	assert (&newFrame->frame == frame);
 
 	pthread_mutex_lock(&mutex);
-	if (filter && filter != frame->type) {
-		push(&pool, newFrame);
-	} else {
-		push(&queue, newFrame);
-		pthread_cond_broadcast(&cond);
-	}
+	push(&queue, newFrame);
+	pthread_cond_broadcast(&cond);
 	pthread_mutex_unlock(&mutex);
 	newFrame = NULL;
 }

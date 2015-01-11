@@ -25,6 +25,9 @@ struct CFG_ADSB {
 	bool rts;
 	bool fec;
 	bool modeAC;
+
+	bool modeSLong;
+	bool modeSShort;
 };
 
 struct CFG_NET {

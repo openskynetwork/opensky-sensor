@@ -12,8 +12,6 @@ void BUF_main();
 
 void BUF_flush();
 
-void BUF_setFilter(uint8_t frameType);
-
 struct ADSB_Frame * BUF_newFrame();
 void BUF_commitFrame(struct ADSB_Frame * frame);
 
