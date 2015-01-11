@@ -16,28 +16,57 @@
 #include <stdio.h>
 #include <cfgfile.h>
 
+/** Pointers into the raw configuration file for option parsing */
 struct Option {
+	/** Length of the Key */
 	ptrdiff_t keyLen;
+	/** Pointer to the Key */
 	const char * key;
+	/** Length of the Value */
 	ptrdiff_t valLen;
+	/** Pointer to the Value */
 	const char * val;
 };
 
+/** Section indices */
 enum SECTION {
+	/** no section selected */
 	SECTION_NONE = 0,
+	/** Section Watchdog */
 	SECTION_WD,
+	/** Section FPGA */
 	SECTION_FPGA,
+	/** Section ADSB */
 	SECTION_ADSB,
+	/** Section Network */
 	SECTION_NET,
+	/** Section Buffer */
 	SECTION_BUF,
+	/** Section Device */
 	SECTION_DEVICE,
 
+	/** Number of sections */
 	SECTIONS
 };
 
+/** Current begin of parser */
 static const char * bufferInput;
+/** Remaining size of the file to be parsed */
 static off_t bufferSize;
+/** Current line number */
 static uint32_t bufferLine;
+
+/** Description of a section */
+struct Section {
+	/** Section name */
+	const char * name;
+	/** Section parser function */
+	void (*parse)(const struct Option * option, struct CFG_Config * cfg);
+};
+
+static void loadDefaults(struct CFG_Config * cfg);
+static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg);
+static void check(struct CFG_Config * cfg);
 
 static void scanOptionWD(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg);
@@ -46,11 +75,7 @@ static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg);
 
-struct Section {
-	const char * name;
-	void (*parse)(const struct Option * option, struct CFG_Config * cfg);
-};
-
+/** Description of all sections */
 static const struct Section sections[] = {
 	[SECTION_NONE] = { NULL, NULL },
 	[SECTION_WD] = { "WATCHDOG", &scanOptionWD },
@@ -61,12 +86,13 @@ static const struct Section sections[] = {
 	[SECTION_DEVICE] = { "DEVICE", &scanOptionDEV }
 };
 
-static void loadDefaults(struct CFG_Config * cfg);
-static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg);
-static void check(struct CFG_Config * cfg);
-
+/** Read and check a configuration file.
+ * \param file configuration file name to be read
+ * \param cfg configuration structure to be filled
+ */
 void CFG_read(const char * file, struct CFG_Config * cfg)
 {
+	/* load default values */
 	loadDefaults(cfg);
 
 	/* open input file */
@@ -88,26 +114,43 @@ void CFG_read(const char * file, struct CFG_Config * cfg)
 		error(-1, errno, "Configuration error: could not mmap '%s'", file);
 	}
 
+	/* actually read configuration */
 	readCfg(cfgStr, st.st_size, cfg);
 
+	/* unmap and close file */
 	munmap(cfgStr, st.st_size);
 	close(fd);
 
+	/* check configuration */
 	check(cfg);
 }
 
+/** Checks two strings for equality (neglecting the case) where one string is
+ * not NUL-terminated.
+ * \param str1 NUL-terminated string to compare
+ * \param str2 non NUL-terminated string to compare with
+ * \param str2len length of second string
+ * \return true if strings are equal
+ */
 static bool isSame(const char * str1, const char * str2, size_t str2len)
 {
 	size_t str1len = strlen(str1);
 	return str1len == str2len && !strncasecmp(str2, str1, str2len);
 }
 
+/** Scan a section name.
+ * \return section index
+ */
 static enum SECTION scanSection()
 {
+	/* get next ']' terminator */
 	const char * c = memchr(bufferInput, ']', bufferSize);
+	/* get next newline or end-of-file */
 	const char * n = memchr(bufferInput, '\n', bufferSize);
 	if (n == NULL)
 		n = bufferInput + bufferSize - 1;
+
+	/* sanity checks */
 	if (!c || n < c)
 		error(-1, 0, "Configuration error: Line %" PRIu32
 			": ] expected, but newline found", bufferLine);
@@ -115,36 +158,48 @@ static enum SECTION scanSection()
 		error(-1, 0, "Configuration error: Line %" PRIu32
 			": newline after ] expected", bufferLine);
 
+	/* calculate length */
 	const ptrdiff_t len = c - bufferInput - 1;
 	const char * const buf = bufferInput + 1;
 
-	enum SECTION ret;
-	for (ret = 1; ret < SECTIONS; ++ret) {
-		if (isSame(sections[ret].name, buf, len)) {
+	/* search section */
+	enum SECTION sect;
+	for (sect = 1; sect < SECTIONS; ++sect) {
+		if (isSame(sections[sect].name, buf, len)) {
+			/* found: advance parser and return */
 			bufferInput += len + 3;
 			bufferSize -= len + 3;
 			++bufferLine;
 
-			return ret;
+			return sect;
 		}
 	}
 
+	/* section not found */
 	error(-1, 0, "Configuration error: Line %" PRIu32
 		": Section %.*s is unknown", bufferLine, (int)len, buf);
 
+	/* keep gcc happy */
 	return SECTION_NONE;
 }
 
+/** Scan a comment. This will just advance the parser to the end of line/file */
 static void scanComment()
 {
+	/* search for next newline */
 	const char * n = memchr(bufferInput, '\n', bufferSize);
 	if (n == NULL)
 		n = bufferInput + bufferSize - 1;
+	/* advance parser */
 	bufferSize -= n + 1 - bufferInput;
 	bufferInput = n + 1;
 	++bufferLine;
 }
 
+/** Parse an integer.
+ * \param opt option to be parsed
+ * \return parsed integer
+ */
 static inline uint32_t parseInt(const struct Option * opt)
 {
 	char buf[20];
@@ -163,6 +218,10 @@ static inline uint32_t parseInt(const struct Option * opt)
 	return n;
 }
 
+/** Parse a boolean.
+ * \param opt option to be parsed
+ * \return parsed boolean
+ */
 static inline bool parseBool(const struct Option * opt)
 {
 	if (isSame("true", opt->val, opt->valLen) ||
@@ -178,6 +237,11 @@ static inline bool parseBool(const struct Option * opt)
 	return false;
 }
 
+/** Parse a string.
+ * \param opt option to be parsed
+ * \param str string to read into (will be nul-terminated)
+ * \param sz size of the string
+ */
 static inline void parseString(const struct Option * opt, char * str, size_t sz)
 {
 	if (opt->valLen > sz - 1)
@@ -187,17 +251,29 @@ static inline void parseString(const struct Option * opt, char * str, size_t sz)
 	str[opt->valLen] = '\0';
 }
 
+/** Test for an option's key.
+ * \param option option to be tested
+ * \param name key name to be compared to
+ * \return true if option matches the keyname
+ */
 static inline bool isOption(const struct Option * opt, const char * name)
 {
 	return isSame(name, opt->key, opt->keyLen);
 }
 
+/** Stop on unknown key.
+ * \param opt option which couldn't be recognized
+ */
 static inline void unknownKey(const struct Option * opt)
 {
 	error(-1, 0, "Configuration error: Line %" PRIu32
 		": unknown key '%.*s'", bufferLine, (int)opt->keyLen, opt->key);
 }
 
+/** Scan Watchdog Section.
+ * \param opt option to be parsed
+ * \param cfg configuration to be filled
+ */
 static void scanOptionWD(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "enabled"))
@@ -206,6 +282,10 @@ static void scanOptionWD(const struct Option * opt, struct CFG_Config * cfg)
 		unknownKey(opt);
 }
 
+/** Scan FPGA Section.
+ * \param opt option to be parsed
+ * \param cfg configuration to be filled
+ */
 static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "configure"))
@@ -220,6 +300,10 @@ static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg)
 		unknownKey(opt);
 }
 
+/** Scan ADSB Section.
+ * \param opt option to be parsed
+ * \param cfg configuration to be filled
+ */
 static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "uart"))
@@ -240,6 +324,10 @@ static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg)
 		unknownKey(opt);
 }
 
+/** Scan Network Section.
+ * \param opt option to be parsed
+ * \param cfg configuration to be filled
+ */
 static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "host"))
@@ -258,6 +346,10 @@ static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg)
 		unknownKey(opt);
 }
 
+/** Scan Buffer Section.
+ * \param opt option to be parsed
+ * \param cfg configuration to be filled
+ */
 static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "history"))
@@ -277,6 +369,10 @@ static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg)
 	else unknownKey(opt);
 }
 
+/** Scan Device Section.
+ * \param opt option to be parsed
+ * \param cfg configuration to be filled
+ */
 static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "serial")) {
@@ -286,39 +382,55 @@ static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg)
 		unknownKey(opt);
 }
 
+/** Scan an option line.
+ * \param sect index to current section
+ * \param cfg configuration to be filled
+ */
 static void scanOption(enum SECTION sect, struct CFG_Config * cfg)
 {
+	/* split option on '='-sign */
 	const char * e = memchr(bufferInput, '=', bufferSize);
 	const char * n = memchr(bufferInput, '\n', bufferSize);
 	if (n == NULL)
 		n = bufferInput + bufferSize - 1;
+	/* sanity check */
 	if (n < e)
 		error(-1, 0, "Configuration error: Line %" PRIu32
 			": = expected, but newline found", bufferLine);
 
 	struct Option opt;
 
+	/* eliminate whitespaces at the end of the key */
 	const char * l = e - 1;
 	while (l > bufferInput && isspace(*l)) --l;
 	opt.key = bufferInput;
 	opt.keyLen = l + 1 - opt.key;
 
+	/* eliminate whitespaces at the beginning of the value */
 	const char * r = e + 1;
 	while (r < n && isspace(*r)) ++r;
 	opt.val = r;
 	opt.valLen = n - r;
 
+	/* parse option value */
 	sections[sect].parse(&opt, cfg);
 
+	/* advance buffer */
 	bufferSize -= n + 1 - bufferInput;
 	bufferInput = n + 1;
 	++bufferLine;
 }
 
+/** Read the configuration file.
+ * \param cfgStr configuration, loaded into memory
+ * \param size size of the configuration
+ * \param cfg configuration structure to be filled
+ */
 static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg)
 {
 	enum SECTION sect = SECTION_NONE;
 
+	/* initialize parser buffer */
 	bufferInput = cfgStr;
 	bufferSize = size;
 	bufferLine = 1;
@@ -347,6 +459,9 @@ static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg)
 	}
 }
 
+/** Load default values.
+ * \param cfg configuration
+ */
 static void loadDefaults(struct CFG_Config * cfg)
 {
 	cfg->wd.enabled = true;
@@ -380,6 +495,9 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->dev.serialSet = false;
 }
 
+/** Check configuration for sanity.
+ * \param cfg configuration
+ */
 static void check(struct CFG_Config * cfg)
 {
 	if (cfg->fpga.configure && cfg->fpga.file[0] == '\0')
