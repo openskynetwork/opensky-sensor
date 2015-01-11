@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <endian.h>
 
+/** Networking socket */
 static int sock = -1;
 
 /** Try to connect to a TCP server.
@@ -19,33 +20,38 @@ static int sock = -1;
  */
 bool NET_connect(const char * server, int port)
 {
+	/* close socket first if already opened */
 	if (sock >= 0) {
 		shutdown(sock, SHUT_RDWR);
 		close(sock);
 		sock = -1;
 	}
 
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock < 0)
-		error(-1, errno, "socket");
-
+	/* resolve name */
 	struct hostent * host = gethostbyname(server);
 	if (!host) {
 		fprintf(stderr, "NET: could not resolve '%s': %s\n", server,
 			hstrerror(h_errno));
 		return false;
 	}
-
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof addr);
 	addr.sin_family = AF_INET;
 	memcpy(&addr.sin_addr.s_addr, host->h_addr, host->h_length);
 	addr.sin_port = htons(port);
 
+	/* create socket */
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (sock < 0)
+		error(-1, errno, "socket");
+
+	/* connect socket */
 	int r = connect(sock, (struct sockaddr*)&addr, sizeof addr);
 	if (r < 0) {
 		fprintf(stderr, "NET: could not connect to '%s:%d': %s\n", server, port,
 			strerror(errno));
+		close(sock);
+		sock = -1;
 		return false;
 	}
 
