@@ -209,8 +209,11 @@ decode_frame:
 			payload_len = 7;
 			break;
 		case '3': /* mode-s long */
+			payload_len = 14;
+			break;
 		case '4': /* ?? */
 			payload_len = 14;
+			++STAT_stats.ADSB_frameTypeUnknown;
 			break;
 		default:
 			fprintf(stderr, "ADSB: Unknown frame type %c, resynchronizing\n",
@@ -220,7 +223,7 @@ decode_frame:
 			continue;
 		}
 		*rawPtr++ = type;
-		frame->frameType = 1 << (type - '0');
+		frame->frameType = 1 << (type - '1');
 		frame->payload_len = payload_len;
 
 		frame->raw_len = 2;
@@ -234,13 +237,16 @@ decode_frame:
 		if (!decode(frame->payload, payload_len, &rawPtr, &frame->raw_len))
 			goto decode_frame;
 
+		if (type > '3')
+			continue;
+
+		++STAT_stats.ADSB_frameType[type - '1'];
+
 		/* apply filter */
 		if (!(frame->frameType & frameFilter)) {
 			++STAT_stats.ADSB_framesFiltered;
 			continue;
 		}
-		++STAT_stats.ADSB_frameType[type - '0'];
-
 
 		/* process header */
 		uint64_t mlat = 0;

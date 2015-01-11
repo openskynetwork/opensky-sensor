@@ -1,5 +1,5 @@
 dnl initialize autoconf
-AC_INIT(serocape, 0.3.0)
+AC_INIT(serocape, 0.3.1)
 
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR(config)
@@ -11,7 +11,7 @@ AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS(config.h)
 
 dnl set some global variables here
-VERSION=0.3.0
+VERSION=0.3.1
 AC_SUBST(VERSION) dnl this exports version as a AC macro
 
 dnl required programs

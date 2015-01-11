@@ -325,9 +325,9 @@ static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg)
 	else if (isOption(opt, "GPS"))
 		cfg->adsb.timestampGPS = parseBool(opt);
 	else if (isOption(opt, "ModeS_Short"))
-		cfg->adsb.modeSShort = true;
+		cfg->adsb.modeSShort = parseBool(opt);
 	else if (isOption(opt, "ModeS_Long"))
-		cfg->adsb.modeSLong = true;
+		cfg->adsb.modeSLong = parseBool(opt);
 	else
 		unknownKey(opt);
 }
