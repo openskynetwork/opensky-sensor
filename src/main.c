@@ -19,16 +19,18 @@ typedef void*(*PTHREAD_FN)(void*);
 int main()
 {
 	struct CFG_Config config;
+	/* read & check configuration */
 	CFG_read("cape.cfg", &config);
 
 	/* initialize GPIO subsystem */
 	GPIO_init();
 
-	/* initialize and start watchdog */
-	WATCHDOG_init();
-	pthread_t watchdog;
-	if (pthread_create(&watchdog, NULL, (PTHREAD_FN)&WATCHDOG_main, NULL)) {
-		error(-1, errno, "Could not create watchdog thread");
+	if (config.wd.enabled) {
+		/* initialize and start watchdog */
+		WATCHDOG_init();
+		pthread_t watchdog;
+		if (pthread_create(&watchdog, NULL, (PTHREAD_FN)&WATCHDOG_main, NULL))
+			error(-1, errno, "Could not create watchdog thread");
 	}
 
 	/* initialize and reprogram FPGA */
