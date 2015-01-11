@@ -25,46 +25,39 @@ int main()
 	/* initialize GPIO subsystem */
 	GPIO_init();
 
+
+	/* Watchdog: initialize and start */
 	if (config.wd.enabled) {
-		/* initialize and start watchdog */
 		WATCHDOG_init();
 		pthread_t watchdog;
 		if (pthread_create(&watchdog, NULL, (PTHREAD_FN)&WATCHDOG_main, NULL))
 			error(-1, errno, "Could not create watchdog thread");
 	}
 
-	/* initialize and reprogram FPGA */
-	FPGA_init();
-	if (config.fpga.configure)
+	/* FPGA: initialize and reprogram */
+	if (config.fpga.configure) {
+		FPGA_init();
 		FPGA_program(config.fpga.file, config.fpga.timeout,
 			config.fpga.retries);
+	}
 
-	/* setup buffer */
+	/* Buffer: initialize buffer, setup garbage collection and filtering */
 	BUF_init(config.buf.statBacklog, config.buf.dynBacklog,
 		config.buf.dynIncrement);
-
-	/* setup buffer garbage collection */
 	BUF_initGC(config.buf.gcInterval, config.buf.gcLevel);
-
-	/* only Mode-S long frames */
 	BUF_setFilter(3);
-
 	if (config.buf.gcEnabled) {
-		/* start Buffer Garbage Collection */
 		pthread_t buf;
 		if (pthread_create(&buf, NULL, (PTHREAD_FN)&BUF_main, NULL))
 			error(-1, errno, "Could not start buffering garbage collector");
 	}
 
-	/* init ADSB receiver */
+	/* ADSB: initialize and setup receiver */
 	ADSB_init(config.adsb.uart, config.adsb.rts);
-
-	/* setup ADSB receiver */
 	ADSB_setup(config.adsb.outputFormatBin, config.adsb.avrMLAT,
 		config.adsb.crc, config.adsb.fec, config.adsb.frameFilter,
 		config.adsb.modeAC, config.adsb.rts, config.adsb.timestampGPS);
-
-	/* start ADSB receiver mainloop */
+	/* ADSB: start receiver mainloop */
 	pthread_t adsb;
 	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL))
 		error(-1, errno, "Could not create adsb main loop");
@@ -78,7 +71,7 @@ int main()
 		if (!NET_sendSerial(config.dev.serial))
 			continue; /* on error: reconnect */
 
-		if (!config.buf.history)
+		if (!config.buf.history) /* flush buffer if history is disabled */
 			BUF_flush();
 
 		bool success;
