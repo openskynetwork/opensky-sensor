@@ -15,7 +15,11 @@
 #include <cfgfile.h>
 #include <statistics.h>
 
+#undef TEST
+
 typedef void*(*PTHREAD_FN)(void*);
+
+static void mainloop(struct CFG_Config * cfg);
 
 int main()
 {
@@ -75,41 +79,73 @@ int main()
 	if (config.adsb.modeSLong)
 		frameFilter |= ADSB_FRAME_TYPE_MODE_S_LONG;
 	ADSB_setFilter(frameFilter);
+	/* relay frames only if they're GPS timestamped */
+	ADSB_setSynchronizationFilter(true);
 	/* ADSB: start receiver mainloop */
 	pthread_t adsb;
 	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL))
 		error(-1, errno, "Could not create adsb main loop");
 
+	mainloop(&config);
+
+	return 0;
+}
+
+#ifdef TEST
+static void mainloop(struct CFG_Config * config)
+{
+	do {
+		/* read a frame from the buffer */
+		const struct ADSB_Frame * frame = BUF_getFrame();
+		switch (frame->frameType) {
+		case ADSB_FRAME_TYPE_MODE_S_LONG:
+			printf("Mode-S long: mlat %15" PRIu64 ", level %+3" PRIi8 ": ",
+				frame->mlat, frame->siglevel);
+			int i;
+			for (i = 0; i < 14; ++i)
+				printf("%02x", frame->payload[i]);
+			putchar('\n');
+			break;
+		case ADSB_FRAME_TYPE_STATUS:
+			printf("Status: mlat %15" PRIu64 ", options %02" PRIx8
+				", Offset %+.2f ns [%02" PRId8 "]\n",
+				frame->mlat, frame->options,
+				frame->offset / 64. * 1000.,
+				frame->offset);
+			break;
+		default:
+			break;
+		}
+		BUF_releaseFrame(frame);
+	} while (true);
+}
+
+#else
+
+static void mainloop(struct CFG_Config * config)
+{
 	while (1) {
 		/* try to connect to the server */
-		while (!NET_connect(config.net.host, config.net.port))
-			sleep(config.net.reconnectInterval); /* in case of failure: retry */
+		while (!NET_connect(config->net.host, config->net.port))
+			sleep(config->net.reconnectInterval); /* retry in case of failure */
 
 		/* send serial number */
-		if (!NET_sendSerial(config.dev.serial))
-			continue; /* on error: reconnect */
+		if (!NET_sendSerial(config->dev.serial))
+			continue; /* reconnect on error */
 
-		if (!config.buf.history) /* flush buffer if history is disabled */
+		if (!config->buf.history) /* flush buffer if history is disabled */
 			BUF_flush();
 
 		bool success;
 		do {
 			/* read a frame from the buffer */
 			const struct ADSB_Frame * frame =
-				BUF_getFrameTimeout(config.net.timeout);
+				BUF_getFrameTimeout(config->net.timeout);
 			if (!frame) {
 				/* timeout */
 				success = NET_sendTimeout();
 			} else {
 				/* got a frame */
-#if 0
-				printf("Mode-S long: mlat %15" PRIu64 ", level %+3" PRIi8 ": ",
-					frame->mlat, frame->siglevel);
-				int i;
-				for (i = 0; i < 14; ++i)
-					printf("%02x", frame->payload[i]);
-				putchar('\n');
-#endif
 				success = NET_sendFrame(frame);
 				if (success)
 					BUF_releaseFrame(frame);
@@ -119,7 +155,6 @@ int main()
 		} while(success);
 		/* if sending failed, reconnect to the server */
 	}
-
-	return 0;
 }
 
+#endif

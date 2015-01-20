@@ -11,11 +11,14 @@
 struct STAT_Statistics STAT_stats;
 
 static time_t start;
+static char startstr[26];
 static uint32_t st_interval;
 
 void STAT_init(uint32_t interval)
 {
 	start = time(NULL);
+	ctime_r(&start, startstr);
+
 	memset(&STAT_stats, 0, sizeof STAT_stats);
 	st_interval = interval;
 }
@@ -36,8 +39,12 @@ void STAT_main()
 		uint32_t h = (secs / 3600) % 24;
 		uint32_t m = (secs / 60) % 60;
 		uint32_t s = secs % 60;
-		printf("Statistics (running since %" PRIu32 "d, %02" PRIu32 "h:"
-			"%02" PRIu32 "m:%02" PRIu32 "s)\n", d, h, m, s);
+
+		puts("Statistics");
+		printf(" - started on %s", startstr);
+		printf(" - running since %3" PRIu32 "d, %02" PRIu32 "h:%02" PRIu32
+			"m:%02" PRIu32 "s\n", d, h, m, s);
+		puts("");
 
 		puts(" Watchdog");
 		printf(" - %27" PRIu64 " events\n", snapshot.WD_events);
@@ -59,12 +66,17 @@ void STAT_main()
 		printf(" - %27" PRIu64 " Mode-S Long frames (%.02f per second)\n",
 			snapshot.ADSB_frameType[2],
 			(double)snapshot.ADSB_frameType[2] / secs);
+		printf(" - %27" PRIu64 " status frames (%.02f per second)\n",
+			snapshot.ADSB_frameType[3],
+			(double)snapshot.ADSB_frameType[3] / secs);
 		printf(" - %27" PRIu64 " unknown frames (%.02f per second)\n",
 			snapshot.ADSB_frameTypeUnknown,
 			(double)snapshot.ADSB_frameTypeUnknown / secs);
 		printf(" - %27" PRIu64 " frames filtered (%.02f per second)\n",
 			snapshot.ADSB_framesFiltered,
 			(double)snapshot.ADSB_framesFiltered / secs);
+		printf(" - %27" PRIu64 " unsynchronized frames\n",
+			snapshot.ADSB_framesUnsynchronized);
 		puts("");
 
 		puts(" Buffer");

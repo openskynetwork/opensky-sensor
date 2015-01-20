@@ -30,7 +30,14 @@ static size_t len;
 /** current pointer into buffer */
 static uint8_t * cur;
 
+/** frame filter */
 static enum ADSB_FRAME_TYPE frameFilter;
+
+/** frame filter */
+static bool synchronizationFilter;
+
+/** synchronization info: true if receiver has a valid GPS timestamp */
+static bool isSynchronized;
 
 /** ADSB Options */
 enum ADSB_OPTION {
@@ -124,7 +131,10 @@ void ADSB_init(const char * uart, bool rtscts)
 	len = 0;
 
 	/* setup filter */
-	frameFilter = ADSB_FRAME_TYPE_ALL;
+	frameFilter = ADSB_FRAME_TYPE_ALL_MSGS;
+
+	/* initialize synchronize info */
+	isSynchronized = false;
 }
 
 /** Setup ADSB receiver with some options.
@@ -165,6 +175,15 @@ void ADSB_setup(bool crc, bool fec, bool frameFilter, bool modeAC, bool rts,
 void ADSB_setFilter(enum ADSB_FRAME_TYPE frameType)
 {
 	frameFilter = frameType;
+}
+
+/** Filter all frames (except status frames unless they're filtered anyway)
+ * until the receiver is synchronized.
+ * \param enable true to enable the synchronization filter, false to disable it
+ */
+void ADSB_setSynchronizationFilter(bool enable)
+{
+	synchronizationFilter = enable;
 }
 
 /** Set an option for the ADSB decoder.
@@ -213,7 +232,6 @@ decode_frame:
 			break;
 		case '4': /* ?? */
 			payload_len = 14;
-			++STAT_stats.ADSB_frameTypeUnknown;
 			break;
 		default:
 			fprintf(stderr, "ADSB: Unknown frame type %c, resynchronizing\n",
@@ -237,16 +255,7 @@ decode_frame:
 		if (!decode(frame->payload, payload_len, &rawPtr, &frame->raw_len))
 			goto decode_frame;
 
-		if (type > '3')
-			continue;
-
 		++STAT_stats.ADSB_frameType[type - '1'];
-
-		/* apply filter */
-		if (!(frame->frameType & frameFilter)) {
-			++STAT_stats.ADSB_framesFiltered;
-			continue;
-		}
 
 		/* process header */
 		uint64_t mlat = 0;
@@ -254,10 +263,35 @@ decode_frame:
 		frame->mlat = be64toh(mlat);
 		frame->siglevel = header[6];
 
+		if (frame->frameType == ADSB_FRAME_TYPE_STATUS)
+			isSynchronized = frame->mlat != 0;
+
+		/* apply filter */
+		if (!(frame->frameType & frameFilter)) {
+			++STAT_stats.ADSB_framesFiltered;
+			continue;
+		}
+
+		/* filter if unsynchronized and filter is enabled*/
+		if (!isSynchronized) {
+			++STAT_stats.ADSB_framesUnsynchronized;
+			if (synchronizationFilter &&
+				frame->frameType != ADSB_FRAME_TYPE_STATUS)
+				continue;
+		}
+
 		/* buffer frame */
 		BUF_commitFrame(frame);
 		frame = BUF_newFrame();
 	}
+}
+
+/** Returns whether the receiver is synchronized by GPS.
+ * \return true if the receiver is synchronized, false otherwise
+ */
+bool ADSB_isSynchronized()
+{
+	return isSynchronized;
 }
 
 /** Decode frame content.
