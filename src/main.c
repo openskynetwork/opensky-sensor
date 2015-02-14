@@ -14,21 +14,26 @@
 #include <unistd.h>
 #include <cfgfile.h>
 #include <statistics.h>
+#include <string.h>
 
-#undef TEST
+static bool TEST = false;
 
 typedef void*(*PTHREAD_FN)(void*);
 
 static void mainloop(struct CFG_Config * cfg);
+static void mainloop_test(struct CFG_Config * cfg);
 
-int main()
+int main(int argc, char * argv[])
 {
+	if (argc == 1 && !strcasecmp(argv[0], "--test"))
+		TEST = true;
+
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
 
 	struct CFG_Config config;
 	/* read & check configuration */
-	CFG_read("cape.cfg", &config);
+	CFG_read(SYSCONFDIR "/openskyd.cfg", &config);
 
 	/* initialize GPIO subsystem */
 	GPIO_init();
@@ -53,8 +58,16 @@ int main()
 	/* FPGA: initialize and reprogram */
 	if (config.fpga.configure) {
 		FPGA_init();
-		FPGA_program(config.fpga.file, config.fpga.timeout,
-			config.fpga.retries);
+		if (config.fpga.file[0] == '/' && stat(config.fpga.file) == 0) {
+			FPGA_program(config.fpga.file, config.fpga.timeout,
+				config.fpga.retries);
+		} else {
+			char file[PATH_MAX];
+			strncpy(file, FWDIR, PATH_MAX);
+			strncat(file, "/", strlen(file) - PATH_MAX);
+			strncat(file, config.fpga.file, strlen(file) - PATH_MAX);
+			FPGA_program(file, config.fpga.timeout, config.fpga.retries);
+		}
 	}
 
 	/* Buffer: initialize buffer, setup garbage collection and filtering */
@@ -78,21 +91,27 @@ int main()
 		frameFilter |= ADSB_FRAME_TYPE_MODE_S_SHORT;
 	if (config.adsb.modeSLong)
 		frameFilter |= ADSB_FRAME_TYPE_MODE_S_LONG;
+	if (TEST)
+		frameFilter |= ADSB_FRAME_TYPE_STATUS;
 	ADSB_setFilter(frameFilter);
-	/* relay frames only if they're GPS timestamped */
-	ADSB_setSynchronizationFilter(true);
+	if (!TEST) {
+		/* relay frames only if they're GPS timestamped */
+		ADSB_setSynchronizationFilter(true);
+	}
 	/* ADSB: start receiver mainloop */
 	pthread_t adsb;
 	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL))
 		error(-1, errno, "Could not create adsb main loop");
 
-	mainloop(&config);
+	if (TEST)
+		mainloop_test(&config);
+	else
+		mainloop(&config);
 
 	return 0;
 }
 
-#ifdef TEST
-static void mainloop(struct CFG_Config * config)
+static void mainloop_test(struct CFG_Config * config)
 {
 	do {
 		/* read a frame from the buffer */
@@ -108,7 +127,7 @@ static void mainloop(struct CFG_Config * config)
 			break;
 		case ADSB_FRAME_TYPE_STATUS:
 			printf("Status: mlat %15" PRIu64 ", options %02" PRIx8
-				", Offset %+.2f ns [%02" PRId8 "]\n",
+				", Offset %+.2f ns [%+02" PRId8 "]\n",
 				frame->mlat, frame->options,
 				frame->offset / 64. * 1000.,
 				frame->offset);
@@ -119,8 +138,6 @@ static void mainloop(struct CFG_Config * config)
 		BUF_releaseFrame(frame);
 	} while (true);
 }
-
-#else
 
 static void mainloop(struct CFG_Config * config)
 {
@@ -156,5 +173,3 @@ static void mainloop(struct CFG_Config * config)
 		/* if sending failed, reconnect to the server */
 	}
 }
-
-#endif
