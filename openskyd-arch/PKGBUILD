@@ -1,0 +1,32 @@
+pkgname=openskyd
+pkgver=0.5.0
+pkgrel=1
+pkgdesc="RadarCape Replacement Daemon for OpenSky network"
+url="http://www.opensky-network.org"
+arch=('armv7h')
+license=('GPL3')
+depends=(gcc-libs)
+makedepends=(gcc binutils make)
+conflicts=()
+replaces=()
+install=${pkgname}.install
+source=("${pkgname}-${pkgver}.tar.gz" "${pkgname}.service" "${pkgname}-start.sh" "${pkgname}.rbf")
+md5sums=('734a1e10dc4925e1d0dda55f406ed732'
+         'd812aa35c9412913d7f3e0c2e2960417'
+         '2832b4440ffa4e305df45adf3c71c4bc'
+         'ec8ede85bf33051d0eabaf7285e3e062')
+
+build() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd
+  make
+}
+
+package() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  make DESTDIR="${pkgdir}" install
+  install -Dm644 "${srcdir}/${pkgname}.service" "$pkgdir/usr/lib/systemd/system/${pkgname}.service"
+  install -Dm755 "${srcdir}/${pkgname}-start.sh" "$pkgdir/usr/bin/${pkgname}-start.sh"
+  install -Dm644 "${srcdir}/${pkgname}.rbf" "$pkgdir/usr/lib/openskyd/${pkgname}.rbf"
+}
+

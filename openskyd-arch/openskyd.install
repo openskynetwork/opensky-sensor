@@ -1,0 +1,8 @@
+post_install() {
+	echo Enter the serial number: 
+	read ser
+	echo "Serial = $ser" >> /etc/openskyd.cfg
+	systemctl daemon-reload
+	systemctl enable openskyd
+}
+
