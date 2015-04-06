@@ -9,7 +9,7 @@ openskyd_LIBS="$(PTHREAD_LIBS)"
 openskyd_CFLAGS="$(PTHREAD_CFLAGS)"
 openskyd_CPPFLAGS=-DSYSCONFDIR='"$(sysconfdir)"'
 openskyd_CPPFLAGS+=-DFWDIR='"$(libdir)"'
-openskyd_DATA=openskyd.cfg
+openskyd_DATA=openskyd.conf
 openskyddir=$(sysconfdir)
 
-EXTRA_DIST=$(openskyd_DATA)
+EXTRA_DIST=openskyd.conf

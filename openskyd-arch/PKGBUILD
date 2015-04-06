@@ -1,25 +1,28 @@
 pkgname=openskyd
-pkgver=0.5.0
+pkgver=0.5.1
 pkgrel=1
 pkgdesc="RadarCape Replacement Daemon for OpenSky network"
 url="http://www.opensky-network.org"
 arch=('armv7h')
 license=('GPL3')
 depends=(gcc-libs)
-makedepends=(gcc binutils make)
+makedepends=(gcc binutils make dtc-overlay)
 conflicts=()
 replaces=()
+backup=(etc/openskyd.conf)
 install=${pkgname}.install
-source=("${pkgname}-${pkgver}.tar.gz" "${pkgname}.service" "${pkgname}-start.sh" "${pkgname}.rbf")
-md5sums=('734a1e10dc4925e1d0dda55f406ed732'
+source=("${pkgname}-${pkgver}.tar.gz" "${pkgname}.service" "${pkgname}-start.sh" "${pkgname}.rbf" "BB-W-Radarcape.dts")
+md5sums=('SKIP'
          'd812aa35c9412913d7f3e0c2e2960417'
          '2832b4440ffa4e305df45adf3c71c4bc'
-         'ec8ede85bf33051d0eabaf7285e3e062')
+         'ec8ede85bf33051d0eabaf7285e3e062'
+         'f29d8a73d5b9b62fa40abe3036c71c15')
 
 build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd
   make
+  dtc ${srcdir}/BB-W-Radarcape.dts -O dts -o ${srcdir}/BB-W-Radarcape-00A0.dtbo
 }
 
 package() {
@@ -28,5 +31,6 @@ package() {
   install -Dm644 "${srcdir}/${pkgname}.service" "$pkgdir/usr/lib/systemd/system/${pkgname}.service"
   install -Dm755 "${srcdir}/${pkgname}-start.sh" "$pkgdir/usr/bin/${pkgname}-start.sh"
   install -Dm644 "${srcdir}/${pkgname}.rbf" "$pkgdir/usr/lib/openskyd/${pkgname}.rbf"
+  install -Dm644 "${srcdir}/BB-W-Radarcape-00A0.dtbo" "$pkgdir/usr/lib/firmware/BB-W-Radarcape-00A0.dtbo"
 }
 

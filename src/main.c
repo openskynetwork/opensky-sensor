@@ -33,7 +33,7 @@ int main(int argc, char * argv[])
 
 	struct CFG_Config config;
 	/* read & check configuration */
-	CFG_read(SYSCONFDIR "/openskyd.cfg", &config);
+	CFG_read(SYSCONFDIR "/openskyd.conf", &config);
 
 	/* initialize GPIO subsystem */
 	GPIO_init();
