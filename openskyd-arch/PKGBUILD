@@ -6,7 +6,7 @@ url="http://www.opensky-network.org"
 arch=('armv7h')
 license=('GPL3')
 depends=(gcc-libs)
-makedepends=(gcc binutils make dtc-overlay)
+makedepends=(gcc binutils make dtc-git-patched)
 conflicts=()
 replaces=()
 backup=(etc/openskyd.conf)
@@ -22,7 +22,7 @@ build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd
   make
-  dtc ${srcdir}/BB-W-Radarcape.dts -O dts -o ${srcdir}/BB-W-Radarcape-00A0.dtbo
+  dtc -O dts -b 0 -@ ${srcdir}/BB-W-Radarcape.dts -o ${srcdir}/BB-W-Radarcape-00A0.dtbo
 }
 
 package() {
