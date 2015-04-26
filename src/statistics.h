@@ -29,6 +29,7 @@ struct STAT_Statistics {
 	uint64_t NET_connectsFail;
 	uint64_t NET_connectsSuccess;
 	uint64_t NET_keepAlives;
+	uint64_t NET_recvFailed;
 };
 
 extern volatile struct STAT_Statistics STAT_stats;

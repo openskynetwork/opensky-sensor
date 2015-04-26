@@ -92,6 +92,10 @@ int main(int argc, char * argv[])
 			error(-1, errno, "Could not start buffering garbage collector");
 	}
 
+	/* Network: configure network */
+	NET_init(config.net.host, config.net.port, config.net.reconnectInterval,
+		config.dev.serial);
+
 	/* ADSB: initialize and setup receiver */
 	ADSB_init(config.adsb.uart, config.adsb.rts);
 	ADSB_setup(config.adsb.crc, config.adsb.fec, config.adsb.frameFilter,
@@ -110,6 +114,12 @@ int main(int argc, char * argv[])
 		/* relay frames only if they're GPS timestamped */
 		ADSB_setSynchronizationFilter(true);
 	}
+
+	/* Network: start network mainloop */
+	pthread_t net;
+	if (pthread_create(&net, NULL, (PTHREAD_FN)&NET_main, NULL))
+		error(-1, errno, "Could not create tb main loop");
+
 	/* ADSB: start receiver mainloop */
 	pthread_t adsb;
 	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL))
@@ -154,13 +164,10 @@ static void mainloop_test(struct CFG_Config * config)
 static void mainloop(struct CFG_Config * config)
 {
 	while (1) {
-		/* try to connect to the server */
-		while (!NET_connect(config->net.host, config->net.port))
-			sleep(config->net.reconnectInterval); /* retry in case of failure */
+		/* synchronize with the network (i.e. wait for a connection) */
+		NET_sync_send();
 
-		/* send serial number */
-		if (!NET_sendSerial(config->dev.serial))
-			continue; /* reconnect on error */
+		/* Now we have a new connection to the server */
 
 		if (!config->buf.history) /* flush buffer if history is disabled */
 			BUF_flush();
@@ -182,6 +189,6 @@ static void mainloop(struct CFG_Config * config)
 					BUF_putFrame(frame);
 			}
 		} while(success);
-		/* if sending failed, reconnect to the server */
+		/* if sending failed, synchronize with the network */
 	}
 }
