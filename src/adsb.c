@@ -230,7 +230,7 @@ decode_frame:
 		case '3': /* mode-s long */
 			payload_len = 14;
 			break;
-		case '4': /* ?? */
+		case '4': /* status frame */
 			payload_len = 14;
 			break;
 		default:
