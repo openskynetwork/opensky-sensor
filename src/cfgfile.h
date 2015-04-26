@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <limits.h>
+#include <netdb.h>
 
 struct CFG_WD {
 	bool enabled;
@@ -31,7 +32,7 @@ struct CFG_ADSB {
 };
 
 struct CFG_NET {
-	char host[255];
+	char host[NI_MAXHOST];
 	uint16_t port;
 	uint32_t timeout;
 	uint32_t reconnectInterval;
