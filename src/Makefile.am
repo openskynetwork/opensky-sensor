@@ -4,7 +4,7 @@ bin_PROGRAMS=openskyd
 # sources of openskyd
 openskyd_SOURCES=main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	adsb.c adsb.h buffer.h buffer.c network.h network.c cfgfile.h cfgfile.c \
-	statistics.h statistics.c
+	statistics.h statistics.c tb.h tb.c
 openskyd_LIBS="$(PTHREAD_LIBS)"
 openskyd_CFLAGS="$(PTHREAD_CFLAGS)"
 if DEVELOPMENT

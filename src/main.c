@@ -17,6 +17,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <tb.h>
 
 static bool TEST = false;
 
@@ -118,6 +119,11 @@ int main(int argc, char * argv[])
 	/* Network: start network mainloop */
 	pthread_t net;
 	if (pthread_create(&net, NULL, (PTHREAD_FN)&NET_main, NULL))
+		error(-1, errno, "Could not create tb main loop");
+
+	/* TB: start talkback mainloop */
+	pthread_t tb;
+	if (pthread_create(&tb, NULL, (PTHREAD_FN)&TB_main, NULL))
 		error(-1, errno, "Could not create tb main loop");
 
 	/* ADSB: start receiver mainloop */
