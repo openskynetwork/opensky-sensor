@@ -9,12 +9,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <network.h>
+#include <errno.h>
 
 /* Packet format:
  * Format: |ID|Len|Payload|
- * Size:     1  2    var
+ * Size:     2  2    var
  *
- * ID: packet type
+ * ID: packet type, encoded in big endian byte order
  * Len: length of packet in bytes, encoded in big endian byte order
  *      Max Length is 128 byte
  * Payload: packet payload, variable length
@@ -30,28 +31,22 @@
  * * 0x4: upgrade system and reboot, Size: 3
  */
 
-__attribute__((packed))
 struct TB_Frame {
-	uint8_t type;
-	uint16_t len;
+	uint_fast16_t type;
+	uint_fast16_t len;
 
-	union {
-		struct {
-			struct in_addr ip;
-			in_port_t port;
-		} revShell;
-	};
+	const uint8_t * payload;
 };
 
-static void processPacket(struct TB_Frame * frame);
+static void processPacket(const struct TB_Frame * frame);
 
-static void packetShell(struct TB_Frame * frame);
-static void packetRestartDaemon(struct TB_Frame * frame);
-static void packetRebootSystem(struct TB_Frame * frame);
-static void packetUpgradeDaemon(struct TB_Frame * frame);
-static void packetUpgradeSystem(struct TB_Frame * frame);
+static void packetShell(const struct TB_Frame * frame);
+static void packetRestartDaemon(const struct TB_Frame * frame);
+static void packetRebootSystem(const struct TB_Frame * frame);
+static void packetUpgradeDaemon(const struct TB_Frame * frame);
+static void packetUpgradeSystem(const struct TB_Frame * frame);
 
-typedef void (*PacketProcessor)(struct TB_Frame*);
+typedef void (*PacketProcessor)(const struct TB_Frame*);
 
 static PacketProcessor processors[] = {
 	packetShell,
@@ -73,23 +68,24 @@ void TB_main()
 
 		while (true) {
 			while (bufLen >= 3) {
-				struct TB_Frame * frame = (struct TB_Frame*)buf;
-				uint16_t len = frame->len;
-				frame->len = be16toh(len);
-				printf("Got Packet of type %" PRIu8 " and length %" PRIu16 "\n",
-					frame->type, frame->len);
-				if (frame->len > 128 || frame->len < 3) {
+				struct TB_Frame frame;
+				frame.type = be16toh(*((uint16_t*)&buf[0]));
+				frame.len = be16toh(*((uint16_t*)&buf[2]));
+				printf("Got Packet of type %" PRIuFAST16 " and length %"
+					PRIuFAST16 "\n", frame.type, frame.len);
+				if (frame.len > 128 || frame.len < 3) {
 					/* TODO: malicious packet */
 					fprintf(stderr, "TB: Wrong packet format, resetting buffer\n");
 					bufLen = 0;
 					break;
 				}
-				if (bufLen >= frame->len) {
+				if (bufLen >= frame.len) {
 					/* complete packet */
-					processPacket(frame);
-					bufLen -= frame->len;
+					frame.payload = buf + 4;
+					processPacket(&frame);
+					bufLen -= frame.len;
 					if (bufLen)
-						memmove(buf, buf + frame->len, bufLen);
+						memmove(buf, buf + frame.len, bufLen);
 				} else {
 					/* more data needed */
 					break;
@@ -106,7 +102,7 @@ void TB_main()
 	}
 }
 
-static void processPacket(struct TB_Frame * frame)
+static void processPacket(const struct TB_Frame * frame)
 {
 	static const uint32_t n_processors =
 		sizeof(processors) / sizeof(*processors);
@@ -125,76 +121,86 @@ static void processPacket(struct TB_Frame * frame)
 	daemon(0,0); \
 })
 
-static void quitAndExec(const char * fn, char * const argv[])
+static void quitAndExec(char * const argv[])
 {
 	char *envp[] = { NULL };
-	execve(fn, argv, envp);
+	int ret = execve(argv[0], argv, envp);
+	if (ret != 0)
+		fprintf(stderr, "ERR: %s\n", strerror(errno));
 	exit(EXIT_FAILURE);
 }
 
-static bool startAndReturn(const char * fn, char * const argv[])
+static bool startAndReturn(char * const argv[])
 {
 	pid_t pid = fork();
 	if (!pid)
-		quitAndExec(fn, argv);
+		quitAndExec(argv);
 
 	int status;
 	waitpid(pid, &status, 0);
 	return WIFEXITED(status);
 }
 
-static void packetShell(struct TB_Frame * frame)
+static void packetShell(const struct TB_Frame * frame)
 {
+	const struct {
+		in_addr_t ip;
+		in_port_t port;
+	} __attribute__((packed)) * revShell = (const void*)frame->payload;
+
 	char ip[INET_ADDRSTRLEN];
 	uint16_t port;
 
 	char addr[INET_ADDRSTRLEN + 6];
 
-	if (frame->len != 9) {
+	if (frame->len != 10) {
 		printf("TB: could not parse packet, discarding\n");
 		return;
 	}
 
-	inet_ntop(AF_INET, &frame->revShell.ip, ip, INET_ADDRSTRLEN);
-	port = ntohs(frame->revShell.port);
+	struct in_addr ipaddr;
+	ipaddr.s_addr = revShell->ip;
+	inet_ntop(AF_INET, &ipaddr, ip, INET_ADDRSTRLEN);
+	port = ntohs(revShell->port);
 
 	snprintf(addr, sizeof addr, "%s:%" PRIu16, ip, port);
 
-	printf("Starting rcc to %s", addr);
+	printf("Starting rcc to %s\n", addr);
 
 	detach();
-	char *argv[] = { "-l", ":22", "-r", addr, "-n", NULL };
-	quitAndExec("/usr/bin/rcc", argv);
+	char *argv[] = { "/usr/bin/rcc", "-t", ":22", "-r", addr, "-n", NULL };
+	quitAndExec(argv);
 }
 
-static void packetRestartDaemon(struct TB_Frame * frame)
+static void packetRestartDaemon(const struct TB_Frame * frame)
 {
 	detach();
-	char *argv[] = { "restart", "openskyd", NULL };
-	quitAndExec("/bin/systemctl", argv);
+	char *argv[] = { "/bin/systemctl", "restart", "openskyd", NULL };
+	quitAndExec(argv);
 }
 
-static void packetRebootSystem(struct TB_Frame * frame)
+static void packetRebootSystem(const struct TB_Frame * frame)
 {
 	detach();
-	char *argv[] = { "reboot", NULL };
-	quitAndExec("/bin/systemctl", argv);
+	char *argv[] = { "/bin/systemctl", "reboot", NULL };
+	quitAndExec(argv);
 }
 
-static void packetUpgradeDaemon(struct TB_Frame * frame)
+static void packetUpgradeDaemon(const struct TB_Frame * frame)
 {
 	detach();
-	char *argv[] = { "--noconfirm", "-Sy", "openskyd", NULL };
-	startAndReturn("/usr/bin/pacman", argv);
-	char *argv1[] = { "restart", "openskyd", NULL };
-	quitAndExec("/bin/systemctl", argv1);
+	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "-Sy", "openskyd",
+		NULL };
+	startAndReturn(argv);
+	char *argv1[] = { "/bin/systemctl", "restart", "openskyd", NULL };
+	quitAndExec(argv1);
 }
 
-static void packetUpgradeSystem(struct TB_Frame * frame)
+static void packetUpgradeSystem(const struct TB_Frame * frame)
 {
 	detach();
-	char *argv[] = { "--noconfirm", "-Syu", NULL };
-	quitAndExec("/usr/bin/pacman", argv);
-	char *argv1[] = { "reboot", NULL };
-	quitAndExec("/bin/systemctl", argv1);
+	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "-Syu", NULL };
+	quitAndExec(argv);
+	char *argv1[] = { "/bin/systemctl", "reboot", NULL };
+	quitAndExec(argv1);
 }
