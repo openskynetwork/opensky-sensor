@@ -9,6 +9,7 @@ AC_CONFIG_SRCDIR(src/main.c)
 dnl initialize automake
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS(config.h)
+AM_MAINTAINER_MODE
 
 dnl set some global variables here
 VERSION=0.5.2
@@ -25,6 +26,15 @@ AC_HEADER_STDC
 AC_SEARCH_LIBS([clock_gettime],[rt posix4])
 
 AX_PTHREAD
+
+AC_ARG_ENABLE([development],
+  [AS_HELP_STRING([--enable-development], [Use local files (default is no)])],
+  [case "${enableval}" in
+    yes) development=true ;;
+    no)  development=false ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-development]) ;;
+   esac], [development=false])
+AM_CONDITIONAL([DEVELOPMENT], [test x$development = xtrue])
 
 dnl output directive
 AC_OUTPUT(Makefile src/Makefile)

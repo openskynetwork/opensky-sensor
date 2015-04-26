@@ -7,8 +7,12 @@ openskyd_SOURCES=main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	statistics.h statistics.c
 openskyd_LIBS="$(PTHREAD_LIBS)"
 openskyd_CFLAGS="$(PTHREAD_CFLAGS)"
+if DEVELOPMENT
+openskyd_CPPFLAGS=-DDEVELOPMENT
+else
 openskyd_CPPFLAGS=-DSYSCONFDIR='"$(sysconfdir)"'
 openskyd_CPPFLAGS+=-DFWDIR='"$(libdir)"'
+endif
 openskyd_DATA=openskyd.conf
 openskyddir=$(sysconfdir)
 
