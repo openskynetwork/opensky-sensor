@@ -15,6 +15,8 @@
 #include <cfgfile.h>
 #include <statistics.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 static bool TEST = false;
 
@@ -67,7 +69,8 @@ int main(int argc, char * argv[])
 	/* FPGA: initialize and reprogram */
 	if (config.fpga.configure) {
 		FPGA_init();
-		if (config.fpga.file[0] == '/' && stat(config.fpga.file) == 0) {
+		struct stat st;
+		if (config.fpga.file[0] == '/' && stat(config.fpga.file, &st) == 0) {
 			FPGA_program(config.fpga.file, config.fpga.timeout,
 				config.fpga.retries);
 		} else {
