@@ -31,7 +31,7 @@ struct STAT_Statistics {
 	uint64_t NET_keepAlives;
 };
 
-extern struct STAT_Statistics STAT_stats;
+extern volatile struct STAT_Statistics STAT_stats;
 
 void STAT_init(uint32_t interval);
 void STAT_main();

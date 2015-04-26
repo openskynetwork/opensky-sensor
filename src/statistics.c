@@ -8,7 +8,7 @@
 #include <time.h>
 #include <buffer.h>
 
-struct STAT_Statistics STAT_stats;
+volatile struct STAT_Statistics STAT_stats;
 
 static time_t start;
 static char startstr[26];
@@ -19,7 +19,7 @@ void STAT_init(uint32_t interval)
 	start = time(NULL);
 	ctime_r(&start, startstr);
 
-	memset(&STAT_stats, 0, sizeof STAT_stats);
+	memset((void*)&STAT_stats, 0, sizeof STAT_stats);
 	st_interval = interval;
 }
 
@@ -32,7 +32,7 @@ void STAT_main()
 		time_t now = time(NULL);
 
 		BUF_fillStatistics();
-		memcpy(&snapshot, &STAT_stats, sizeof snapshot);
+		memcpy(&snapshot, (void*)&STAT_stats, sizeof snapshot);
 
 		uint32_t secs = now - start;
 		uint32_t d = secs / (24 * 3600);
