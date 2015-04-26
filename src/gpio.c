@@ -46,7 +46,7 @@ void GPIO_init()
 	int devmem;
 
 	/* open /dev/mem */
-	devmem = open("/dev/mem", O_RDWR | O_SYNC);
+	devmem = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
 	if (devmem < 0)
 		error(-1, errno, "GPIO: Could not open /dev/mem");
 

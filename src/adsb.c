@@ -99,7 +99,7 @@ static inline void setOption(enum ADSB_OPTION option);
 void ADSB_init(const char * uart, bool rtscts)
 {
 	/* open uart */
-	fd = open(uart, O_RDWR, O_NONBLOCK | O_NOCTTY);
+	fd = open(uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
 	if (fd < 0)
 		error(-1, errno, "ADSB: Could not open UART at '%s'", uart);
 

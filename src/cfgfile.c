@@ -100,7 +100,7 @@ void CFG_read(const char * file, struct CFG_Config * cfg)
 	loadDefaults(cfg);
 
 	/* open input file */
-	int fd = open(file, O_RDONLY);
+	int fd = open(file, O_RDONLY | O_CLOEXEC);
 	if (fd < 0)
 		error(-1, errno, "Configuration error: could not open '%s'", file);
 

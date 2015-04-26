@@ -102,7 +102,7 @@ static bool transfer(const uint8_t * rfd, off_t size)
 void FPGA_program(const char * file, uint32_t timeout, uint32_t retries)
 {
 	/* open input file */
-	int fd = open(file, O_RDONLY);
+	int fd = open(file, O_RDONLY | O_CLOEXEC);
 	if (fd < 0)
 		error(-1, errno, "FPGA: could not open '%s'", file);
 

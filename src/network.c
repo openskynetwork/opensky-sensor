@@ -143,7 +143,7 @@ static bool doConnect()
 		}
 
 		/* create socket */
-		sock = socket(host->ai_family, SOCK_STREAM, 0);
+		sock = socket(host->ai_family, SOCK_STREAM | SOCK_CLOEXEC, 0);
 		if (sock < 0)
 			error(EXIT_FAILURE, errno, "socket");
 
