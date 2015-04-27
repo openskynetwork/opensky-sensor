@@ -78,11 +78,10 @@ void TB_main()
 				struct TB_Frame frame;
 				frame.type = be16toh(*((uint16_t*)&buf[0]));
 				frame.len = be16toh(*((uint16_t*)&buf[2]));
-				printf("Got Packet of type %" PRIuFAST16 " and length %"
-					PRIuFAST16 "\n", frame.type, frame.len);
 				if (frame.len > 128 || frame.len < 3) {
-					/* TODO: malicious packet */
-					fprintf(stderr, "TB: Wrong packet format, resetting buffer\n");
+					fprintf(stderr, "TB: Wrong packet format (type=%"
+						PRIuFAST16 ", len=%" PRIuFAST16 "), resetting buffer\n",
+						frame.type, frame.len);
 					bufLen = 0;
 					break;
 				}
@@ -100,11 +99,9 @@ void TB_main()
 			}
 
 			ssize_t len = NET_receive(buf + bufLen, (sizeof buf) - bufLen);
-			if (len <= 0) {
+			if (len <= 0)
 				break;
-			}
 			bufLen += len;
-			printf("Got Data of Length %zi, new length %zu\n", len, bufLen);
 		}
 	}
 }
@@ -114,12 +111,16 @@ static void processPacket(const struct TB_Frame * frame)
 	static const uint32_t n_processors =
 		sizeof(processors) / sizeof(*processors);
 
-	if (frame->type > n_processors) {
+	PacketProcessor * processor = &processors[frame->type];
+
+	if (frame->type > n_processors || !processor) {
 		/* frame type unknown */
+		fprintf(stderr, "TB: Unknown packet type (type=%" PRIuFAST16
+			", len=%" PRIuFAST16 ")\n", frame->type, frame->len);
 		return;
 	}
 
-	processors[frame->type](frame);
+	processor(frame);
 }
 
 static void printCmdLine(char * const argv[])
