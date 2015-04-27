@@ -67,6 +67,9 @@ int main(int argc, char * argv[])
 			error(-1, errno, "Could not create watchdog thread");
 	}
 
+	/* Talkback: configure restart */
+	TB_init(argv);
+
 	/* FPGA: initialize and reprogram */
 	if (config.fpga.configure) {
 		FPGA_init();

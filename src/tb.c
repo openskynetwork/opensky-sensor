@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <network.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 /* Packet format:
  * Format: |ID|Len|Payload|
@@ -38,13 +40,14 @@ struct TB_Frame {
 	const uint8_t * payload;
 };
 
+static char ** daemonArgv;
+
 static void processPacket(const struct TB_Frame * frame);
 
 static void packetShell(const struct TB_Frame * frame);
 static void packetRestartDaemon(const struct TB_Frame * frame);
 static void packetRebootSystem(const struct TB_Frame * frame);
 static void packetUpgradeDaemon(const struct TB_Frame * frame);
-static void packetUpgradeSystem(const struct TB_Frame * frame);
 
 typedef void (*PacketProcessor)(const struct TB_Frame*);
 
@@ -52,9 +55,13 @@ static PacketProcessor processors[] = {
 	packetShell,
 	packetRestartDaemon,
 	packetRebootSystem,
-	packetUpgradeDaemon,
-	packetUpgradeSystem
+	packetUpgradeDaemon
 };
+
+void TB_init(char * argv[])
+{
+	daemonArgv = argv;
+}
 
 void TB_main()
 {
@@ -115,26 +122,75 @@ static void processPacket(const struct TB_Frame * frame)
 	processors[frame->type](frame);
 }
 
-#define detach() ({\
-	if (fork()) \
-		return; \
-	daemon(0,0); \
-})
-
-static void quitAndExec(char * const argv[])
+static void printCmdLine(char * const argv[])
 {
+	char * const * arg;
+
+	printf("TB: Exec ");
+
+	for (arg = argv; *arg; ++arg)
+		printf("%s%c", *arg, arg[1] ? ' ' : '\n');
+}
+
+static bool detach()
+{
+	pid_t child = fork();
+	if (child == -1) {
+		printf("fork failed\n");
+		return false;
+	} else if (child) {
+		return false;
+	}
+
+	/* child */
+	pid_t sid = setsid();
+	if (sid == -1) {
+		printf("setsid failed");
+		_exit(EXIT_FAILURE);
+	}
+	return true;
+}
+
+static void execute(char * const argv[])
+{
+	printCmdLine(argv);
+
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+	openat(STDIN_FILENO, "/dev/null", O_RDONLY);
+	openat(STDOUT_FILENO, "/tmp/log", O_WRONLY | O_CREAT | O_APPEND);
+	dup2(STDOUT_FILENO, STDERR_FILENO);
+
+	(void)umask(~0755);
+
+	printCmdLine(argv);
+
 	char *envp[] = { NULL };
 	int ret = execve(argv[0], argv, envp);
 	if (ret != 0)
 		fprintf(stderr, "ERR: %s\n", strerror(errno));
-	exit(EXIT_FAILURE);
+	_exit(EXIT_FAILURE);
 }
 
-static bool startAndReturn(char * const argv[])
+static void daemonizeAndExec(char * const argv[])
+{
+	daemon(0, 1);
+	execute(argv);
+}
+
+static void detachAndExec(char * const argv[])
+{
+	if (!detach())
+		return;
+	daemonizeAndExec(argv);
+}
+
+static bool executeAndReturn(char * const argv[])
 {
 	pid_t pid = fork();
 	if (!pid)
-		quitAndExec(argv);
+		execute(argv);
 
 	int status;
 	waitpid(pid, &status, 0);
@@ -167,40 +223,39 @@ static void packetShell(const struct TB_Frame * frame)
 
 	printf("Starting rcc to %s\n", addr);
 
-	detach();
 	char *argv[] = { "/usr/bin/rcc", "-t", ":22", "-r", addr, "-n", NULL };
-	quitAndExec(argv);
+	detachAndExec(argv);
 }
 
 static void packetRestartDaemon(const struct TB_Frame * frame)
 {
-	detach();
-	char *argv[] = { "/bin/systemctl", "restart", "openskyd", NULL };
-	quitAndExec(argv);
+	printf("TB: restarting daemon\n");
+	fflush(stdout);
+
+	printCmdLine(daemonArgv);
+
+	char * envp[] = { NULL };
+	int ret = execve(daemonArgv[0], daemonArgv, envp);
+	if (ret != 0)
+		fprintf(stderr, "ERR: %s\n", strerror(errno));
 }
 
 static void packetRebootSystem(const struct TB_Frame * frame)
 {
-	detach();
 	char *argv[] = { "/bin/systemctl", "reboot", NULL };
-	quitAndExec(argv);
+	detachAndExec(argv);
 }
 
 static void packetUpgradeDaemon(const struct TB_Frame * frame)
 {
-	detach();
-	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "-Sy", "openskyd",
+	if (!detach())
+		return;
+	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "-Syu", /*"openskyd",*/
 		NULL };
-	startAndReturn(argv);
-	char *argv1[] = { "/bin/systemctl", "restart", "openskyd", NULL };
-	quitAndExec(argv1);
-}
-
-static void packetUpgradeSystem(const struct TB_Frame * frame)
-{
-	detach();
-	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "-Syu", NULL };
-	quitAndExec(argv);
-	char *argv1[] = { "/bin/systemctl", "reboot", NULL };
-	quitAndExec(argv1);
+	if (!executeAndReturn(argv)) {
+		printf("TB: upgrade failed");
+	} else {
+		char *argv1[] = { "/bin/systemctl", "restart", "openskyd", NULL };
+		execute(argv1);
+	}
 }
