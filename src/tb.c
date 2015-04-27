@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <proc.h>
 
 /* Packet format:
  * Format: |ID|Len|Payload|
@@ -33,24 +34,31 @@
  * * 0x4: upgrade system and reboot, Size: 3
  */
 
-struct TB_Frame {
+/** Packet header and payload pointer */
+struct TB_Packet {
+	/** frame type */
 	uint_fast16_t type;
+	/** frame length */
 	uint_fast16_t len;
 
+	/** pointer to payload */
 	const uint8_t * payload;
 };
 
+/** argument vector of daemon, needed for restart */
 static char ** daemonArgv;
 
-static void processPacket(const struct TB_Frame * frame);
+static void processPacket(const struct TB_Packet * packet);
 
-static void packetShell(const struct TB_Frame * frame);
-static void packetRestartDaemon(const struct TB_Frame * frame);
-static void packetRebootSystem(const struct TB_Frame * frame);
-static void packetUpgradeDaemon(const struct TB_Frame * frame);
+static void packetShell(const struct TB_Packet * packet);
+static void packetRestartDaemon(const struct TB_Packet * frame);
+static void packetRebootSystem(const struct TB_Packet * frame);
+static void packetUpgradeDaemon(const struct TB_Packet * frame);
 
-typedef void (*PacketProcessor)(const struct TB_Frame*);
+/** Packet processor function pointer */
+typedef void (*PacketProcessor)(const struct TB_Packet*);
 
+/** All packet processors in order of their type */
 static PacketProcessor processors[] = {
 	packetShell,
 	packetRestartDaemon,
@@ -58,27 +66,35 @@ static PacketProcessor processors[] = {
 	packetUpgradeDaemon
 };
 
+/** Initialize TB.
+ * \param argv argument vector of the daemon
+ */
 void TB_init(char * argv[])
 {
 	daemonArgv = argv;
 }
 
+/** Mainloop of the TB. */
 void TB_main()
 {
 	uint8_t buf[128];
 	size_t bufLen;
 
 	while (true) {
+		/* synchronize with receiver */
 		NET_sync_recv();
 
+		/* new connection, reset buffer */
 		bufLen = 0;
 
 		while (true) {
-			while (bufLen >= 3) {
-				struct TB_Frame frame;
+			while (bufLen >= 4) {
+				/* enough data to read header */
+				struct TB_Packet frame;
 				frame.type = be16toh(*((uint16_t*)&buf[0]));
 				frame.len = be16toh(*((uint16_t*)&buf[2]));
-				if (frame.len > 128 || frame.len < 3) {
+				if (frame.len > 128 || frame.len < 4) {
+					/* sanity check failed, reset buffer */
 					fprintf(stderr, "TB: Wrong packet format (type=%"
 						PRIuFAST16 ", len=%" PRIuFAST16 "), resetting buffer\n",
 						frame.type, frame.len);
@@ -86,18 +102,20 @@ void TB_main()
 					break;
 				}
 				if (bufLen >= frame.len) {
-					/* complete packet */
+					/* complete packet: process it */
 					frame.payload = buf + 4;
 					processPacket(&frame);
+					/* and clear it from buffer */
 					bufLen -= frame.len;
 					if (bufLen)
 						memmove(buf, buf + frame.len, bufLen);
 				} else {
-					/* more data needed */
+					/* packet incomplete: more data needed */
 					break;
 				}
 			}
 
+			/* read (more) data from network into buffer */
 			ssize_t len = NET_receive(buf + bufLen, (sizeof buf) - bufLen);
 			if (len <= 0)
 				break;
@@ -106,157 +124,92 @@ void TB_main()
 	}
 }
 
-static void processPacket(const struct TB_Frame * frame)
+/** Process a packet: call handler if exists.
+ * \param packet packet to be processed
+ */
+static void processPacket(const struct TB_Packet * packet)
 {
 	static const uint32_t n_processors =
 		sizeof(processors) / sizeof(*processors);
 
-	PacketProcessor * processor = &processors[frame->type];
-
-	if (frame->type > n_processors || !processor) {
-		/* frame type unknown */
-		fprintf(stderr, "TB: Unknown packet type (type=%" PRIuFAST16
-			", len=%" PRIuFAST16 ")\n", frame->type, frame->len);
+	if (packet->type > n_processors || !processors[packet->type]) {
+		/* packet type unknown */
+		fprintf(stderr, "TB: Unknown packet type (type = %" PRIuFAST16
+			", len = %" PRIuFAST16 ")\n", packet->type, packet->len);
 		return;
 	}
 
-	processor(frame);
+	/* call processor */
+	processors[packet->type](packet);
 }
 
-static void printCmdLine(char * const argv[])
+/** Start reverse connect to given server
+ * \param packet packet containing the server address */
+static void packetShell(const struct TB_Packet * packet)
 {
-	char * const * arg;
-
-	printf("TB: Exec ");
-
-	for (arg = argv; *arg; ++arg)
-		printf("%s%c", *arg, arg[1] ? ' ' : '\n');
-}
-
-static bool detach()
-{
-	pid_t child = fork();
-	if (child == -1) {
-		printf("fork failed\n");
-		return false;
-	} else if (child) {
-		return false;
-	}
-
-	/* child */
-	pid_t sid = setsid();
-	if (sid == -1) {
-		printf("setsid failed");
-		_exit(EXIT_FAILURE);
-	}
-	return true;
-}
-
-static void execute(char * const argv[])
-{
-	printCmdLine(argv);
-
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-	openat(STDIN_FILENO, "/dev/null", O_RDONLY);
-	openat(STDOUT_FILENO, "/tmp/log", O_WRONLY | O_CREAT | O_APPEND);
-	dup2(STDOUT_FILENO, STDERR_FILENO);
-
-	(void)umask(~0755);
-
-	printCmdLine(argv);
-
-	char *envp[] = { NULL };
-	int ret = execve(argv[0], argv, envp);
-	if (ret != 0)
-		fprintf(stderr, "ERR: %s\n", strerror(errno));
-	_exit(EXIT_FAILURE);
-}
-
-static void daemonizeAndExec(char * const argv[])
-{
-	daemon(0, 1);
-	execute(argv);
-}
-
-static void detachAndExec(char * const argv[])
-{
-	if (!detach())
+	/* sanity check */
+	if (packet->len != 10) {
+		fprintf(stderr, "TB: packet of type %" PRIuFAST16 " too short (len = %"
+			PRIuFAST16 ", discarding\n", packet->type, packet->len);
 		return;
-	daemonizeAndExec(argv);
-}
+	}
 
-static bool executeAndReturn(char * const argv[])
-{
-	pid_t pid = fork();
-	if (!pid)
-		execute(argv);
-
-	int status;
-	waitpid(pid, &status, 0);
-	return WIFEXITED(status);
-}
-
-static void packetShell(const struct TB_Frame * frame)
-{
+	/* extract ip and port */
 	const struct {
 		in_addr_t ip;
 		in_port_t port;
-	} __attribute__((packed)) * revShell = (const void*)frame->payload;
+	} __attribute__((packed)) * revShell = (const void*)packet->payload;
 
 	char ip[INET_ADDRSTRLEN];
 	uint16_t port;
-
-	char addr[INET_ADDRSTRLEN + 6];
-
-	if (frame->len != 10) {
-		printf("TB: could not parse packet, discarding\n");
-		return;
-	}
 
 	struct in_addr ipaddr;
 	ipaddr.s_addr = revShell->ip;
 	inet_ntop(AF_INET, &ipaddr, ip, INET_ADDRSTRLEN);
 	port = ntohs(revShell->port);
 
+	char addr[INET_ADDRSTRLEN + 6];
 	snprintf(addr, sizeof addr, "%s:%" PRIu16, ip, port);
 
-	printf("Starting rcc to %s\n", addr);
+	/* start rcc in background */
+	printf("TB: Starting rcc to %s\n", addr);
 
 	char *argv[] = { "/usr/bin/rcc", "-t", ":22", "-r", addr, "-n", NULL };
-	detachAndExec(argv);
+	PROC_forkAndExec(argv); /* returns while executing in the background */
 }
 
-static void packetRestartDaemon(const struct TB_Frame * frame)
+/** Restart Daemon.
+ * \param packet packet */
+static void packetRestartDaemon(const struct TB_Packet * frame)
 {
 	printf("TB: restarting daemon\n");
 	fflush(stdout);
 
-	printCmdLine(daemonArgv);
-
-	char * envp[] = { NULL };
-	int ret = execve(daemonArgv[0], daemonArgv, envp);
-	if (ret != 0)
-		fprintf(stderr, "ERR: %s\n", strerror(errno));
+	/* replace daemon by new instance */
+	PROC_execRaw(daemonArgv);
 }
 
-static void packetRebootSystem(const struct TB_Frame * frame)
+/** Reboot system using systemd.
+ * \param packet packet */
+static void packetRebootSystem(const struct TB_Packet * frame)
 {
 	char *argv[] = { "/bin/systemctl", "reboot", NULL };
-	detachAndExec(argv);
+	PROC_forkAndExec(argv); /* returns while executing in the background */
 }
 
-static void packetUpgradeDaemon(const struct TB_Frame * frame)
+/** Upgrade daemon using pacman and restart daemon using systemd.
+ * \param packet packet */
+static void packetUpgradeDaemon(const struct TB_Packet * frame)
 {
-	if (!detach())
-		return;
-	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "-Syu", /*"openskyd",*/
+	if (!PROC_fork())
+		return; /* parent: return immediately */
+
+	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "-Sy", "openskyd",
 		NULL };
-	if (!executeAndReturn(argv)) {
+	if (!PROC_execAndReturn(argv)) {
 		printf("TB: upgrade failed");
 	} else {
 		char *argv1[] = { "/bin/systemctl", "restart", "openskyd", NULL };
-		execute(argv1);
+		PROC_execAndFinalize(argv1);
 	}
 }
