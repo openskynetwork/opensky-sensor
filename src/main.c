@@ -24,13 +24,8 @@ typedef void*(*PTHREAD_FN)(void*);
 static void mainloop(struct CFG_Config * cfg);
 static void mainloop_test(struct CFG_Config * cfg);
 
-#ifdef DEVELOPMENT
-#ifndef FWDIR
-#define FWDIR "."
-#endif
-#ifndef SYSCONFDIR
+#if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
-#endif
 #endif
 
 int main(int argc, char * argv[])
