@@ -2,6 +2,7 @@
 #define _HAVE_STATISTICS_H
 
 #include <stdint.h>
+#include <cfgfile.h>
 
 struct STAT_Statistics {
 	uint64_t ADSB_outOfSync;
@@ -34,7 +35,7 @@ struct STAT_Statistics {
 
 extern volatile struct STAT_Statistics STAT_stats;
 
-void STAT_init(uint32_t interval);
+void STAT_init(const struct CFG_STATS * cfg);
 void STAT_main();
 
 #endif

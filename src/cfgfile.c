@@ -528,7 +528,10 @@ static void loadDefaults(struct CFG_Config * cfg)
 static void check(struct CFG_Config * cfg)
 {
 	if (cfg->fpga.configure && cfg->fpga.file[0] == '\0')
-			error(-1, 0, "Configuration error: FPGA.file is empty");
+		error(-1, 0, "Configuration error: FPGA.file is empty");
+
+	if (cfg->buf.statBacklog <= 2)
+		error(-1, 0, "Configuration error: BUFFER.staticBacklog must be >= 2");
 
 	if (cfg->net.host[0] == '\0')
 		error(-1, 0, "Configuration error: NET.host is empty");

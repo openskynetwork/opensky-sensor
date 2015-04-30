@@ -13,6 +13,12 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <limits.h>
+#include <string.h>
+
+#if defined(DEVELOPMENT) && !defined(FWDIR)
+#define FWDIR "."
+#endif
 
 /** GPIO number for CONF_DONE pin of FPGA */
 #define FPGA_CONFD (32 + 6)
@@ -42,7 +48,7 @@ void FPGA_init()
 /** Reset the FPGA configuration.
  * \param timeout waiting time for the reset to happen in units of 50 us
  */
-void FPGA_reset(uint32_t timeout)
+static void reset(uint32_t timeout)
 {
 	puts("FPGA: Reset");
 	GPIO_clear(FPGA_NCONF);
@@ -99,15 +105,25 @@ static bool transfer(const uint8_t * rfd, off_t size)
  * \param timeout timeout for I/O waiting loops in units of 50 us
  * \param retries number of retries. 0 means "one try"
  */
-void FPGA_program(const char * file, uint32_t timeout, uint32_t retries)
+void FPGA_program(const struct CFG_FPGA * cfg)
 {
+	char file[PATH_MAX];
+
+	struct stat st;
+	if (cfg->file[0] == '/' && stat(cfg->file, &st) == 0) {
+		strncpy(file, cfg->file, sizeof file);
+	} else {
+		strncpy(file, FWDIR, PATH_MAX);
+		strncat(file, "/", strlen(file) - PATH_MAX);
+		strncat(file, cfg->file, strlen(file) - PATH_MAX);
+	}
+
 	/* open input file */
 	int fd = open(file, O_RDONLY | O_CLOEXEC);
 	if (fd < 0)
 		error(-1, errno, "FPGA: could not open '%s'", file);
 
 	/* stat input file for its size */
-	struct stat st;
 	if (fstat(fd, &st) < 0) {
 		close(fd);
 		error(-1, errno, "FPGA: could not stat '%s'", file);
@@ -121,19 +137,19 @@ void FPGA_program(const char * file, uint32_t timeout, uint32_t retries)
 	}
 
 	uint32_t try;
-	++retries;
+	uint32_t retries = cfg->retries + 1;
 	for (try = 1; try < retries; ++try) {
 		printf("FPGA: Programming (attempt %" PRIu32 " of %" PRIu32 ")\n", try,
 			retries);
 
 		/* reset FPGA */
-		FPGA_reset(timeout);
+		reset(cfg->timeout);
 
 		puts("FPGA: Transferring RBF");
 		if (!transfer(rfd, st.st_size))
 			continue;
 
-		uint32_t spin = timeout;
+		uint32_t spin = cfg->timeout;
 		while (GPIO_read(FPGA_CONFD) && spin--)
 			usleep(50);
 		if (!GPIO_read(FPGA_CONFD)) {

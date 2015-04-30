@@ -3,11 +3,10 @@
 
 #include <stdlib.h>
 #include <adsb.h>
+#include <cfgfile.h>
 
-void BUF_init(size_t staticBacklog, size_t dynamicBacklog,
-	size_t dynamicIncrements);
+void BUF_init(const struct CFG_BUF * cfg);
 
-void BUF_initGC(uint32_t interval, uint32_t level);
 void BUF_main();
 
 void BUF_flush();

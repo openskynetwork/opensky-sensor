@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <cfgfile.h>
 
 enum ADSB_FRAME_TYPE {
 	ADSB_FRAME_TYPE_NONE = 0,
@@ -35,10 +36,11 @@ struct ADSB_Frame {
 	};
 };
 
-void ADSB_init(const char * uart, bool rtscts);
-void ADSB_main();
+void ADSB_init(const struct CFG_ADSB * cfg);
 void ADSB_setup(bool crc, bool fec, bool frameFilter, bool modeAC, bool rts,
 	bool gps);
+void ADSB_main();
+
 void ADSB_setFilter(enum ADSB_FRAME_TYPE frameType);
 void ADSB_setSynchronizationFilter(bool enable);
 

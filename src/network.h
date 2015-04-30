@@ -4,10 +4,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <cfgfile.h>
 #include <adsb.h>
 
-void NET_init(const char * server, uint16_t port, uint32_t reconnect,
-	uint32_t serial);
+void NET_init(const struct CFG_NET * cfg, uint32_t serial);
 void NET_main();
 
 void NET_sync_send();

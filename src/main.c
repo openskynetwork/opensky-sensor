@@ -15,8 +15,6 @@
 #include <cfgfile.h>
 #include <statistics.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <tb.h>
 
 static bool TEST = false;
@@ -53,7 +51,7 @@ int main(int argc, char * argv[])
 
 	/* initialize and start statistics */
 	if (config.stats.enabled) {
-		STAT_init(config.stats.interval);
+		STAT_init(&config.stats);
 		pthread_t stats;
 		if (pthread_create(&stats, NULL, (PTHREAD_FN)&STAT_main, NULL))
 			error(-1, errno, "Could not create watchdog thread");
@@ -73,23 +71,11 @@ int main(int argc, char * argv[])
 	/* FPGA: initialize and reprogram */
 	if (config.fpga.configure) {
 		FPGA_init();
-		struct stat st;
-		if (config.fpga.file[0] == '/' && stat(config.fpga.file, &st) == 0) {
-			FPGA_program(config.fpga.file, config.fpga.timeout,
-				config.fpga.retries);
-		} else {
-			char file[PATH_MAX];
-			strncpy(file, FWDIR, PATH_MAX);
-			strncat(file, "/", strlen(file) - PATH_MAX);
-			strncat(file, config.fpga.file, strlen(file) - PATH_MAX);
-			FPGA_program(file, config.fpga.timeout, config.fpga.retries);
-		}
+		FPGA_program(&config.fpga);
 	}
 
 	/* Buffer: initialize buffer, setup garbage collection and filtering */
-	BUF_init(config.buf.statBacklog, config.buf.dynBacklog,
-		config.buf.history ? config.buf.dynIncrement : 0);
-	BUF_initGC(config.buf.gcInterval, config.buf.gcLevel);
+	BUF_init(&config.buf);
 	if (config.buf.gcEnabled) {
 		pthread_t buf;
 		if (pthread_create(&buf, NULL, (PTHREAD_FN)&BUF_main, NULL))
@@ -97,11 +83,10 @@ int main(int argc, char * argv[])
 	}
 
 	/* Network: configure network */
-	NET_init(config.net.host, config.net.port, config.net.reconnectInterval,
-		config.dev.serial);
+	NET_init(&config.net, config.dev.serial);
 
 	/* ADSB: initialize and setup receiver */
-	ADSB_init(config.adsb.uart, config.adsb.rts);
+	ADSB_init(&config.adsb);
 	ADSB_setup(config.adsb.crc, config.adsb.fec, config.adsb.frameFilter,
 		config.adsb.modeAC, config.adsb.rts, config.adsb.timestampGPS);
 	enum ADSB_FRAME_TYPE frameFilter = ADSB_FRAME_TYPE_NONE;

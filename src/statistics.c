@@ -12,22 +12,22 @@ volatile struct STAT_Statistics STAT_stats;
 
 static time_t start;
 static char startstr[26];
-static uint32_t st_interval;
+static uint32_t interval;
 
-void STAT_init(uint32_t interval)
+void STAT_init(const struct CFG_STATS * cfg)
 {
 	start = time(NULL);
 	ctime_r(&start, startstr);
 
 	memset((void*)&STAT_stats, 0, sizeof STAT_stats);
-	st_interval = interval;
+	interval = cfg->interval;
 }
 
 void STAT_main()
 {
 	struct STAT_Statistics snapshot;
 	while (true) {
-		sleep(st_interval);
+		sleep(interval);
 
 		time_t now = time(NULL);
 

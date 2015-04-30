@@ -96,12 +96,12 @@ static inline void setOption(enum ADSB_OPTION option);
  * \param rtscts use RTS/CTS handshake on uart. Must be set in the receiver
  *  also.
  */
-void ADSB_init(const char * uart, bool rtscts)
+void ADSB_init(const struct CFG_ADSB * cfg)
 {
 	/* open uart */
-	fd = open(uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
+	fd = open(cfg->uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
 	if (fd < 0)
-		error(-1, errno, "ADSB: Could not open UART at '%s'", uart);
+		error(-1, errno, "ADSB: Could not open UART at '%s'", cfg->uart);
 
 	/* set uart options */
 	struct termios t;
@@ -111,7 +111,7 @@ void ADSB_init(const char * uart, bool rtscts)
 	t.c_iflag = IGNPAR;
 	t.c_oflag = ONLCR;
 	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3000000;
-	if (rtscts)
+	if (cfg->rts)
 		t.c_cflag |= CRTSCTS;
 	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
 	t.c_ispeed = B3000000;

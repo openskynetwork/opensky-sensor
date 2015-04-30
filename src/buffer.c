@@ -106,26 +106,16 @@ static inline void clear(volatile struct FrameList * list);
  *  when the pool is empty
  * \param dynamicIncrements max number of increments
  */
-void BUF_init(size_t staticBacklog, size_t dynamicBacklog,
-	size_t dynamicIncrements)
+void BUF_init(const struct CFG_BUF * cfg)
 {
-	assert (staticBacklog > 2);
+	dynMaxIncrements = cfg->history ? cfg->dynIncrement : 0;
+	dynBacklog = cfg->dynBacklog;
 
-	dynBacklog = dynamicBacklog;
-	dynMaxIncrements = dynamicIncrements;
-
-	if (!deployPool(&staticPool, staticBacklog))
+	if (!deployPool(&staticPool, cfg->statBacklog))
 		error(-1, errno, "malloc failed");
-}
 
-/** Initialize the garbage collector.
- * \param interval interval between two garbage collector runs
- * \param level threshold when to actually run the collector
- */
-void BUF_initGC(uint32_t interval, uint32_t level)
-{
-	GC_interval = interval;
-	GC_level = level;
+	GC_interval = cfg->gcInterval;
+	GC_level = cfg->gcLevel;
 }
 
 /** Gargabe collector mainloop.

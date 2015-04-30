@@ -1,10 +1,9 @@
 #ifndef _HAVE_FPGA_H
 #define _HAVE_FPGA_H
 
-#include <stdint.h>
+#include <cfgfile.h>
 
 void FPGA_init();
-void FPGA_reset(uint32_t timeout);
-void FPGA_program(const char * file, uint32_t timeout, uint32_t retries);
+void FPGA_program(const struct CFG_FPGA * cfg);
 
 #endif

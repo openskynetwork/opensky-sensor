@@ -57,14 +57,11 @@ static inline bool sendData(const void * data, size_t len);
  * \param reconnect reconnect interval in seconds
  * \param serial serial number of device
  */
-void NET_init(const char * server, uint16_t port, uint32_t reconnect,
-	uint32_t serial)
+void NET_init(const struct CFG_NET * cfg, uint32_t serial)
 {
-	if (strlen(server) > sizeof serverAddress)
-		error(EXIT_FAILURE, 0, "Server string too long\n");
-	strncpy(serverAddress, server, sizeof serverAddress);
-	serverPort = port;
-	reconnectInterval = reconnect;
+	strncpy(serverAddress, cfg->host, sizeof serverAddress);
+	serverPort = cfg->port;
+	reconnectInterval = cfg->reconnectInterval;
 	serialNumber = serial;
 }
 
