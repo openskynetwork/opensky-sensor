@@ -17,12 +17,9 @@
 #include <string.h>
 #include <tb.h>
 
-static bool TEST = false;
-
 typedef void*(*PTHREAD_FN)(void*);
 
 static void mainloop(struct CFG_Config * cfg);
-static void mainloop_test(struct CFG_Config * cfg);
 
 #if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
@@ -30,9 +27,6 @@ static void mainloop_test(struct CFG_Config * cfg);
 
 int main(int argc, char * argv[])
 {
-	if (argc == 1 && !strcasecmp(argv[0], "--test"))
-		TEST = true;
-
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
 
@@ -91,13 +85,9 @@ int main(int argc, char * argv[])
 		frameFilter |= ADSB_FRAME_TYPE_MODE_S_SHORT;
 	if (config.adsb.modeSLong)
 		frameFilter |= ADSB_FRAME_TYPE_MODE_S_LONG;
-	if (TEST)
-		frameFilter |= ADSB_FRAME_TYPE_STATUS;
 	ADSB_setFilter(frameFilter);
-	if (!TEST) {
-		/* relay frames only if they're GPS timestamped */
-		ADSB_setSynchronizationFilter(true);
-	}
+	/* relay frames only if they're GPS timestamped */
+	ADSB_setSynchronizationFilter(true);
 
 	/* Network: start network mainloop */
 	pthread_t net;
@@ -114,40 +104,9 @@ int main(int argc, char * argv[])
 	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL))
 		error(-1, errno, "Could not create adsb main loop");
 
-	if (TEST)
-		mainloop_test(&config);
-	else
-		mainloop(&config);
+	mainloop(&config);
 
 	return 0;
-}
-
-static void mainloop_test(struct CFG_Config * config)
-{
-	do {
-		/* read a frame from the buffer */
-		const struct ADSB_Frame * frame = BUF_getFrame();
-		switch (frame->frameType) {
-		case ADSB_FRAME_TYPE_MODE_S_LONG:
-			printf("Mode-S long: mlat %15" PRIu64 ", level %+3" PRIi8 ": ",
-				frame->mlat, frame->siglevel);
-			int i;
-			for (i = 0; i < 14; ++i)
-				printf("%02x", frame->payload[i]);
-			putchar('\n');
-			break;
-		case ADSB_FRAME_TYPE_STATUS:
-			printf("Status: mlat %15" PRIu64 ", options %02" PRIx8
-				", Offset %+.2f ns [%+02" PRId8 "]\n",
-				frame->mlat, frame->options,
-				frame->offset / 64. * 1000.,
-				frame->offset);
-			break;
-		default:
-			break;
-		}
-		BUF_releaseFrame(frame);
-	} while (true);
 }
 
 static void mainloop(struct CFG_Config * config)
