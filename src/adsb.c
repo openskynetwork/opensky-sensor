@@ -1,13 +1,7 @@
 
 #define _DEFAULT_SOURCE
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <poll.h>
 #include <error.h>
 #include <errno.h>
-#include <termios.h>
-#include <unistd.h>
 #include <assert.h>
 #include <string.h>
 #include <stdint.h>
@@ -18,11 +12,8 @@
 #include <adsb.h>
 #include <buffer.h>
 #include <statistics.h>
+#include <input.h>
 
-/** file descriptor for UART */
-static int fd;
-/** poll set when waiting for data */
-static struct pollfd fds;
 /** receive buffer */
 static uint8_t buf[128];
 /** current buffer length (max sizeof buf) */
@@ -82,59 +73,35 @@ enum ADSB_OPTION {
 	ADSB_OPTION_MODE_AC_DECODING_DISABLED = 'j'
 };
 
-static inline void discardAndFill();
-static inline char peek();
-static inline char next();
+enum RAW_STATUS {
+	RAW_STATUS_OK,
+	RAW_STATUS_RESYNC,
+	RAW_STATUS_CONNFAIL
+};
+
+static inline bool discardAndFill();
 static inline void consume();
-static inline void synchronize();
+static inline bool peek(uint8_t * ch);
+static inline bool next(uint8_t * ch);
+static inline bool synchronize();
+static inline bool setOption(enum ADSB_OPTION option);
 static inline void receiveFrames();
+static inline enum RAW_STATUS readRaw(size_t len, struct ADSB_Frame * frame);
 static inline void decodeHeader(const struct ADSB_Frame * frame,
 	struct ADSB_Header * header);
-static inline bool readRaw(size_t len, struct ADSB_Frame * frame);
-static inline void setOption(enum ADSB_OPTION option);
 
 /** Initialize ADSB UART.
  * \param cfg pointer to buffer configuration, see cfgfile.h
  */
 void ADSB_init(const struct CFG_ADSB * cfg)
 {
-	/* open uart */
-	fd = open(cfg->uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
-	if (fd < 0)
-		error(-1, errno, "ADSB: Could not open UART at '%s'", cfg->uart);
-
-	/* set uart options */
-	struct termios t;
-	if (tcgetattr(fd, &t) == -1)
-		error(-1, errno, "ADSB: tcgetattr failed");
-
-	t.c_iflag = IGNPAR;
-	t.c_oflag = ONLCR;
-	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3000000;
-	if (cfg->rts)
-		t.c_cflag |= CRTSCTS;
-	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
-	t.c_ispeed = B3000000;
-	t.c_ospeed = B3000000;
-
-	if (tcsetattr(fd, TCSANOW, &t))
-		error(-1, errno, "ADSB: tcsetattr failed");
-
-	tcflush(fd, TCIOFLUSH);
-
-	/* setup polling */
-	fds.events = POLLIN;
-	fds.fd = fd;
-
-	/* setup buffer */
-	cur = buf;
-	len = 0;
-
 	/* setup filter */
 	frameFilter = ADSB_FRAME_TYPE_ALL_MSGS;
 
 	/* initialize synchronize info */
 	isSynchronized = false;
+
+	INPUT_init(cfg);
 }
 
 /** Setup ADSB receiver with some options.
@@ -189,16 +156,19 @@ void ADSB_setSynchronizationFilter(bool enable)
 /** Set an option for the ADSB decoder.
  * \param option option to be set
  */
-static inline void setOption(enum ADSB_OPTION option)
+static inline bool setOption(enum ADSB_OPTION option)
 {
 	uint8_t w[3] = { '\x1a', '1', (uint8_t)option };
-	write(fd, w, sizeof w);
+	return INPUT_write(w, sizeof w);
 }
 
 /** ADSB main loop: receive, decode, buffer */
 void ADSB_main()
 {
 	while (true) {
+		/* connect with input */
+		INPUT_connect();
+
 		/* reset buffer */
 		cur = buf;
 		len = 0;
@@ -215,7 +185,11 @@ static inline void receiveFrames()
 	while (true) {
 		/* synchronize */
 		while (true) {
-			uint8_t sync = next();
+			uint8_t sync;
+			if (!next(&sync)) {
+				BUF_abortFrame(frame);
+				return;
+			}
 			if (sync == 0x1a)
 				break;
 			fprintf(stderr, "ADSB: Out of Sync: got 0x%2d instead of 0x1a\n",
@@ -229,7 +203,10 @@ static inline void receiveFrames()
 		uint8_t type;
 decode_frame:
 		/* decode type */
-		type = next();
+		if (!next(&type)) {
+			BUF_abortFrame(frame);
+			return;
+		}
 		size_t payload_len;
 		switch (type) {
 		case '1': /* mode-ac */
@@ -256,12 +233,18 @@ decode_frame:
 		frame->raw_len = 2;
 
 		/* read header */
-		if (!readRaw(7, frame))
+		enum RAW_STATUS rs = readRaw(7, frame);
+		if (rs == RAW_STATUS_RESYNC)
 			goto decode_frame;
+		else if (rs == RAW_STATUS_CONNFAIL)
+			return;
 
 		/* read payload */
-		if (!readRaw(payload_len, frame))
+		rs = readRaw(payload_len, frame);
+		if (rs == RAW_STATUS_RESYNC)
 			goto decode_frame;
+		else if (rs == RAW_STATUS_CONNFAIL)
+			return;
 
 		++STAT_stats.ADSB_frameType[type - '1'];
 
@@ -316,18 +299,21 @@ static inline void decodeHeader(const struct ADSB_Frame * frame,
  * \param rawPtrPtr pointer to pointer of raw buffer
  * \param lenRawPtr pointer to raw buffer length
  */
-static inline bool readRaw(size_t len, struct ADSB_Frame * frame)
+static inline enum RAW_STATUS readRaw(size_t len, struct ADSB_Frame * frame)
 {
 	size_t i;
 	uint8_t * rawPtr = frame->raw + frame->raw_len;
 	for (i = 0; i < len; ++i) {
 		/* receive one character */
-		uint8_t c = next();
+		uint8_t c;
+		if (!next(&c))
+			return RAW_STATUS_CONNFAIL;
 		/* put into raw buffer */
 		*rawPtr++ = c;
 		++frame->raw_len;
 		if (c == 0x1a) { /* escaped character */
-			c = peek();
+			if (!peek(&c))
+				return RAW_STATUS_CONNFAIL;
 			if (c == 0x1a) {
 				/* consume character */
 				consume();
@@ -338,11 +324,11 @@ static inline bool readRaw(size_t len, struct ADSB_Frame * frame)
 				printf("ADSB: Out of Sync: got unescaped 0x1a in frame, "
 					"treating as resynchronization\n");
 				++STAT_stats.ADSB_outOfSync;
-				return false;
+				return RAW_STATUS_RESYNC;
 			}
 		}
 	}
-	return true;
+	return RAW_STATUS_OK;
 }
 
 /** Returns whether the receiver is synchronized by GPS.
@@ -354,66 +340,61 @@ bool ADSB_isSynchronized()
 }
 
 /** Discard buffer content and fill it again. */
-static inline void discardAndFill()
+static inline bool discardAndFill()
 {
-	while (1) {
-		int rc = read(fd, buf, sizeof buf);
-		if (rc == -1) {
-			if (errno == EAGAIN)
-				poll(&fds, 1, -1);
-			else
-				error(-1, errno, "ADSB: read failed");
-		} else if (rc == 0) {
-			poll(&fds, 1, -1);
-		} else {
-			len = rc;
-			break;
-		}
+	size_t rc = INPUT_read(buf, sizeof buf);
+	if (rc == 0) {
+		return false;
+	} else {
+		len = rc;
+		cur = buf;
+		return true;
 	}
-
-	cur = buf;
 }
 
 static inline void consume()
 {
-	assert (cur < buf + len);
+	if (cur >= buf + len)
+		error(EXIT_FAILURE, 0, "ADSB: assertion cur >= buf + len violated");
 	++cur;
 }
 
 /** Get next character from buffer but keep it there.
  * \return next character in buffer
  */
-static inline char peek()
+static inline bool peek(uint8_t * c)
 {
-	while (1) {
-		if (cur < buf + len)
-			return *cur;
-
-		discardAndFill();
-	}
+	do {
+		if (cur < buf + len) {
+			*c = *cur;
+			return true;
+		}
+	} while (discardAndFill());
+	return false;
 }
 
 /** Consume next character from buffer.
  * \return next character in buffer
  */
-static inline char next()
+static inline bool next(uint8_t * ch)
 {
-	char ret = peek();
-	++cur;
+	bool ret = peek(ch);
+	if (ret)
+		++cur;
 	return ret;
 }
 
 /** Synchronize buffer.
  * \note After calling that, the next call to next() or peek() will return 0x1a.
  */
-static inline void synchronize()
+static inline bool synchronize()
 {
-	while (1) {
+	do {
 		uint8_t * esc = memchr(cur, 0x1a, len - (cur - buf));
 		if (esc) {
 			cur = esc;
-			return;
+			return true;
 		}
-		discardAndFill();
-	}
+	} while (discardAndFill());
+	return false;
 }

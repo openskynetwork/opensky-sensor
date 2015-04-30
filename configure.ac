@@ -36,5 +36,14 @@ AC_ARG_ENABLE([development],
    esac], [development=false])
 AM_CONDITIONAL([DEVELOPMENT], [test x$development = xtrue])
 
+AC_ARG_ENABLE([network],
+  [AS_HELP_STRING([--enable-network], [Use network input layer (default is no)])],
+  [case "${enableval}" in
+    yes) networking=true ;;
+    no)  networking=false ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-development]) ;;
+   esac], [development=false])
+AM_CONDITIONAL([NETWORKING], [test x$networking = xtrue])
+
 dnl output directive
 AC_OUTPUT(Makefile src/Makefile)

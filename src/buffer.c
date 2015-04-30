@@ -229,6 +229,22 @@ void BUF_commitFrame(struct ADSB_Frame * frame)
 	newFrame = NULL;
 }
 
+/** Abort filling a frame and return it to the pool.
+ * \param frame aborted frame
+ */
+void BUF_abortFrame(struct ADSB_Frame * frame)
+{
+	assert (frame);
+	assert (&newFrame->frame == frame);
+
+	pthread_mutex_lock(&mutex);
+	push(&pool, newFrame);
+	newFrame = NULL;
+	pthread_mutex_unlock(&mutex);
+
+	newFrame = NULL;
+}
+
 /** Get a frame from the queue.
  * \return adsb frame
  */
