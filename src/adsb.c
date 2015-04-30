@@ -85,9 +85,12 @@ enum ADSB_OPTION {
 static inline void discardAndFill();
 static inline char peek();
 static inline char next();
+static inline void consume();
 static inline void synchronize();
-static inline bool decode(uint8_t * dst, size_t len, uint8_t ** rawPtrPtr,
-	size_t * lenRawPtr);
+static inline void receiveFrames();
+static inline void decodeHeader(const struct ADSB_Frame * frame,
+	struct ADSB_Header * header);
+static inline bool readRaw(size_t len, struct ADSB_Frame * frame);
 static inline void setOption(enum ADSB_OPTION option);
 
 /** Initialize ADSB UART.
@@ -195,10 +198,23 @@ static inline void setOption(enum ADSB_OPTION option)
 /** ADSB main loop: receive, decode, buffer */
 void ADSB_main()
 {
+	while (true) {
+		/* reset buffer */
+		cur = buf;
+		len = 0;
+
+		receiveFrames();
+
+		/* TODO: sleep */
+	}
+}
+
+static inline void receiveFrames()
+{
 	struct ADSB_Frame * frame = BUF_newFrame();
-	while (1) {
+	while (true) {
 		/* synchronize */
-		while (1) {
+		while (true) {
 			uint8_t sync = next();
 			if (sync == 0x1a)
 				break;
@@ -209,13 +225,11 @@ void ADSB_main()
 		}
 
 		/* decode frame */
-		uint8_t * rawPtr;
+		frame->raw[0] = 0x1a;
+		uint8_t type;
 decode_frame:
-		rawPtr = frame->raw;
-		*rawPtr++ = 0x1a;
-
 		/* decode type */
-		uint8_t type = next();
+		type = next();
 		size_t payload_len;
 		switch (type) {
 		case '1': /* mode-ac */
@@ -237,31 +251,25 @@ decode_frame:
 			synchronize();
 			continue;
 		}
-		*rawPtr++ = type;
+		frame->raw[1] = type;
 		frame->frameType = 1 << (type - '1');
-		frame->payload_len = payload_len;
-
 		frame->raw_len = 2;
 
-		/* decode header */
-		uint8_t header[7];
-		if (!decode(header, sizeof header, &rawPtr, &frame->raw_len))
+		/* read header */
+		if (!readRaw(7, frame))
 			goto decode_frame;
 
-		/* decode payload */
-		if (!decode(frame->payload, payload_len, &rawPtr, &frame->raw_len))
+		/* read payload */
+		if (!readRaw(payload_len, frame))
 			goto decode_frame;
 
 		++STAT_stats.ADSB_frameType[type - '1'];
 
-		/* process header */
-		uint64_t mlat = 0;
-		memcpy(((uint8_t*)&mlat) + 2, header, 6);
-		frame->mlat = be64toh(mlat);
-		frame->siglevel = header[6];
-
-		if (frame->frameType == ADSB_FRAME_TYPE_STATUS)
-			isSynchronized = frame->mlat != 0;
+		if (frame->frameType == ADSB_FRAME_TYPE_STATUS) {
+			struct ADSB_Header header;
+			decodeHeader(frame, &header);
+			isSynchronized = header.mlat != 0;
+		}
 
 		/* apply filter */
 		if (!(frame->frameType & frameFilter)) {
@@ -269,7 +277,7 @@ decode_frame:
 			continue;
 		}
 
-		/* filter if unsynchronized and filter is enabled*/
+		/* filter if unsynchronized and filter is enabled */
 		if (!isSynchronized) {
 			++STAT_stats.ADSB_framesUnsynchronized;
 			if (synchronizationFilter &&
@@ -283,55 +291,66 @@ decode_frame:
 	}
 }
 
-/** Returns whether the receiver is synchronized by GPS.
- * \return true if the receiver is synchronized, false otherwise
- */
-bool ADSB_isSynchronized()
+static inline void decodeHeader(const struct ADSB_Frame * frame,
+	struct ADSB_Header * header)
 {
-	return isSynchronized;
+	uint8_t decoded[7];
+
+	size_t i;
+	const uint8_t * rawHeader = frame->raw + 2;
+	for (i = 0; i < sizeof decoded; ++i)
+		if ((decoded[i] = *rawHeader++) == 0x1a)
+			++rawHeader;
+
+	/* decode mlat */
+	uint64_t mlat = 0;
+	memcpy(((uint8_t*)&mlat) + 2, decoded, 6);
+	header->mlat = be64toh(mlat);
+	header->siglevel = decoded[6];
 }
 
-/** Decode frame content.
+/** Unescape frame payload.
  * \param dst destination buffer
  * \param len length of frame content to be decoded.
  *  Must not exceed the buffers size
  * \param rawPtrPtr pointer to pointer of raw buffer
  * \param lenRawPtr pointer to raw buffer length
  */
-static inline bool decode(uint8_t * dst, size_t len, uint8_t ** rawPtrPtr,
-	size_t * lenRawPtr)
+static inline bool readRaw(size_t len, struct ADSB_Frame * frame)
 {
 	size_t i;
-	uint8_t * rawPtr = *rawPtrPtr;
+	uint8_t * rawPtr = frame->raw + frame->raw_len;
 	for (i = 0; i < len; ++i) {
 		/* receive one character */
 		uint8_t c = next();
 		/* put into raw buffer */
 		*rawPtr++ = c;
-		++*lenRawPtr;
+		++frame->raw_len;
 		if (c == 0x1a) { /* escaped character */
 			c = peek();
 			if (c == 0x1a) {
 				/* consume character */
-				next();
+				consume();
 				/* put into raw buffer */
 				*rawPtr++ = c;
-				++*lenRawPtr;
-				/* put unescaped character into buffer */
-				*dst++ = 0x1a;
+				++frame->raw_len;
 			} else {
 				printf("ADSB: Out of Sync: got unescaped 0x1a in frame, "
 					"treating as resynchronization\n");
 				++STAT_stats.ADSB_outOfSync;
 				return false;
 			}
-		} else {
-			/* put into buffer */
-			*dst++ = c;
 		}
 	}
-	*rawPtrPtr = rawPtr;
 	return true;
+}
+
+/** Returns whether the receiver is synchronized by GPS.
+ * \return true if the receiver is synchronized, false otherwise
+ */
+bool ADSB_isSynchronized()
+{
+	return isSynchronized;
 }
 
 /** Discard buffer content and fill it again. */
@@ -353,6 +372,12 @@ static inline void discardAndFill()
 	}
 
 	cur = buf;
+}
+
+static inline void consume()
+{
+	assert (cur < buf + len);
+	++cur;
 }
 
 /** Get next character from buffer but keep it there.

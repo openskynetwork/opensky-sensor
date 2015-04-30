@@ -23,17 +23,12 @@ struct ADSB_Frame {
 	size_t raw_len;
 	uint8_t raw[23 * 2];
 
-	size_t payload_len;
 	enum ADSB_FRAME_TYPE frameType;
+};
+
+struct ADSB_Header {
 	uint64_t mlat;
 	int8_t siglevel;
-	union {
-		uint8_t payload[14];
-		struct {
-			uint8_t options;
-			int8_t offset;
-		};
-	};
 };
 
 void ADSB_init(const struct CFG_ADSB * cfg);
