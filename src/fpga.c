@@ -101,9 +101,7 @@ static bool transfer(const uint8_t * rfd, off_t size)
 }
 
 /** (Re-)Program the FPGA.
- * \param file path to file which is transferred to the FPGA
- * \param timeout timeout for I/O waiting loops in units of 50 us
- * \param retries number of retries. 0 means "one try"
+* \param cfg pointer to buffer configuration, see cfgfile.h
  */
 void FPGA_program(const struct CFG_FPGA * cfg)
 {

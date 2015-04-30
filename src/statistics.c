@@ -14,6 +14,9 @@ static time_t start;
 static char startstr[26];
 static uint32_t interval;
 
+/** Initialize statistics.
+ * \param cfg pointer to buffer configuration, see cfgfile.h
+ */
 void STAT_init(const struct CFG_STATS * cfg)
 {
 	start = time(NULL);

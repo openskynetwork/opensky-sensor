@@ -100,11 +100,7 @@ static inline void append(volatile struct FrameList * dstList,
 static inline void clear(volatile struct FrameList * list);
 
 /** Initialize frame buffer.
- * \param staticBacklog number of empty frames for the steady state. Must be
- *  more than 2, should be about 10
- * \param dynamicBacklog number of empty frames to allocate additionally
- *  when the pool is empty
- * \param dynamicIncrements max number of increments
+ * \param cfg pointer to buffer configuration, see cfgfile.h
  */
 void BUF_init(const struct CFG_BUF * cfg)
 {

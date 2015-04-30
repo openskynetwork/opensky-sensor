@@ -52,9 +52,7 @@ static bool sendSerial();
 static inline bool sendData(const void * data, size_t len);
 
 /** Initialize Network component.
- * \param server server to connect to
- * \param port port to connect to
- * \param reconnect reconnect interval in seconds
+ * \param cfg pointer to buffer configuration, see cfgfile.h
  * \param serial serial number of device
  */
 void NET_init(const struct CFG_NET * cfg, uint32_t serial)

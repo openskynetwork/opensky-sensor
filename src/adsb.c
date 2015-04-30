@@ -82,7 +82,6 @@ enum ADSB_OPTION {
 	ADSB_OPTION_MODE_AC_DECODING_DISABLED = 'j'
 };
 
-
 static inline void discardAndFill();
 static inline char peek();
 static inline char next();
@@ -92,9 +91,7 @@ static inline bool decode(uint8_t * dst, size_t len, uint8_t ** rawPtrPtr,
 static inline void setOption(enum ADSB_OPTION option);
 
 /** Initialize ADSB UART.
- * \param uart path to uart to be used
- * \param rtscts use RTS/CTS handshake on uart. Must be set in the receiver
- *  also.
+ * \param cfg pointer to buffer configuration, see cfgfile.h
  */
 void ADSB_init(const struct CFG_ADSB * cfg)
 {
