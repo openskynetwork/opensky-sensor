@@ -16,6 +16,7 @@ stamp-h1
 src/cape
 src/*.o
 src/openskyd
+build/
 .settings/language.settings.xml
 *.tar.gz
 *.bck
