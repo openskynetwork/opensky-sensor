@@ -12,6 +12,7 @@
 #include <adsb.h>
 #include <buffer.h>
 #include <statistics.h>
+#include <unistd.h>
 #include <input.h>
 
 /** receive buffer */
