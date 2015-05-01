@@ -523,6 +523,7 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->adsb.modeAC = false;
 	cfg->adsb.modeSShort = false;
 	cfg->adsb.modeSLong = true;
+	cfg->adsb.reconnectInterval = 10;
 
 	cfg->net.host[0] = '\0';
 	cfg->net.port = 30003;
