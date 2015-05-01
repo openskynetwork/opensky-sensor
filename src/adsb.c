@@ -159,7 +159,7 @@ void ADSB_setSynchronizationFilter(bool enable)
 static inline bool setOption(enum ADSB_OPTION option)
 {
 	uint8_t w[3] = { '\x1a', '1', (uint8_t)option };
-	return INPUT_write(w, sizeof w);
+	return INPUT_write(w, sizeof w) > 0;
 }
 
 /** ADSB main loop: receive, decode, buffer */

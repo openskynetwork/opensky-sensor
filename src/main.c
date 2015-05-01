@@ -34,8 +34,10 @@ int main(int argc, char * argv[])
 	/* read & check configuration */
 	CFG_read(SYSCONFDIR "/openskyd.conf", &config);
 
-	/* initialize GPIO subsystem */
-	GPIO_init();
+	if (config.wd.enabled || config.fpga.configure) {
+		/* initialize GPIO subsystem */
+		GPIO_init();
+	}
 
 
 	/* initialize and start statistics */

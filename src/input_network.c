@@ -55,7 +55,9 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 size_t INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = send(sock, buf, bufLen, MSG_NOSIGNAL);
-	if (rc <= 0)
+	if (rc <= 0) {
+		error(0, errno, "INPUT: send failed");
 		return 0;
+	}
 	return rc;
 }
