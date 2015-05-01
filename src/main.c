@@ -39,7 +39,6 @@ int main(int argc, char * argv[])
 		GPIO_init();
 	}
 
-
 	/* initialize and start statistics */
 	if (config.stats.enabled) {
 		STAT_init(&config.stats);

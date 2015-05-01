@@ -68,7 +68,8 @@ struct Section {
 
 static void loadDefaults(struct CFG_Config * cfg);
 static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg);
-static void check(struct CFG_Config * cfg);
+static void fix(struct CFG_Config * cfg);
+static void check(const struct CFG_Config * cfg);
 
 static void scanOptionWD(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg);
@@ -124,6 +125,9 @@ void CFG_read(const char * file, struct CFG_Config * cfg)
 	/* unmap and close file */
 	munmap(cfgStr, st.st_size);
 	close(fd);
+
+	/* fix configuration */
+	fix(cfg);
 
 	/* check configuration */
 	check(cfg);
@@ -544,10 +548,33 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->stats.interval = 600;
 }
 
+static void fix(struct CFG_Config * cfg)
+{
+#ifdef NETWORK
+	if (cfg->fpga.configure) {
+		cfg->fpga.configure = false;
+		fprintf(stderr, "Configuration warning: FPGA.configure is ignored in "
+			"network mode\n");
+	}
+
+	if (cfg->wd.enabled) {
+		cfg->wd.enabled = false;
+		fprintf(stderr, "Configuration warning: WATCHDOG.enabled is ignored in "
+			"network mode\n");
+	}
+#endif
+
+	if (cfg->buf.statBacklog < 2) {
+		cfg->buf.statBacklog = 2;
+		fprintf(stderr, "Configuration warning: BUFFER.staticBacklog was "
+			"increased to 2\n");
+	}
+}
+
 /** Check configuration for sanity.
  * \param cfg configuration
  */
-static void check(struct CFG_Config * cfg)
+static void check(const struct CFG_Config * cfg)
 {
 	if (cfg->fpga.configure && cfg->fpga.file[0] == '\0')
 		error(-1, 0, "Configuration error: FPGA.file is empty");
