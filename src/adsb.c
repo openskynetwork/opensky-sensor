@@ -83,7 +83,7 @@ enum RAW_STATUS {
 	RAW_STATUS_CONNFAIL
 };
 
-static bool setup();
+static bool configure();
 static inline bool discardAndFill();
 static inline void consume();
 static inline bool peek(uint8_t * ch);
@@ -112,7 +112,7 @@ void ADSB_init(const struct CFG_ADSB * cfg)
 }
 
 /** Setup ADSB receiver with some options. */
-static bool setup()
+static bool configure()
 {
 	/* setup ADSB */
 	return setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN) &&
@@ -169,7 +169,7 @@ void ADSB_main()
 		/* connect with input */
 		INPUT_connect();
 
-		if (setup()) {
+		if (!config->configure || configure()) {
 			/* reset buffer */
 			cur = buf;
 			len = 0;

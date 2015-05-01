@@ -28,13 +28,13 @@ struct CFG_ADSB {
 
 	uint32_t reconnectInterval;
 
+	bool configure;
 	bool frameFilter;
 	bool crc;
 	bool timestampGPS;
 	bool rts;
 	bool fec;
 	bool modeAC;
-
 	bool modeSLong;
 	bool modeSShort;
 };

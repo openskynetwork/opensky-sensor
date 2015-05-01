@@ -332,6 +332,8 @@ static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg)
 #endif
 	} else if (isOption(opt, "reconnectInterval"))
 		cfg->adsb.reconnectInterval = parseInt(opt);
+	else if (isOption(opt, "configure"))
+		cfg->adsb.configure = parseBool(opt);
 	else if (isOption(opt, "CRC"))
 		cfg->adsb.crc = parseBool(opt);
 	else if (isOption(opt, "FEC"))
@@ -519,6 +521,11 @@ static void loadDefaults(struct CFG_Config * cfg)
 #else
 	strncpy(cfg->adsb.uart, "/dev/ttyO5", sizeof cfg->adsb.uart);
 #endif
+#ifdef NETWORK
+	cfg->adsb.configure = false;
+#else
+	cfg->adsb.configure = true;
+#endif
 	cfg->adsb.frameFilter = true;
 	cfg->adsb.crc = true;
 	cfg->adsb.timestampGPS = true;
@@ -560,6 +567,12 @@ static void fix(struct CFG_Config * cfg)
 	if (cfg->wd.enabled) {
 		cfg->wd.enabled = false;
 		fprintf(stderr, "Configuration warning: WATCHDOG.enabled is ignored in "
+			"network mode\n");
+	}
+
+	if (cfg->adsb.configure) {
+		cfg->adsb.configure = false;
+		fprintf(stderr, "Configuration warning: ADSB.configure is ignored in "
 			"network mode\n");
 	}
 #endif
