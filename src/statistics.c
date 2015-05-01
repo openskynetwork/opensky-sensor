@@ -10,9 +10,10 @@
 
 volatile struct STAT_Statistics STAT_stats;
 
+const const struct CFG_STATS * config;
+
 static time_t start;
 static char startstr[26];
-static uint32_t interval;
 
 /** Initialize statistics.
  * \param cfg pointer to buffer configuration, see cfgfile.h
@@ -23,14 +24,15 @@ void STAT_init(const struct CFG_STATS * cfg)
 	ctime_r(&start, startstr);
 
 	memset((void*)&STAT_stats, 0, sizeof STAT_stats);
-	interval = cfg->interval;
+
+	config = cfg;
 }
 
 void STAT_main()
 {
 	struct STAT_Statistics snapshot;
 	while (true) {
-		sleep(interval);
+		sleep(config->interval);
 
 		time_t now = time(NULL);
 

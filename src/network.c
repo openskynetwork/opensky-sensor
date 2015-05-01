@@ -37,12 +37,8 @@ static pthread_cond_t condConnected = PTHREAD_COND_INITIALIZER;
 /** Condition for reconnect flag */
 static pthread_cond_t condReconnect = PTHREAD_COND_INITIALIZER;
 
-/** server address */
-static char serverAddress[NI_MAXHOST];
-/** server port */
-static uint16_t serverPort;
-/** reconnect interval in seconds */
-static uint32_t reconnectInterval;
+/** network configuration */
+static const struct CFG_NET * config;
 /** serial number */
 static uint32_t serialNumber;
 
@@ -57,9 +53,7 @@ static inline bool sendData(const void * data, size_t len);
  */
 void NET_init(const struct CFG_NET * cfg, uint32_t serial)
 {
-	strncpy(serverAddress, cfg->host, sizeof serverAddress);
-	serverPort = cfg->port;
-	reconnectInterval = cfg->reconnectInterval;
+	config = cfg;
 	serialNumber = serial;
 }
 
@@ -78,7 +72,7 @@ void NET_main()
 		/* connect to the server */
 		while (!doConnect()) {
 			pthread_mutex_unlock(&mutex);
-			sleep(reconnectInterval); /* retry in case of failure */
+			sleep(config->reconnectInterval); /* retry in case of failure */
 			pthread_mutex_lock(&mutex);
 		}
 
@@ -113,13 +107,13 @@ static bool doConnect()
 
 	/* resolve name */
 	struct addrinfo * hosts, * host;
-	int rc = getaddrinfo(serverAddress, NULL, NULL, &hosts);
+	int rc = getaddrinfo(config->host, NULL, NULL, &hosts);
 	if (rc) {
-		fprintf(stderr, "NET: could not resolve '%s': %s\n", serverAddress,
+		fprintf(stderr, "NET: could not resolve '%s': %s\n", config->host,
 			gai_strerror(rc));
 	}
 
-	uint16_t port = htons(serverPort);
+	uint16_t port = htons(config->port);
 	for (host = hosts; host != NULL; host = host->ai_next) {
 		struct sockaddr * addr = host->ai_addr;
 
@@ -133,7 +127,7 @@ static bool doConnect()
 			break;
 		default:
 			printf("NET: ignoring unknown family %d for address '%s'",
-				host->ai_family, serverAddress);
+				host->ai_family, config->host);
 			continue;
 		}
 
@@ -148,7 +142,7 @@ static bool doConnect()
 			close(sock);
 			sock = -1;
 		} else {
-			printf("NET: connected to '%s:%d'\n", serverAddress, serverPort);
+			printf("NET: connected to '%s:%d'\n", config->host, config->port);
 			++STAT_stats.NET_connectsSuccess;
 			freeaddrinfo(hosts);
 			return true;
@@ -156,7 +150,7 @@ static bool doConnect()
 	}
 
 	fprintf(stderr, "NET: could not connect to '%s:%d': %s\n",
-		serverAddress, serverPort, strerror(errno));
+		config->host, config->port, strerror(errno));
 	++STAT_stats.NET_connectsFail;
 
 	freeaddrinfo(hosts);

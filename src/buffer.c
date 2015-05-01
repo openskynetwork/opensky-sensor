@@ -51,8 +51,6 @@ struct Pool {
 /** Static Pool (those frames are always allocated in advance) */
 static struct Pool staticPool;
 
-/** Dynamic Pool backlog size */
-static size_t dynBacklog;
 /** Dynamic Pool max. increments */
 static size_t dynMaxIncrements;
 /** Dynamic Pool increments */
@@ -74,10 +72,8 @@ static struct FrameLink * newFrame = NULL;
 /** Currently processed frame (by reader), for debugging purposes */
 static struct FrameLink * currentFrame = NULL;
 
-/** Garbage Collector interval */
-static uint32_t GC_interval;
-/** Garbage Collector threshold level */
-static uint32_t GC_level;
+/** Buffer configuration */
+static const struct CFG_BUF * config;
 
 /** Mutex */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -104,14 +100,12 @@ static inline void clear(volatile struct FrameList * list);
  */
 void BUF_init(const struct CFG_BUF * cfg)
 {
+	config = cfg;
+
 	dynMaxIncrements = cfg->history ? cfg->dynIncrement : 0;
-	dynBacklog = cfg->dynBacklog;
 
 	if (!deployPool(&staticPool, cfg->statBacklog))
 		error(-1, errno, "malloc failed");
-
-	GC_interval = cfg->gcInterval;
-	GC_level = cfg->gcLevel;
 }
 
 /** Gargabe collector mainloop.
@@ -119,9 +113,10 @@ void BUF_init(const struct CFG_BUF * cfg)
 void BUF_main()
 {
 	while (true) {
-		sleep(GC_interval);
+		sleep(config->gcInterval);
 		pthread_mutex_lock(&mutex);
-		if (queue.size < (dynIncrements * dynBacklog) / GC_level) {
+		if (queue.size <
+			(dynIncrements * config->dynBacklog) / config->gcLevel) {
 			++STAT_stats.BUF_GCRuns;
 #ifdef BUF_DEBUG
 			puts("BUF: Running Garbage Collector");
@@ -381,7 +376,7 @@ static bool createDynPool()
 		return false;
 
 	/* deployment */
-	if (!deployPool(newPool, dynBacklog)) {
+	if (!deployPool(newPool, config->dynBacklog)) {
 		free(newPool);
 		return false;
 	}
