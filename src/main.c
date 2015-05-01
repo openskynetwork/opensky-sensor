@@ -44,7 +44,7 @@ int main(int argc, char * argv[])
 		STAT_init(&config.stats);
 		pthread_t stats;
 		if (pthread_create(&stats, NULL, (PTHREAD_FN)&STAT_main, NULL))
-			error(-1, errno, "Could not create watchdog thread");
+			error(-1, errno, "Could not create statistics thread");
 	}
 
 	/* Watchdog: initialize and start */
