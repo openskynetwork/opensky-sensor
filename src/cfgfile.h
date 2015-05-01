@@ -18,7 +18,15 @@ struct CFG_FPGA {
 };
 
 struct CFG_ADSB {
-	char uart[PATH_MAX];
+	union {
+		char uart[PATH_MAX];
+		struct {
+			char host[NI_MAXHOST];
+			uint16_t port;
+		};
+	};
+
+	uint32_t reconnectInterval;
 
 	bool frameFilter;
 	bool crc;

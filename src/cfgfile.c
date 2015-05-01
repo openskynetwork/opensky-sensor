@@ -310,8 +310,24 @@ static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg)
  */
 static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg)
 {
-	if (isOption(opt, "uart"))
+	if (isOption(opt, "uart")) {
+#ifndef NETWORK
 		parseString(opt, cfg->adsb.uart, sizeof cfg->adsb.uart);
+#endif
+	} else if(isOption(opt, "host")) {
+#ifdef NETWORK
+		parseString(opt, cfg->adsb.host, sizeof cfg->adsb.host);
+#endif
+	} else if(isOption(opt, "port")) {
+#ifdef NETWORK
+		uint32_t n = parseInt(opt);
+		if (n > 0xffff)
+			error(-1, 0, "Configuration error: Line %" PRIu32
+				": port must be < 65535", bufferLine);
+		cfg->adsb.port = n;
+#endif
+	} else if (isOption(opt, "reconnectInterval"))
+		cfg->adsb.reconnectInterval = parseInt(opt);
 	else if (isOption(opt, "CRC"))
 		cfg->adsb.crc = parseBool(opt);
 	else if (isOption(opt, "FEC"))
@@ -493,7 +509,12 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->fpga.retries = 2;
 	cfg->fpga.timeout = 10;
 
+#ifdef NETWORK
+	strncpy(cfg->adsb.host, "localhost", sizeof cfg->adsb.host);
+	cfg->adsb.port = 30003;
+#else
 	strncpy(cfg->adsb.uart, "/dev/ttyO5", sizeof cfg->adsb.uart);
+#endif
 	cfg->adsb.frameFilter = true;
 	cfg->adsb.crc = true;
 	cfg->adsb.timestampGPS = true;
@@ -537,6 +558,16 @@ static void check(struct CFG_Config * cfg)
 		error(-1, 0, "Configuration error: NET.host is empty");
 	if (cfg->net.port == 0)
 		error(-1, 0, "Configuration error: NET.port = 0");
+
+#ifdef NETWORK
+	if (cfg->adsb.host[0] == '\0')
+		error(-1, 0, "Configuration error: ADSB.host is empty");
+	if (cfg->adsb.port == 0)
+		error(-1, 0, "Configuration error: ADSB.port = 0");
+#else
+	if (cfg->adsb.uart[0] == '\0')
+		error(-1, 0, "Configuration error: ADSB.uart is empty");
+#endif
 
 	if (!cfg->dev.serialSet)
 		error(-1, 0, "Configuration error: DEVICE.serial is missing");

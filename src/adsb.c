@@ -176,7 +176,7 @@ void ADSB_main()
 			receiveFrames();
 		}
 
-		/* TODO: sleep */
+		sleep(config->reconnectInterval);
 	}
 }
 

@@ -12,7 +12,7 @@ openskyd_CFLAGS="$(PTHREAD_CFLAGS)"
 
 if NETWORKING
 openskyd_SOURCES += input_network.c
-openskyd_CFLAGS += -DNETWORKING
+openskyd_CFLAGS += -DNETWORK
 else
 openskyd_SOURCES += input_uart.c
 endif
