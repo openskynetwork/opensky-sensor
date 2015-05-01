@@ -32,8 +32,6 @@ struct ADSB_Header {
 };
 
 void ADSB_init(const struct CFG_ADSB * cfg);
-void ADSB_setup(bool crc, bool fec, bool frameFilter, bool modeAC, bool rts,
-	bool gps);
 void ADSB_main();
 
 void ADSB_setFilter(enum ADSB_FRAME_TYPE frameType);

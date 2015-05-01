@@ -76,8 +76,6 @@ int main(int argc, char * argv[])
 
 	/* ADSB: initialize and setup receiver */
 	ADSB_init(&config.adsb);
-	ADSB_setup(config.adsb.crc, config.adsb.fec, config.adsb.frameFilter,
-		config.adsb.modeAC, config.adsb.rts, config.adsb.timestampGPS);
 	enum ADSB_FRAME_TYPE frameFilter = ADSB_FRAME_TYPE_NONE;
 	if (config.adsb.modeAC)
 		frameFilter |= ADSB_FRAME_TYPE_MODE_AC;

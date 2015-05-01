@@ -30,6 +30,9 @@ static bool synchronizationFilter;
 /** synchronization info: true if receiver has a valid GPS timestamp */
 static bool isSynchronized;
 
+/** configuration */
+static const struct CFG_ADSB * config;
+
 /** ADSB Options */
 enum ADSB_OPTION {
 	/** Output Format: AVR */
@@ -79,6 +82,7 @@ enum RAW_STATUS {
 	RAW_STATUS_CONNFAIL
 };
 
+static bool setup();
 static inline bool discardAndFill();
 static inline void consume();
 static inline bool peek(uint8_t * ch);
@@ -95,6 +99,8 @@ static inline void decodeHeader(const struct ADSB_Frame * frame,
  */
 void ADSB_init(const struct CFG_ADSB * cfg)
 {
+	config = cfg;
+
 	/* setup filter */
 	frameFilter = ADSB_FRAME_TYPE_ALL_MSGS;
 
@@ -104,32 +110,25 @@ void ADSB_init(const struct CFG_ADSB * cfg)
 	INPUT_init(cfg);
 }
 
-/** Setup ADSB receiver with some options.
- * \param crc enable CRC
- * \param fec enable forward error correction
- * \param frameFilter receive DF-11/17/18 frames only
- * \param modeAC receive Mode-A/C additionally
- * \param rts use RTS/CTS handshake on UART
- * \param gps use GPS for timestamps
- */
-void ADSB_setup(bool crc, bool fec, bool frameFilter, bool modeAC, bool rts,
-	bool gps)
+/** Setup ADSB receiver with some options. */
+static bool setup()
 {
 	/* setup ADSB */
-	setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN);
-	setOption(frameFilter ? ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
-		ADSB_OPTION_FRAME_FILTER_ALL);
-	setOption(ADSB_OPTION_AVR_FORMAT_MLAT);
-	setOption(crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
-		ADSB_OPTION_DF_11_17_18_CRC_DISABLED);
-	setOption(gps ? ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
-		ADSB_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ);
-	setOption(rts ? ADSB_OPTION_RTS_HANDSHAKE_ENABLED :
-		ADSB_OPTION_RTS_HANDSHAKE_DISABLED);
-	setOption(fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
-		ADSB_OPTION_DF_17_18_FEC_DISABLED);
-	setOption(modeAC ? ADSB_OPTION_MODE_AC_DECODING_ENABLED :
-		ADSB_OPTION_MODE_AC_DECODING_DISABLED);
+	return setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN) &&
+		setOption(config->frameFilter ?
+			ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
+			ADSB_OPTION_FRAME_FILTER_ALL) &&
+		setOption(ADSB_OPTION_AVR_FORMAT_MLAT) &&
+		setOption(config->crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
+			ADSB_OPTION_DF_11_17_18_CRC_DISABLED) &&
+		setOption(config->timestampGPS ? ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
+			ADSB_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ) &&
+		setOption(config->rts ? ADSB_OPTION_RTS_HANDSHAKE_ENABLED :
+			ADSB_OPTION_RTS_HANDSHAKE_DISABLED) &&
+		setOption(config->fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
+			ADSB_OPTION_DF_17_18_FEC_DISABLED) &&
+		setOption(config->modeAC ? ADSB_OPTION_MODE_AC_DECODING_ENABLED :
+			ADSB_OPTION_MODE_AC_DECODING_DISABLED);
 }
 
 /** Set a filter for all received frames.
@@ -169,11 +168,13 @@ void ADSB_main()
 		/* connect with input */
 		INPUT_connect();
 
-		/* reset buffer */
-		cur = buf;
-		len = 0;
+		if (setup()) {
+			/* reset buffer */
+			cur = buf;
+			len = 0;
 
-		receiveFrames();
+			receiveFrames();
+		}
 
 		/* TODO: sleep */
 	}
