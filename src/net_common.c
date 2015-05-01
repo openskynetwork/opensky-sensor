@@ -18,6 +18,7 @@ int NETC_connect(const char * component, const char * hostName, uint16_t port)
 	if (rc) {
 		fprintf(stderr, "%s: could not resolve '%s': %s\n", component, hostName,
 			gai_strerror(rc));
+		return -1;
 	}
 
 	uint16_t port_be = htons(port);
