@@ -1,9 +1,9 @@
 #include <network.h>
+#include <net_common.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <error.h>
 #include <errno.h>
-#include <netdb.h>
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
@@ -105,56 +105,8 @@ static bool doConnect()
 		sock = -1;
 	}
 
-	/* resolve name */
-	struct addrinfo * hosts, * host;
-	int rc = getaddrinfo(config->host, NULL, NULL, &hosts);
-	if (rc) {
-		fprintf(stderr, "NET: could not resolve '%s': %s\n", config->host,
-			gai_strerror(rc));
-	}
-
-	uint16_t port = htons(config->port);
-	for (host = hosts; host != NULL; host = host->ai_next) {
-		struct sockaddr * addr = host->ai_addr;
-
-		/* extend address info for connecting */
-		switch (host->ai_family) {
-		case AF_INET:
-			((struct sockaddr_in*)addr)->sin_port = port;
-			break;
-		case AF_INET6:
-			((struct sockaddr_in6*)addr)->sin6_port = port;
-			break;
-		default:
-			printf("NET: ignoring unknown family %d for address '%s'",
-				host->ai_family, config->host);
-			continue;
-		}
-
-		/* create socket */
-		sock = socket(host->ai_family, SOCK_STREAM | SOCK_CLOEXEC, 0);
-		if (sock < 0)
-			error(EXIT_FAILURE, errno, "socket");
-
-		/* connect socket */
-		rc = connect(sock, addr, host->ai_addrlen);
-		if (rc < 0) {
-			close(sock);
-			sock = -1;
-		} else {
-			printf("NET: connected to '%s:%d'\n", config->host, config->port);
-			++STAT_stats.NET_connectsSuccess;
-			freeaddrinfo(hosts);
-			return true;
-		}
-	}
-
-	fprintf(stderr, "NET: could not connect to '%s:%d': %s\n",
-		config->host, config->port, strerror(errno));
-	++STAT_stats.NET_connectsFail;
-
-	freeaddrinfo(hosts);
-	return false;
+	sock = NETC_connect("NET", config->host, config->port);
+	return sock != -1;
 }
 
 /** Synchronize sending thread: wait for a connection */
