@@ -37,13 +37,28 @@ AC_ARG_ENABLE([development],
 AM_CONDITIONAL([DEVELOPMENT], [test x$development = xtrue])
 
 AC_ARG_ENABLE([network],
-  [AS_HELP_STRING([--enable-network], [Use network input layer (default is no)])],
+  [AS_HELP_STRING([--enable-network], [Build network input layer (default is no)])],
   [case "${enableval}" in
-    yes) networking=true ;;
-    no)  networking=false ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-development]) ;;
-   esac], [development=false])
-AM_CONDITIONAL([NETWORKING], [test x$networking = xtrue])
+    yes) network=true ;;
+    no)  network=false ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-network]) ;;
+   esac], [network=false])
+AM_CONDITIONAL([WANT_NETWORK], [test x$network = xtrue])
+
+AC_ARG_ENABLE([uart],
+  [AS_HELP_STRING([--enable-uart], [Build uart input layer (default is yes)])],
+  [case "${enableval}" in
+    yes) uart=true ;;
+    no)  uart=false ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-uart]) ;;
+   esac], [uart=true])
+AM_CONDITIONAL([WANT_UART], [test x$uart = xtrue])
+
+if test x$network = xfalse -a x$uart = xfalse
+then
+	AC_MSG_ERROR([No input layer chosen])
+fi
+
 
 dnl output directive
 AC_OUTPUT(Makefile src/Makefile)
