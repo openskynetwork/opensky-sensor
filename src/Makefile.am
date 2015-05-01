@@ -13,8 +13,8 @@ main=openskyd-uart$(EXEEXT)
 endif
 
 openskyd$(EXEEXT): $(main)
-	[ -e $@ ] && rm -f $@
-	ln -s $< $@
+	if test -e "$@"; then rm -f "$@"; fi
+	ln -s "$<" "$@"
 
 # sources of openskyd
 SOURCES=main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
@@ -25,6 +25,7 @@ SOURCES=main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 
 openskyd_net_SOURCES = $(SOURCES) input_network.c
 openskyd_uart_SOURCES = $(SOURCES) input_uart.c
+openskyd_SOURCES=
 
 LIBS+=@PTHREAD_LIBS@
 AM_CFLAGS=@PTHREAD_CFLAGS@
