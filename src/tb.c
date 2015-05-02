@@ -91,8 +91,9 @@ void TB_main()
 			while (bufLen >= 4) {
 				/* enough data to read header */
 				struct TB_Packet frame;
-				frame.type = be16toh(*((uint16_t*)&buf[0]));
-				frame.len = be16toh(*((uint16_t*)&buf[2]));
+				uint16_t * buf16 = (uint16_t*)buf;
+				frame.type = be16toh(buf16[0]);
+				frame.len = be16toh(buf16[1]);
 				if (frame.len > 128 || frame.len < 4) {
 					/* sanity check failed, reset buffer */
 					fprintf(stderr, "TB: Wrong packet format (type=%"

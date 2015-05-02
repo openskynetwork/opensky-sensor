@@ -81,8 +81,10 @@ void PROC_forkAndExec(char * argv[])
 	if (!PROC_fork())
 		return; /* parent */
 	/* daemonize and chdir to root */
-	daemon(0, 1);
-	PROC_execAndFinalize(argv);
+	if (daemon(0, 1) < 0)
+		error(0, errno, "PROC: daemon failed");
+	else
+		PROC_execAndFinalize(argv);
 }
 
 /** Execute a command and return.

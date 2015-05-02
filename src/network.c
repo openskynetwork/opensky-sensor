@@ -227,14 +227,17 @@ static bool sendSerial()
 {
 	char buf[10] = { '\x1a', '\x35' };
 
-	uint8_t ca[4];
-	*(uint32_t*)ca = htobe32(serialNumber);
+	union {
+		uint8_t ca[4];
+		uint32_t serial;
+	} serial;
+	serial.serial = htobe32(serialNumber);
 
 	char * cur = buf + 2;
 
 	uint32_t n;
 	for (n = 0; n < 4; ++n)
-		if ((*cur++ = ca[n]) == '\x1a')
+		if ((*cur++ = serial.ca[n]) == '\x1a')
 			*cur++ = '\x1a';
 
 	return sendDataUnlocked(buf, cur - buf);
