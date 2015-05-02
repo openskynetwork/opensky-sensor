@@ -71,6 +71,13 @@ void STAT_main()
 		printf(" - %27" PRIu64 " Mode-S Long frames (%.02f per second)\n",
 			snapshot.ADSB_frameType[2],
 			(double)snapshot.ADSB_frameType[2] / secs);
+		uint32_t i;
+		for (i = 0; i < 32; ++i) {
+			uint64_t n = snapshot.ADSB_longType[i];
+			if (n)
+				printf("   - %27" PRIu64 " frames of type %" PRIu32
+					" (%.02f /s)\n", n, i, (double)n / secs);
+		}
 		printf(" - %27" PRIu64 " status frames (%.02f per second)\n",
 			snapshot.ADSB_frameType[3],
 			(double)snapshot.ADSB_frameType[3] / secs);
@@ -80,6 +87,9 @@ void STAT_main()
 		printf(" - %27" PRIu64 " frames filtered (%.02f per second)\n",
 			snapshot.ADSB_framesFiltered,
 			(double)snapshot.ADSB_framesFiltered / secs);
+		printf(" - %27" PRIu64 " long frames filtered (%.02f per second)\n",
+			snapshot.ADSB_framesFilteredLong,
+			(double)snapshot.ADSB_framesFilteredLong / secs);
 		printf(" - %27" PRIu64 " unsynchronized frames\n",
 			snapshot.ADSB_framesUnsynchronized);
 		puts("");

@@ -37,6 +37,7 @@ struct CFG_ADSB {
 	bool modeAC;
 	bool modeSLong;
 	bool modeSShort;
+	bool modeSLongExtSquitter;
 };
 
 struct CFG_NET {

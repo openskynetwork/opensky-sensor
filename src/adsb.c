@@ -25,6 +25,9 @@ static uint8_t * cur;
 /** frame filter */
 static enum ADSB_FRAME_TYPE frameFilter;
 
+/** frame filter (for long frames) */
+static enum ADSB_LONG_FRAME_TYPE frameFilterLong;
+
 /** frame filter */
 static bool synchronizationFilter;
 
@@ -92,6 +95,8 @@ static inline bool synchronize();
 static inline bool setOption(enum ADSB_OPTION option);
 static inline void receiveFrames();
 static inline enum RAW_STATUS readRaw(size_t len, struct ADSB_Frame * frame);
+static inline void decode(const struct ADSB_Frame * frame, size_t skip,
+	uint8_t * out, size_t len);
 static inline void decodeHeader(const struct ADSB_Frame * frame,
 	struct ADSB_Header * header);
 
@@ -103,7 +108,8 @@ void ADSB_init(const struct CFG_ADSB * cfg)
 	config = cfg;
 
 	/* setup filter */
-	frameFilter = ADSB_FRAME_TYPE_ALL_MSGS;
+	frameFilter = ADSB_FRAME_TYPE_ALL;
+	frameFilterLong = ADSB_LONG_FRAME_TYPE_ALL;
 
 	/* initialize synchronize info */
 	isSynchronized = false;
@@ -137,11 +143,23 @@ static bool configure()
  *  All other frames will be discarded.
  * \note This is a software filter. If frames are discarded by the receiver
  *  already, they won't show here. So if Mode-A/C messages should pass, be also
- *  sure to not filter them with ADSB_setup
+ *  sure to not filter them with ADSB_init.
  */
 void ADSB_setFilter(enum ADSB_FRAME_TYPE frameType)
 {
 	frameFilter = frameType;
+}
+
+/** Set a filter for all received long frames.
+ * \param frameType types which pass the filter, or'ed together
+ *  All other frames will be discarded.
+ * \note This is a software filter. If frames are discarded by the receiver
+ *  already, they won't show here. Be sure to be consistent with the options
+ *  in ADSB_init.
+ */
+void ADSB_setFilterLong(enum ADSB_LONG_FRAME_TYPE frameLongType)
+{
+	frameFilterLong = frameLongType;
 }
 
 /** Filter all frames (except status frames unless they're filtered anyway)
@@ -262,9 +280,23 @@ decode_frame:
 			continue;
 		}
 
+		if (frame->frameType == ADSB_FRAME_TYPE_MODE_S_LONG) {
+			uint8_t payload_type;
+			decode(frame, 9, &payload_type, sizeof payload_type);
+			uint32_t ftype = (payload_type >> 3) & 0x1f;
+			++STAT_stats.ADSB_longType[ftype];
+			/* apply filter */
+			if (!((1 << ftype) & frameFilterLong)) {
+				++STAT_stats.ADSB_framesFiltered;
+				++STAT_stats.ADSB_framesFilteredLong;
+				continue;
+			}
+		}
+
 		/* filter if unsynchronized and filter is enabled */
 		if (!isSynchronized) {
 			++STAT_stats.ADSB_framesUnsynchronized;
+			++STAT_stats.ADSB_framesFiltered;
 			if (synchronizationFilter &&
 				frame->frameType != ADSB_FRAME_TYPE_STATUS)
 				continue;
@@ -281,17 +313,30 @@ static inline void decodeHeader(const struct ADSB_Frame * frame,
 {
 	uint8_t decoded[7];
 
-	size_t i;
-	const uint8_t * rawHeader = frame->raw + 2;
-	for (i = 0; i < sizeof decoded; ++i)
-		if ((decoded[i] = *rawHeader++) == 0x1a)
-			++rawHeader;
+	decode(frame, 2, decoded, sizeof decoded);
 
 	/* decode mlat */
 	uint64_t mlat = 0;
 	memcpy(((uint8_t*)&mlat) + 2, decoded, 6);
 	header->mlat = be64toh(mlat);
 	header->siglevel = decoded[6];
+}
+
+static inline void decode(const struct ADSB_Frame * frame, size_t skip,
+	uint8_t * out, size_t len)
+{
+	size_t i;
+
+	const uint8_t * in = frame->raw + 1;
+	--skip;
+
+	for (i = 0; i < skip; ++i)
+		if (*in++ == 0x1a)
+			++in;
+
+	for (i = 0; i < len; ++i)
+		if ((*out++ = *in++) == 0x1a)
+			++in;
 }
 
 /** Unescape frame payload.

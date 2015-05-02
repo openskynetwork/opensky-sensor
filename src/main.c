@@ -85,6 +85,10 @@ int main(int argc, char * argv[])
 	if (config.adsb.modeSLong)
 		frameFilter |= ADSB_FRAME_TYPE_MODE_S_LONG;
 	ADSB_setFilter(frameFilter);
+	/* for the moment, only extended squitter are relevant */
+	ADSB_setFilterLong(config.adsb.modeSLongExtSquitter ?
+		ADSB_LONG_FRAME_TYPE_EXTENDED_SQUITTER_ALL :
+		ADSB_LONG_FRAME_TYPE_ALL);
 	/* relay frames only if they're GPS timestamped */
 	ADSB_setSynchronizationFilter(true);
 

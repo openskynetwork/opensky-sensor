@@ -350,6 +350,8 @@ static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg)
 		cfg->adsb.modeSShort = parseBool(opt);
 	else if (isOption(opt, "ModeS_Long"))
 		cfg->adsb.modeSLong = parseBool(opt);
+	else if (isOption(opt, "ModeS_Long_ExtSquitterOnly"))
+		cfg->adsb.modeSLongExtSquitter = parseBool(opt);
 	else
 		unknownKey(opt);
 }
@@ -534,6 +536,7 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->adsb.modeAC = false;
 	cfg->adsb.modeSShort = false;
 	cfg->adsb.modeSLong = true;
+	cfg->adsb.modeSLongExtSquitter = true;
 	cfg->adsb.reconnectInterval = 10;
 
 	cfg->net.host[0] = '\0';

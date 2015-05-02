@@ -7,8 +7,10 @@
 struct STAT_Statistics {
 	uint64_t ADSB_outOfSync;
 	uint64_t ADSB_frameType[4];
+	uint64_t ADSB_longType[32];
 	uint64_t ADSB_frameTypeUnknown;
 	uint64_t ADSB_framesFiltered;
+	uint64_t ADSB_framesFilteredLong;
 	uint64_t ADSB_framesUnsynchronized;
 
 	uint64_t BUF_flushes;
