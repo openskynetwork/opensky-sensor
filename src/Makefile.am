@@ -1,48 +1,44 @@
 
 # binary programs
-bin_PROGRAMS=openskyd
-
+bin_PROGRAMS =
 if WANT_NETWORK
-bin_PROGRAMS+=openskyd-net
-main=openskyd-net$(EXEEXT)
+bin_PROGRAMS += openskyd-net
 endif
-
 if WANT_UART
-bin_PROGRAMS+=openskyd-uart
-main=openskyd-uart$(EXEEXT)
+bin_PROGRAMS += openskyd-uart
 endif
 
-openskyd$(EXEEXT): $(main)
-	if test -e "$@"; then rm -f "$@"; fi
-	ln -s "$<" "$@"
-
-# sources of openskyd
-SOURCES=main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
+# common sources of openskyd
+SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	adsb.c adsb.h buffer.h buffer.c network.h network.c cfgfile.h cfgfile.c \
 	statistics.h statistics.c tb.h tb.c proc.h proc.c \
 	input.h net_common.h net_common.c
 
-
+# extra sources
 openskyd_net_SOURCES = $(SOURCES) input_network.c
 openskyd_uart_SOURCES = $(SOURCES) input_uart.c
-openskyd_SOURCES=
 
-LIBS+=@PTHREAD_LIBS@
-AM_CFLAGS=@PTHREAD_CFLAGS@
+# libs and cflags
+LIBS += @PTHREAD_LIBS@
+AM_CFLAGS = @PTHREAD_CFLAGS@
 
+# flags for development
 if DEVELOPMENT
-AM_CPPFLAGS=-DDEVELOPMENT
+AM_CPPFLAGS = -DDEVELOPMENT
 else
-AM_CPPFLAGS=-DSYSCONFDIR='"$(sysconfdir)"' -DFWDIR='"$(libdir)"'
+AM_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"' -DFWDIR='"$(libdir)"'
 endif
 
+# Network needs another flag. Do this also with openskyd-uart, so object files
+#  will be named properly
 openskyd_net_CPPFLAGS = $(AM_CPPFLAGS) -DNETWORK
 openskyd_uart_CPPFLAGS = $(AM_CPPFLAGS)
 
-openskyd_net_DATA=openskyd.conf
-openskyd_uart_DATA=openskyd.conf
+# data files
+openskyd_net_DATA = openskyd.conf
+openskyd_uart_DATA = openskyd.conf
+EXTRA_DIST = openskyd.conf
 
-openskyd_netdir=$(sysconfdir)
-openskyd_uartdir=$(sysconfdir)
-
-EXTRA_DIST=openskyd.conf
+# configuration directory
+openskyd_netdir = $(sysconfdir)
+openskyd_uartdir = $(sysconfdir)
