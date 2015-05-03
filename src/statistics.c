@@ -11,13 +11,21 @@
 
 volatile struct STAT_Statistics STAT_stats;
 
+struct Snapshot {
+	time_t timestamp;
+	uint32_t secs;
+	uint32_t delta;
+	struct STAT_Statistics stats;
+	uint64_t frames;
+};
+
 const const struct CFG_STATS * config;
 
 static time_t start;
 static char startstr[26];
 
 static void sigStats(int sig);
-static void printStatistics();
+static void printStatistics(struct Snapshot * lastSnapshot);
 
 /** Initialize statistics.
  * \param cfg pointer to buffer configuration, see cfgfile.h
@@ -36,32 +44,78 @@ void STAT_init(const struct CFG_STATS * cfg)
 
 void STAT_main()
 {
+	struct Snapshot snapshot;
+
+	memset(&snapshot, 0, sizeof snapshot);
+	snapshot.timestamp = time(NULL);
+
 	while (true) {
 		sleep(config->interval);
 
-		printStatistics();
+		printStatistics(&snapshot);
 	}
 }
 
 static void sigStats(int sig)
 {
-	printStatistics();
+	printStatistics(NULL);
 }
 
-static void printStatistics()
+static inline void printFrames2(const char * name,
+	const struct Snapshot * snapshot, uint64_t frames,
+	bool hasLastFrames, uint64_t lastFrames)
 {
-	struct STAT_Statistics snapshot;
+	printf(" - %27" PRIu64 " [%3.0f%%] %s (%.02f /s", frames,
+		100. * frames / snapshot->frames, name,
+		(double)frames / snapshot->secs);
+	if (hasLastFrames && snapshot->delta) {
+		printf(", %.02f /s)\n",
+			(double)(frames - lastFrames) / snapshot->delta);
+	} else {
+		puts(")");
+	}
+}
 
-	time_t now = time(NULL);
+#define printFrames(name, snapshot, lastSnapshot, member) \
+	printFrames2((name), (snapshot), (snapshot)->stats.member, \
+		!!(lastSnapshot), (lastSnapshot) ? (lastSnapshot)->stats.member : 0)
+
+static inline void printSubFrames(uint32_t type,
+	const struct Snapshot * snapshot, const struct Snapshot * lastSnapshot)
+{
+	uint64_t n = snapshot->stats.ADSB_longType[type];
+	if (n) {
+		printf("   - %27" PRIu64 " [%3.0f%%] type %" PRIu32 " (%.02f /s",
+			n, 100. * snapshot->stats.ADSB_frameType[2] / n, type,
+			(double)n / snapshot->secs);
+		if (lastSnapshot && snapshot->delta) {
+			printf(", %.02f /s)\n",
+				(double)(n - lastSnapshot->stats.ADSB_longType[type]) /
+					snapshot->delta);
+		} else {
+			puts(")");
+		}
+	}
+}
+
+static void printStatistics(struct Snapshot * lastSnapshot)
+{
+	struct Snapshot snapshot;
+	struct STAT_Statistics * stats = &snapshot.stats;
+
+	snapshot.timestamp = time(NULL);
+
+	snapshot.delta = lastSnapshot ?
+		snapshot.timestamp - lastSnapshot->timestamp : 0;
 
 	BUF_fillStatistics();
-	memcpy(&snapshot, (void*)&STAT_stats, sizeof snapshot);
+	memcpy(&snapshot.stats, (void*)&STAT_stats, sizeof snapshot.stats);
 
-	uint32_t secs = now - start;
-	uint32_t d = secs / (24 * 3600);
-	uint32_t h = (secs / 3600) % 24;
-	uint32_t m = (secs / 60) % 60;
-	uint32_t s = secs % 60;
+	snapshot.secs = snapshot.timestamp - start;
+	uint32_t d = snapshot.secs / (24 * 3600);
+	uint32_t h = (snapshot.secs / 3600) % 24;
+	uint32_t m = (snapshot.secs / 60) % 60;
+	uint32_t s = snapshot.secs % 60;
 
 	puts("Statistics");
 	printf(" - started on %s", startstr);
@@ -70,82 +124,75 @@ static void printStatistics()
 	puts("");
 
 	puts(" Watchdog");
-	printf(" - %27" PRIu64 " events\n", snapshot.WD_events);
+	printf(" - %27" PRIu64 " events\n", stats->WD_events);
 	puts("");
 
 	puts(" ADSB");
-	printf(" - %27" PRIu64 " times out of sync\n", snapshot.ADSB_outOfSync);
-	uint64_t frames = snapshot.ADSB_frameType[0] +
-		snapshot.ADSB_frameType[1] + snapshot.ADSB_frameType[2] +
-		snapshot.ADSB_frameTypeUnknown + snapshot.ADSB_framesFiltered;
-	printf(" - %27" PRIu64 " frames received (%.02f per second)\n",
-		frames, (double)frames / secs);
-	printf(" - %27" PRIu64 " Mode-A/C frames (%.02f per second)\n",
-		snapshot.ADSB_frameType[0],
-		(double)snapshot.ADSB_frameType[0] / secs);
-	printf(" - %27" PRIu64 " Mode-S Short frames (%.02f per second)\n",
-		snapshot.ADSB_frameType[1],
-		(double)snapshot.ADSB_frameType[1] / secs);
-	printf(" - %27" PRIu64 " Mode-S Long frames (%.02f per second)\n",
-		snapshot.ADSB_frameType[2],
-		(double)snapshot.ADSB_frameType[2] / secs);
-	uint32_t i;
-	for (i = 0; i < 32; ++i) {
-		uint64_t n = snapshot.ADSB_longType[i];
-		if (n)
-			printf("   - %27" PRIu64 " frames of type %" PRIu32
-				" (%.02f /s)\n", n, i, (double)n / secs);
+	printf(" - %27" PRIu64 " times out of sync\n", stats->ADSB_outOfSync);
+	snapshot.frames = stats->ADSB_frameType[0] + stats->ADSB_frameType[1] +
+		stats->ADSB_frameType[2] + stats->ADSB_frameTypeUnknown;
+	printf(" - %27" PRIu64 " frames received (%.02f /s",
+		snapshot.frames, (double)snapshot.frames / snapshot.secs);
+	if (lastSnapshot) {
+		printf(", %.02f /s)\n",
+			(double)(snapshot.frames - lastSnapshot->frames) / snapshot.delta);
+	} else {
+		puts(")");
 	}
-	printf(" - %27" PRIu64 " status frames (%.02f per second)\n",
-		snapshot.ADSB_frameType[3],
-		(double)snapshot.ADSB_frameType[3] / secs);
-	printf(" - %27" PRIu64 " unknown frames (%.02f per second)\n",
-		snapshot.ADSB_frameTypeUnknown,
-		(double)snapshot.ADSB_frameTypeUnknown / secs);
-	printf(" - %27" PRIu64 " frames filtered (%.02f per second)\n",
-		snapshot.ADSB_framesFiltered,
-		(double)snapshot.ADSB_framesFiltered / secs);
-	printf(" - %27" PRIu64 " long frames filtered (%.02f per second)\n",
-		snapshot.ADSB_framesFilteredLong,
-		(double)snapshot.ADSB_framesFilteredLong / secs);
+	printFrames("Mode-A/C", &snapshot, lastSnapshot, ADSB_frameType[0]);
+	printFrames("Mode-S Short", &snapshot, lastSnapshot, ADSB_frameType[1]);
+	printFrames("Mode-S Long", &snapshot, lastSnapshot, ADSB_frameType[2]);
+	uint32_t i;
+	for (i = 0; i < 32; ++i)
+		printSubFrames(i, &snapshot, lastSnapshot);
+	printFrames("status", &snapshot, lastSnapshot, ADSB_frameType[3]);
+	printFrames("unknown", &snapshot, lastSnapshot, ADSB_frameTypeUnknown);
+	printFrames("filtered", &snapshot, lastSnapshot, ADSB_framesFiltered);
+	printFrames("long filtered", &snapshot, lastSnapshot,
+		ADSB_framesFilteredLong);
 	printf(" - %27" PRIu64 " unsynchronized frames\n",
-		snapshot.ADSB_framesUnsynchronized);
+		stats->ADSB_framesUnsynchronized);
 	puts("");
 
 	puts(" Buffer");
 	printf(" - %27" PRIu64 " queued messages (current)\n",
-		snapshot.BUF_queue);
+		stats->BUF_queue);
 	printf(" - %27" PRIu64 " queued messages (max)\n",
-		snapshot.BUF_maxQueue);
+		stats->BUF_maxQueue);
 	printf(" - %27" PRIu64 " discarded messages (overall)\n",
-		snapshot.BUF_sacrifices);
+		stats->BUF_sacrifices);
 	printf(" - %27" PRIu64 " discarded messages (in one overflow "
-		"situation)\n", snapshot.BUF_sacrificeMax);
+		"situation)\n", stats->BUF_sacrificeMax);
 	printf(" - %27" PRIu64 " frames in pool (Usage %.2f%%)\n",
-		snapshot.BUF_pool, (100. * snapshot.BUF_queue) /
-		(double)(snapshot.BUF_queue + snapshot.BUF_pool));
+		stats->BUF_pool, (100. * stats->BUF_queue) /
+		(double)(stats->BUF_queue + stats->BUF_pool));
 	printf(" - %27" PRIu64 " dynamic pools (current)\n",
-		snapshot.BUF_pools);
+		stats->BUF_pools);
 	printf(" - %27" PRIu64 " dynamic pools (overall)\n",
-		snapshot.BUF_poolsCreated);
+		stats->BUF_poolsCreated);
 	printf(" - %27" PRIu64 " dynamic pools (max)\n",
-		snapshot.BUF_maxPools);
-	printf(" - %27" PRIu64 " flushes\n", snapshot.BUF_flushes);
+		stats->BUF_maxPools);
+	printf(" - %27" PRIu64 " flushes\n", stats->BUF_flushes);
 	printf(" - %27" PRIu64 " uncollected dynamic pools\n",
-		snapshot.BUF_uncollects);
+		stats->BUF_uncollects);
 	printf(" - %27" PRIu64 " Garbage Collector runs\n",
-		snapshot.BUF_GCRuns);
+		stats->BUF_GCRuns);
 	puts("");
 
 	puts(" Network");
 	printf(" - %27" PRIu64 " successful connection attempts\n",
-		snapshot.NET_connectsSuccess);
+		stats->NET_connectsSuccess);
 	printf(" - %27" PRIu64 " unsuccessful connection attempts\n",
-		snapshot.NET_connectsFail);
+		stats->NET_connectsFail);
 	printf(" - %27" PRIu64 " frames sent successfully\n",
-		snapshot.NET_framesSent);
+		stats->NET_framesSent);
 	printf(" - %27" PRIu64 " frames sent unsuccessfully\n",
-		snapshot.NET_framesFailed);
+		stats->NET_framesFailed);
+	printf(" - %27" PRIu64 " frames received unsuccessfully\n",
+		stats->NET_recvFailed);
 	printf(" - %27" PRIu64 " keep alive messages\n",
-		snapshot.NET_keepAlives);
+		stats->NET_keepAlives);
+
+	if (lastSnapshot)
+		memcpy(lastSnapshot, &snapshot, sizeof snapshot);
 }
