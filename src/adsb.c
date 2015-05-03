@@ -185,17 +185,17 @@ void ADSB_main()
 {
 	while (true) {
 		/* connect with input */
-		if (INPUT_connect()) {
-			if (!config->configure || configure()) {
-				/* reset buffer */
-				cur = buf;
-				len = 0;
+		while (!INPUT_connect())
+			sleep(config->reconnectInterval);
 
-				receiveFrames();
-			}
-		}
+		/* configure input */
+		if (config->configure && !configure())
+			continue;
 
-		sleep(config->reconnectInterval);
+		/* reset buffer */
+		cur = buf;
+		len = 0;
+		receiveFrames();
 	}
 }
 
