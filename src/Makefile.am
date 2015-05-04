@@ -12,7 +12,7 @@ endif
 SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	adsb.c adsb.h buffer.h buffer.c network.h network.c cfgfile.h cfgfile.c \
 	statistics.h statistics.c tb.h tb.c proc.h proc.c \
-	input.h net_common.h net_common.c
+	input.h net_common.h net_common.c util.h util.c
 
 # extra sources
 openskyd_net_SOURCES = $(SOURCES) input_network.c

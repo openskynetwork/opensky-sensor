@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <cfgfile.h>
+#include <util.h>
 
 /** Pointers into the raw configuration file for option parsing */
 struct Option {
@@ -585,6 +586,9 @@ static void fix(struct CFG_Config * cfg)
 		fprintf(stderr, "Configuration warning: BUFFER.staticBacklog was "
 			"increased to 2\n");
 	}
+
+	if (!cfg->dev.serialSet)
+		cfg->dev.serialSet = UTIL_getSerial(&cfg->dev.serial);
 }
 
 /** Check configuration for sanity.
