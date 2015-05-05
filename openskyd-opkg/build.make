@@ -5,9 +5,10 @@ DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 help:
 	@echo Targets:
-	@echo ' build: extract and build daemon'
+	@echo ' build:   extract and build daemon'
 	@echo ' prepare: prepare package'
 	@echo ' package: build package'
+	@echo ' all:     do all'
 
 all: build prepare config package
 
