@@ -1,5 +1,5 @@
 pkgname=openskyd
-pkgver=0.6
+pkgver=0.7
 pkgrel=1
 pkgdesc="RadarCape Replacement Daemon for OpenSky network"
 url="http://www.opensky-network.org"
