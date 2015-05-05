@@ -11,8 +11,13 @@ endif
 # common sources of openskyd
 SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	adsb.c adsb.h buffer.h buffer.c network.h network.c cfgfile.h cfgfile.c \
-	statistics.h statistics.c tb.h tb.c proc.h proc.c \
+	statistics.h statistics.c tb.h tb.c \
 	input.h net_common.h net_common.c util.h util.c
+
+# sources for talkback
+if TALKBACK
+SOURCES += proc.h proc.c
+endif
 
 # extra sources
 openskyd_net_SOURCES = $(SOURCES) input_network.c
@@ -27,6 +32,11 @@ if DEVELOPMENT
 AM_CPPFLAGS = -DDEVELOPMENT
 else
 AM_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"' -DFWDIR='"$(libdir)"'
+endif
+
+# flags for talkback
+if TALKBACK
+AM_CPPFLAGS += -DTALKBACK
 endif
 
 # Network needs another flag. Do this also with openskyd-uart, so object files

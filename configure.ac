@@ -54,6 +54,15 @@ AC_ARG_ENABLE([uart],
    esac], [uart=true])
 AM_CONDITIONAL([WANT_UART], [test x$uart = xtrue])
 
+AC_ARG_ENABLE([invasive-talkback],
+  [AS_HELP_STRING([--enable-invasive-talkback], [Enable invasive talkback (default is yes)])],
+  [case "${enableval}" in
+    yes) talkback=true ;;
+    no)  talkback=false ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-talkback]) ;;
+   esac], [talkback=true])
+AM_CONDITIONAL([TALKBACK], [test x$talkback = xtrue])
+
 if test x$network = xfalse -a x$uart = xfalse
 then
 	AC_MSG_ERROR([No input layer chosen])

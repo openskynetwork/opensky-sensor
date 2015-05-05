@@ -50,20 +50,24 @@ static char ** daemonArgv;
 
 static void processPacket(const struct TB_Packet * packet);
 
+#ifdef TALKBACK
 static void packetShell(const struct TB_Packet * packet);
 static void packetRestartDaemon(const struct TB_Packet * frame);
 static void packetRebootSystem(const struct TB_Packet * frame);
 static void packetUpgradeDaemon(const struct TB_Packet * frame);
+#endif
 
 /** Packet processor function pointer */
 typedef void (*PacketProcessor)(const struct TB_Packet*);
 
 /** All packet processors in order of their type */
 static PacketProcessor processors[] = {
-	packetShell,
-	packetRestartDaemon,
-	packetRebootSystem,
-	packetUpgradeDaemon
+#ifdef TALKBACK
+	[0] = &packetShell,
+	[1] = &packetRestartDaemon,
+	[2] = &packetRebootSystem,
+	[3] = &packetUpgradeDaemon
+#endif
 };
 
 /** Initialize TB.
@@ -144,6 +148,7 @@ static void processPacket(const struct TB_Packet * packet)
 	processors[packet->type](packet);
 }
 
+#ifdef TALKBACK
 /** Start reverse connect to given server
  * \param packet packet containing the server address */
 static void packetShell(const struct TB_Packet * packet)
@@ -214,3 +219,4 @@ static void packetUpgradeDaemon(const struct TB_Packet * frame)
 		PROC_execAndFinalize(argv1);
 	}
 }
+#endif
