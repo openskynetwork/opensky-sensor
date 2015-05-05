@@ -5,6 +5,8 @@ After=network.target adsb.service
 [Service]
 Type=simple
 ExecStart=/usr/bin/openskyd-net
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
