@@ -4,7 +4,7 @@ Description: OpenSky Daemon for client mode
 Section: openskyd
 Priority: optional
 Maintainer: Sero Systems
-Architecture: all
+Architecture: armv7a-vfp-neon
 Homepage: http://opensky-network.org
 Source: http://opensky-network.org
 Depends: radarcaped
