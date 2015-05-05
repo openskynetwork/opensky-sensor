@@ -1,0 +1,5 @@
+echo "Starting openskyd service"
+
+systemctl enable openskyd.service
+systemctl start openskyd.service
+

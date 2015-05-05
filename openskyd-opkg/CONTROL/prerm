@@ -1,0 +1,9 @@
+echo "Stopping opensky daemon"
+
+if [ -e /lib/systemd/system/openskyd.service ]; then
+  systemctl is-enabled openskyd.service
+  if [ 0 = $? ]; then
+    systemctl stop openskyd.service
+    systemctl disable openskyd.service
+  fi
+fi

@@ -1,0 +1,11 @@
+[Unit]
+Description=OpenSky Daemon
+After=network.target adsb.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/openskyd-net
+
+[Install]
+WantedBy=multi-user.target
+

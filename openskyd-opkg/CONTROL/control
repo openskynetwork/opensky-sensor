@@ -1,0 +1,10 @@
+Package: openskyd-net
+Version: 0.6
+Description: OpenSky Daemon for client mode
+Section: openskyd
+Priority: optional
+Maintainer: Sero Systems
+Architecture: all
+Homepage: http://opensky-network.org
+Source: http://opensky-network.org
+Depends: radarcaped
