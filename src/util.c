@@ -5,6 +5,7 @@
 #include <netdb.h>
 #include <linux/if_arp.h>
 #include <string.h>
+#include <endian.h>
 
 bool UTIL_getSerial(uint32_t * serial)
 {
@@ -21,7 +22,10 @@ bool UTIL_getSerial(uint32_t * serial)
 	if (ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER)
 		return false;
 
-	memcpy(serial, ((uint8_t*)ifr.ifr_hwaddr.sa_data) + 2, sizeof *serial);
+	uint32_t serial_be;
+	memcpy(&serial_be, ((uint8_t*)ifr.ifr_hwaddr.sa_data) + 2,
+		sizeof serial_be);
+	*serial = be32toh(serial_be);
 
 	return true;
 }
