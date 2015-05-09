@@ -1,5 +1,5 @@
 dnl initialize autoconf
-AC_INIT(openskyd, 0.7)
+AC_INIT(openskyd, 0.7.1)
 
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR(config)
@@ -12,7 +12,7 @@ AC_CONFIG_HEADERS(config.h)
 AM_MAINTAINER_MODE
 
 dnl set some global variables here
-VERSION=0.7
+VERSION=0.7.1
 AC_SUBST(VERSION) dnl this exports version as a AC macro
 
 dnl required programs

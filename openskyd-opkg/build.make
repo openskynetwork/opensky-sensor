@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=0.7
+VERSION=0.7.1
 DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 help:
@@ -34,4 +34,7 @@ config:
 
 package:
 	sh opkg-build -O pkg
+
+clean:
+	-rm -rf pkg openskyd-$(VERSION) openskyd-net_$(VERSION)_armv7a-vfp-neon.opk
 
