@@ -54,6 +54,15 @@ AC_ARG_ENABLE([uart],
    esac], [uart=true])
 AM_CONDITIONAL([WANT_UART], [test x$uart = xtrue])
 
+AC_ARG_ENABLE([wd],
+  [AS_HELP_STRING([--enable-wd], [Build Watchdog Daemon (default is no)])],
+  [case "${enableval}" in
+    yes) wd=true ;;
+    no)  wd=false ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-wd]) ;;
+   esac], [wd=false])
+AM_CONDITIONAL([WANT_WD], [test x$wd = xtrue])
+
 AC_ARG_ENABLE([invasive-talkback],
   [AS_HELP_STRING([--enable-invasive-talkback], [Enable invasive talkback (default is yes)])],
   [case "${enableval}" in

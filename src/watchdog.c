@@ -25,7 +25,9 @@ void WATCHDOG_main()
 	while (1) {
 		GPIO_set(WD_GPIO);
 		GPIO_clear(WD_GPIO);
+#ifndef WD_ONLY
 		++STAT_stats.WD_events;
+#endif
 		sleep(WD_REPEAT);
 	}
 }
