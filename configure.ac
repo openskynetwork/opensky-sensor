@@ -72,7 +72,7 @@ AC_ARG_ENABLE([invasive-talkback],
    esac], [talkback=true])
 AM_CONDITIONAL([TALKBACK], [test x$talkback = xtrue])
 
-if test x$network = xfalse -a x$uart = xfalse
+if test x$network = xfalse -a x$uart = xfalse -a x$wd = xfalse
 then
 	AC_MSG_ERROR([No input layer chosen])
 fi
