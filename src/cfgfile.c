@@ -587,8 +587,15 @@ static void fix(struct CFG_Config * cfg)
 			"increased to 2\n");
 	}
 
-	if (!cfg->dev.serialSet)
+	if (cfg->dev.serialSet) {
+		if (cfg->dev.serial & 0x80000000) {
+			cfg->dev.serial &= 0x7fffffff;
+			fprintf(stderr, "Configuration warning: DEVICE.serial was "
+				"truncated to 31 bits, it's %" PRIu32 " now", cfg->dev.serial);
+		}
+	} else {
 		cfg->dev.serialSet = UTIL_getSerial(&cfg->dev.serial);
+	}
 }
 
 /** Check configuration for sanity.
