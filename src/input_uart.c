@@ -54,12 +54,12 @@ bool INPUT_connect()
 
 	t.c_iflag = IGNPAR;
 	t.c_oflag = ONLCR;
-	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3000000;
+	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3500000;
 	if (config->rts)
 		t.c_cflag |= CRTSCTS;
 	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
-	t.c_ispeed = B3000000;
-	t.c_ospeed = B3000000;
+	t.c_ispeed = B3500000;
+	t.c_ospeed = B3500000;
 
 	if (tcsetattr(fd, TCSANOW, &t)) {
 		error(0, errno, "INPUT: tcsetattr failed");
