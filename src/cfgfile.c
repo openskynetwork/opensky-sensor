@@ -587,6 +587,13 @@ static void fix(struct CFG_Config * cfg)
 			"increased to 2\n");
 	}
 
+	if (cfg->buf.gcEnabled && !cfg->buf.history) {
+		cfg->buf.gcEnabled = false;
+		fprintf(stderr, "Configuration warning: ignoring BUFFER.gcEnabled "
+			"because BUFFER.history is not enabled");
+
+	}
+
 	if (cfg->dev.serialSet) {
 		if (cfg->dev.serial & 0x80000000) {
 			cfg->dev.serial &= 0x7fffffff;

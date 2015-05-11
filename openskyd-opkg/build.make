@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=0.7.2
+VERSION=0.7.3
 DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 help:
