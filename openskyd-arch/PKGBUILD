@@ -23,7 +23,8 @@ build() {
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd \
     --disable-network --disable-invasive-talkback
   make
-  dtc -O dts -b 0 -@ ${srcdir}/BB-W-Radarcape.dts -o ${srcdir}/BB-W-Radarcape-00A0.dtbo
+  cd "${srcdir}"
+  dtc -O dtb -o BB-W-Radarcape-00A0.dtbo -b 0 -@ BB-W-Radarcape.dts
 }
 
 package() {
