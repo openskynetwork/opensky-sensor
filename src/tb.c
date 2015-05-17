@@ -218,8 +218,11 @@ static void packetUpgradeDaemon(const struct TB_Packet * frame)
 	if (!PROC_execAndReturn(argv)) {
 		printf("TB: upgrade failed\n");
 	} else {
-		char *argv1[] = { "/bin/systemctl", "restart", "openskyd", NULL };
-		PROC_execAndFinalize(argv1);
+		char *argv1[] = { "/bin/systemctl", "daemon-reload", NULL };
+		PROC_execAndReturn(argv1);
+
+		char *argv2[] = { "/bin/systemctl", "restart", "openskyd", NULL };
+		PROC_execAndFinalize(argv2);
 	}
 }
 #endif
