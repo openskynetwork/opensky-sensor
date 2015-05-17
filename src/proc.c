@@ -73,6 +73,19 @@ void PROC_execRaw(char * argv[])
 		error(0, errno, "TB: exec failed");
 }
 
+/** Escape the cgroup, so systemd won't kill us when stopping the daemon */
+static void escape_cgroup()
+{
+	pid_t pid = getpid();
+	FILE * f = fopen("/sys/fs/cgroup/systemd/tasks", "a");
+	if (!f) {
+		error(0, errno, "Could not open cgroup/tasks for appending");
+		return;
+	}
+	fprintf(f, "%u\n", (unsigned int)pid);
+	fclose(f);
+}
+
 /** Fork parent process, daemonize child and execute.
  * \param argv argument vector
  */
@@ -83,8 +96,10 @@ void PROC_forkAndExec(char * argv[])
 	/* daemonize and chdir to root */
 	if (daemon(0, 1) < 0)
 		error(0, errno, "PROC: daemon failed");
-	else
+	else {
+		escape_cgroup();
 		PROC_execAndFinalize(argv);
+	}
 }
 
 /** Execute a command and return.
