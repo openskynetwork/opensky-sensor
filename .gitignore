@@ -19,4 +19,8 @@ src/openskyd
 build/
 .settings/language.settings.xml
 *.tar.gz
+*.tar.xz
+*.opk
+*.rbf
+*~
 *.bck
