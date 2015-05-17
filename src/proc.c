@@ -21,7 +21,7 @@ static void printCmdLine(char * argv[])
 {
 	char * const * arg;
 
-	printf("PROC: Exec ");
+	printf("PROC: Executing ");
 
 	for (arg = argv; *arg; ++arg)
 		printf("%s%c", *arg, arg[1] ? ' ' : '\n');
@@ -48,8 +48,6 @@ bool PROC_fork()
  */
 void PROC_execAndFinalize(char * argv[])
 {
-	printCmdLine(argv);
-
 	close(STDIN_FILENO);
 	/*close(STDOUT_FILENO);
 	close(STDERR_FILENO);*/
@@ -103,5 +101,5 @@ bool PROC_execAndReturn(char * argv[])
 
 	int status;
 	waitpid(pid, &status, 0);
-	return WIFEXITED(status);
+	return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 }
