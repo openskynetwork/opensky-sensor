@@ -51,11 +51,11 @@ void PROC_execAndFinalize(char * argv[])
 	printCmdLine(argv);
 
 	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
+	/*close(STDOUT_FILENO);
+	close(STDERR_FILENO);*/
 	openat(STDIN_FILENO, "/dev/null", O_RDONLY);
-	openat(STDOUT_FILENO, "/tmp/log", O_WRONLY | O_CREAT | O_APPEND, 0600);
-	dup2(STDOUT_FILENO, STDERR_FILENO);
+	/*openat(STDOUT_FILENO, "/tmp/log", O_WRONLY | O_CREAT | O_APPEND, 0600);
+	dup2(STDOUT_FILENO, STDERR_FILENO);*/
 
 	(void)umask(~0755);
 
