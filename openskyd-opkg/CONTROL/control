@@ -1,5 +1,5 @@
 Package: openskyd-net
-Version: 0.7.4
+Version: 0.7.5
 Description: OpenSky Daemon for client mode
 Section: openskyd
 Priority: optional
