@@ -1,27 +1,29 @@
+# Maintainer: Markus Engel <m_engel at cs dot uni-kl dot de>
 pkgname=openskyd
-pkgver=0.7.3
+pkgver=0.7.4
 pkgrel=1
 pkgdesc="RadarCape Replacement Daemon for OpenSky network"
 url="http://www.opensky-network.org"
 arch=('armv7h')
 license=('GPL3')
-depends=(gcc-libs)
+depends=(gcc-libs bash rcc)
 makedepends=(gcc binutils make dtc-git-patched)
 conflicts=()
 replaces=()
 backup=(etc/openskyd.conf)
 install=${pkgname}.install
-source=("${pkgname}-${pkgver}.tar.gz" "${pkgname}.service" "${pkgname}-start.sh" "${pkgname}.rbf" "BB-W-Radarcape.dts")
+source=("${pkgname}-${pkgver}.tar.gz" "${pkgname}.service" \
+	"${pkgname}-start.sh" "${pkgname}.rbf" "BB-W-Radarcape.dts")
 md5sums=('SKIP'
          'e196ebef4681cd476987b127f21b346b'
          '2832b4440ffa4e305df45adf3c71c4bc'
          'f6453aa6ec4188c739ec8c6ecc5bef55'
-	 '3575e02f6fce4fbe461c2064f2931f92')
+         '3575e02f6fce4fbe461c2064f2931f92')
 
 build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd \
-    --disable-network --disable-invasive-talkback
+    --disable-network --enable-invasive-talkback
   make
   cd "${srcdir}"
   dtc -O dtb -o BB-W-Radarcape-00A0.dtbo -b 0 -@ BB-W-Radarcape.dts
