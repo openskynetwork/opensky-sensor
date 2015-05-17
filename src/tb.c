@@ -216,7 +216,7 @@ static void packetUpgradeDaemon(const struct TB_Packet * frame)
 	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "-Sy", "openskyd",
 		NULL };
 	if (!PROC_execAndReturn(argv)) {
-		printf("TB: upgrade failed");
+		printf("TB: upgrade failed\n");
 	} else {
 		char *argv1[] = { "/bin/systemctl", "restart", "openskyd", NULL };
 		PROC_execAndFinalize(argv1);
