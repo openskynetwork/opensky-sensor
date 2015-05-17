@@ -77,6 +77,13 @@ then
 	AC_MSG_ERROR([No input layer chosen])
 fi
 
+if test x$development = xtrue; then
+AC_DEFINE([DEVELOPMENT], [], [Enable development features])
+fi
+
+if test x$talkback = xtrue; then
+AC_DEFINE([TALKBACK], [], [Enable talkback component])
+fi
 
 dnl output directive
 AC_OUTPUT(Makefile src/Makefile)

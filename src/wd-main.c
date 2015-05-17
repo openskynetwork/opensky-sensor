@@ -1,4 +1,6 @@
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <gpio.h>
 #include <watchdog.h>
 #include <stdlib.h>

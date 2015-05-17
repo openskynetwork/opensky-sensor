@@ -1,4 +1,6 @@
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <gpio.h>
 #include <fpga.h>
 #include <sys/types.h>

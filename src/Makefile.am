@@ -34,15 +34,8 @@ openskyd_uart_LIBS = @PTHREAD_LIBS@
 AM_CFLAGS = @PTHREAD_CFLAGS@
 
 # flags for development
-if DEVELOPMENT
-AM_CPPFLAGS = -DDEVELOPMENT
-else
+if !DEVELOPMENT
 AM_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"' -DFWDIR='"$(libdir)"'
-endif
-
-# flags for talkback
-if TALKBACK
-AM_CPPFLAGS += -DTALKBACK
 endif
 
 # Network needs another flag. Do this also with openskyd-uart, so object files

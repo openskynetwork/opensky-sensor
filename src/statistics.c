@@ -1,4 +1,6 @@
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <statistics.h>
 #include <stdbool.h>
 #include <inttypes.h>

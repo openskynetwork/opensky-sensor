@@ -1,4 +1,6 @@
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
