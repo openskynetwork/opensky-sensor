@@ -224,8 +224,8 @@ static void packetUpgradeDaemon(const struct TB_Packet * frame)
 	if (!PROC_fork())
 		return; /* parent: return immediately */
 
-	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "-Sy", "openskyd",
-		"rcc", NULL };
+	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "--needed", "-Sy",
+		"openskyd", "rcc", NULL };
 	if (!PROC_execAndReturn(argv)) {
 		printf("TB: upgrade failed\n");
 	} else {
