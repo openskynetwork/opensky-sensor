@@ -1,6 +1,6 @@
 # Maintainer: Markus Engel <m_engel at cs dot uni-kl dot de>
 pkgname=openskyd
-pkgver=0.7.7
+pkgver=0.7.8
 pkgrel=1
 pkgdesc="RadarCape Replacement Daemon for OpenSky network"
 url="http://www.opensky-network.org"
@@ -24,7 +24,7 @@ md5sums=('SKIP'
 build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd \
-    --disable-network --enable-invasive-talkback
+    --disable-network --enable-talkback --with-systemd --with-pacman
   make
   cd "${srcdir}"
   dtc -O dtb -o BB-W-Radarcape-00A0.dtbo -b 0 -@ BB-W-Radarcape.dts

@@ -56,8 +56,12 @@ static void processPacket(const struct TB_Packet * packet);
 #ifdef TALKBACK
 static void packetShell(const struct TB_Packet * packet);
 static void packetRestartDaemon(const struct TB_Packet * frame);
+#ifdef WITH_SYSTEMD
 static void packetRebootSystem(const struct TB_Packet * frame);
+#endif
+#ifdef WITH_PACMAN
 static void packetUpgradeDaemon(const struct TB_Packet * frame);
+#endif
 #endif
 
 /** Packet processor function pointer */
@@ -68,8 +72,12 @@ static PacketProcessor processors[] = {
 #ifdef TALKBACK
 	[0] = &packetShell,
 	[1] = &packetRestartDaemon,
+#ifdef WITH_SYSTEMD
 	[2] = &packetRebootSystem,
-	[3] = &packetUpgradeDaemon
+#endif
+#ifdef WITH_PACMAN
+	[3] = &packetUpgradeDaemon,
+#endif
 #endif
 };
 
@@ -198,14 +206,17 @@ static void packetRestartDaemon(const struct TB_Packet * frame)
 	PROC_execRaw(daemonArgv);
 }
 
+#ifdef WITH_SYSTEMD
 /** Reboot system using systemd.
  * \param packet packet */
 static void packetRebootSystem(const struct TB_Packet * frame)
 {
-	char *argv[] = { "/bin/systemctl", "reboot", NULL };
+	char *argv[] = { WITH_SYSTEMD "/systemctl", "reboot", NULL };
 	PROC_forkAndExec(argv); /* returns while executing in the background */
 }
+#endif
 
+#ifdef WITH_PACMAN
 /** Upgrade daemon using pacman and restart daemon using systemd.
  * \param packet packet */
 static void packetUpgradeDaemon(const struct TB_Packet * frame)
@@ -225,4 +236,5 @@ static void packetUpgradeDaemon(const struct TB_Packet * frame)
 		PROC_execAndFinalize(argv2);
 	}
 }
+#endif
 #endif

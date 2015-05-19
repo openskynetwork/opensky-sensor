@@ -74,8 +74,9 @@ void PROC_execRaw(char * argv[])
 }
 
 /** Escape the cgroup, so systemd won't kill us when stopping the daemon */
-static void escape_cgroup()
+static inline void escape_cgroup()
 {
+#ifdef WITH_SYSTEMD
 	pid_t pid = getpid();
 	FILE * f = fopen("/sys/fs/cgroup/systemd/tasks", "a");
 	if (!f) {
@@ -84,6 +85,7 @@ static void escape_cgroup()
 	}
 	fprintf(f, "%u\n", (unsigned int)pid);
 	fclose(f);
+#endif
 }
 
 /** Fork parent process, daemonize child and execute.
