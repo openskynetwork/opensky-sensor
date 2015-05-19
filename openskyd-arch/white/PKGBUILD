@@ -1,5 +1,6 @@
 # Maintainer: Markus Engel <m_engel at cs dot uni-kl dot de>
-pkgname=openskyd
+pkgname=openskyd-w
+_srcname=openskyd
 pkgver=0.7.8
 pkgrel=1
 pkgdesc="RadarCape Replacement Daemon for OpenSky network"
@@ -7,14 +8,15 @@ url="http://www.opensky-network.org"
 arch=('armv7h')
 license=('GPL3')
 depends=(gcc-libs bash)
-makedepends=(gcc binutils make dtc-git-patched)
+makedepends=(gcc binutils make dtc-git-patched pkg-config)
 optdepends=(rcc)
-conflicts=()
-replaces=()
+conflicts=(openskyd openskyd-b)
+provides=(openskyd)
+replaces=(openskyd)
 backup=(etc/openskyd.conf)
-install=${pkgname}.install
-source=("${pkgname}-${pkgver}.tar.gz" "${pkgname}.service" \
-	"${pkgname}-start.sh" "${pkgname}.rbf" "BB-W-Radarcape.dts")
+install=${_srcname}.install
+source=("${_srcname}-${pkgver}.tar.gz" "${_srcname}.service" \
+	"${_srcname}-start.sh" "${_srcname}.rbf" "BB-W-Radarcape.dts")
 md5sums=('SKIP'
          'e196ebef4681cd476987b127f21b346b'
          '2832b4440ffa4e305df45adf3c71c4bc'
@@ -22,7 +24,7 @@ md5sums=('SKIP'
          'ee20625a0e3af1e8d002e040e4e1c37f')
 
 build() {
-  cd "${srcdir}/${pkgname}-${pkgver}"
+  cd "${srcdir}/${_srcname}-${pkgver}"
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd \
     --disable-network --enable-talkback --with-systemd --with-pacman
   make
@@ -31,12 +33,12 @@ build() {
 }
 
 package() {
-  cd "${srcdir}/${pkgname}-${pkgver}"
+  cd "${srcdir}/${_srcname}-${pkgver}"
   make DESTDIR="${pkgdir}" install
   mv "${pkgdir}/usr/bin/openskyd-uart" "${pkgdir}/usr/bin/openskyd"
-  install -Dm644 "${srcdir}/${pkgname}.service" "${pkgdir}/usr/lib/systemd/system/${pkgname}.service"
-  install -Dm755 "${srcdir}/${pkgname}-start.sh" "${pkgdir}/usr/bin/${pkgname}-start.sh"
-  install -Dm644 "${srcdir}/${pkgname}.rbf" "${pkgdir}/usr/lib/openskyd/${pkgname}.rbf"
+  install -Dm644 "${srcdir}/${_srcname}.service" "${pkgdir}/usr/lib/systemd/system/${_srcname}.service"
+  install -Dm755 "${srcdir}/${_srcname}-start.sh" "${pkgdir}/usr/bin/${_srcname}-start.sh"
+  install -Dm644 "${srcdir}/${_srcname}.rbf" "${pkgdir}/usr/lib/openskyd/${_srcname}.rbf"
   install -Dm644 "${srcdir}/BB-W-Radarcape-00A0.dtbo" "${pkgdir}/usr/lib/firmware/BB-W-Radarcape-00A0.dtbo"
 }
 
