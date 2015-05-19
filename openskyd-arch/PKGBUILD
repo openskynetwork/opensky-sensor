@@ -19,7 +19,7 @@ md5sums=('SKIP'
          'e196ebef4681cd476987b127f21b346b'
          '2832b4440ffa4e305df45adf3c71c4bc'
          'f6453aa6ec4188c739ec8c6ecc5bef55'
-         '3575e02f6fce4fbe461c2064f2931f92')
+         'ee20625a0e3af1e8d002e040e4e1c37f')
 
 build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
