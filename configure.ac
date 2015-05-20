@@ -68,6 +68,16 @@ AC_ARG_ENABLE([talkback],
    esac], [talkback=true])
 AM_CONDITIONAL([TALKBACK], [test x$talkback = xtrue])
 
+AC_ARG_ENABLE([bb-black],
+  [AS_HELP_STRING([--enable-bb-black], [Build openskyd for BeagleBone Black @<:@no@:>@])],
+  [case "${enableval}" in
+    yes) bbblack=yes ;;
+    no)  bbblack=no ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-bb-black]) ;;
+   esac], [bbblack=no])
+AS_IF([test x"$bbblack" = x"yes"],
+  [AC_DEFINE([BEAGLEBONE_BLACK], [1], [Build for BeagleBone Black])])
+
 AC_ARG_WITH([systemd],
   [AS_HELP_STRING([--with-systemd], [Compile with systemd integration @<:@check@:>@])],
   [:],[with_systemd=check])
