@@ -22,17 +22,29 @@
 #define FWDIR "."
 #endif
 
+#ifdef BEAGLEBONE_BLACK
 /** GPIO number for CONF_DONE pin of FPGA */
-#define FPGA_CONFD (32 + 6)
+#define FPGA_CONFD (45)
 /** GPIO number for DCLK pin of FPGA */
-#define FPGA_DCLK (32 + 7)
+#define FPGA_DCLK (47)
 /** GPIO number for nSTATUS pin of FPGA */
-#define FPGA_NSTAT (32 + 2)
+#define FPGA_NSTAT (46)
 /** GPIO number for DATA0 pin of FPGA */
-#define FPGA_DATA0 (32 + 12)
+#define FPGA_DATA0 (44)
 /** GPIO number for nCONFIG pin of FPGA */
-#define FPGA_NCONF (32 + 5)
-
+#define FPGA_NCONF (61)
+#else
+/** GPIO number for CONF_DONE pin of FPGA */
+#define FPGA_CONFD (38)
+/** GPIO number for DCLK pin of FPGA */
+#define FPGA_DCLK (39)
+/** GPIO number for nSTATUS pin of FPGA */
+#define FPGA_NSTAT (34)
+/** GPIO number for DATA0 pin of FPGA */
+#define FPGA_DATA0 (44)
+/** GPIO number for nCONFIG pin of FPGA */
+#define FPGA_NCONF (37)
+#endif
 /** Initialize FPGA configuration.
  * \note: GPIO_init() must be called prior to that function!
  */
