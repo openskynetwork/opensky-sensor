@@ -77,11 +77,14 @@ void NET_main()
 			pthread_mutex_unlock(&mutex);
 			sleep(config->reconnectInterval); /* retry in case of failure */
 			pthread_mutex_lock(&mutex);
+			++STAT_stats.NET_connectsFail;
 		}
 
 		/* connection established */
-		if (!sendSerial())
+		if (!sendSerial()) {
+			++STAT_stats.NET_connectsFail;
 			continue;
+		}
 
 		/* signalize sender / receiver */
 		connected = true;
@@ -89,6 +92,8 @@ void NET_main()
 		reconnectedSend = true;
 		reconnect = false;
 		pthread_cond_broadcast(&condConnected);
+
+		++STAT_stats.NET_connectsSuccess;
 
 		/* wait for failure */
 		while (!reconnect)
