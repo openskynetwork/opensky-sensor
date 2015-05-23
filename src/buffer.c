@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <statistics.h>
+#include <cfgfile.h>
 
 /** Define to 1 to enable debugging messages */
 #define BUF_DEBUG 1
@@ -74,9 +75,6 @@ static struct FrameLink * newFrame = NULL;
 /** Currently processed frame (by reader), for debugging purposes */
 static struct FrameLink * currentFrame = NULL;
 
-/** Buffer configuration */
-static const struct CFG_BUF * config;
-
 /** Mutex */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Reader condition (for listOut) */
@@ -100,13 +98,12 @@ static inline void clear(volatile struct FrameList * list);
 /** Initialize frame buffer.
  * \param cfg pointer to buffer configuration, see cfgfile.h
  */
-void BUF_init(const struct CFG_BUF * cfg)
+void BUF_init()
 {
-	config = cfg;
+	dynMaxIncrements = CFG_config.buf.history ?
+		CFG_config.buf.dynIncrement : 0;
 
-	dynMaxIncrements = cfg->history ? cfg->dynIncrement : 0;
-
-	if (!deployPool(&staticPool, cfg->statBacklog))
+	if (!deployPool(&staticPool, CFG_config.buf.statBacklog))
 		error(-1, errno, "malloc failed");
 }
 
@@ -115,10 +112,11 @@ void BUF_init(const struct CFG_BUF * cfg)
 void BUF_main()
 {
 	while (true) {
-		sleep(config->gcInterval);
+		sleep(CFG_config.buf.gcInterval);
 		pthread_mutex_lock(&mutex);
 		if (queue.size <
-			(dynIncrements * config->dynBacklog) / config->gcLevel) {
+			(dynIncrements * CFG_config.buf.dynBacklog) /
+				CFG_config.buf.gcLevel) {
 			++STAT_stats.BUF_GCRuns;
 #ifdef BUF_DEBUG
 			puts("BUF: Running Garbage Collector");
@@ -378,7 +376,7 @@ static bool createDynPool()
 		return false;
 
 	/* deployment */
-	if (!deployPool(newPool, config->dynBacklog)) {
+	if (!deployPool(newPool, CFG_config.buf.dynBacklog)) {
 		free(newPool);
 		return false;
 	}

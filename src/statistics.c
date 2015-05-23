@@ -10,6 +10,7 @@
 #include <time.h>
 #include <buffer.h>
 #include <signal.h>
+#include <cfgfile.h>
 
 volatile struct STAT_Statistics STAT_stats;
 
@@ -21,8 +22,6 @@ struct Snapshot {
 	uint64_t frames;
 };
 
-const const struct CFG_STATS * config;
-
 static time_t start;
 static char startstr[26];
 
@@ -32,14 +31,12 @@ static void printStatistics(struct Snapshot * lastSnapshot);
 /** Initialize statistics.
  * \param cfg pointer to buffer configuration, see cfgfile.h
  */
-void STAT_init(const struct CFG_STATS * cfg)
+void STAT_init()
 {
 	start = time(NULL);
 	ctime_r(&start, startstr);
 
 	memset((void*)&STAT_stats, 0, sizeof STAT_stats);
-
-	config = cfg;
 
 	signal(SIGUSR1, &sigStats);
 }
@@ -52,7 +49,7 @@ void STAT_main()
 	snapshot.timestamp = time(NULL);
 
 	while (true) {
-		sleep(config->interval);
+		sleep(CFG_config.stats.interval);
 
 		printStatistics(&snapshot);
 	}

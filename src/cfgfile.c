@@ -19,6 +19,8 @@
 #include <cfgfile.h>
 #include <util.h>
 
+struct CFG_Config CFG_config;
+
 /** Pointers into the raw configuration file for option parsing */
 struct Option {
 	/** Length of the Key */
@@ -98,10 +100,10 @@ static const struct Section sections[] = {
  * \param file configuration file name to be read
  * \param cfg configuration structure to be filled
  */
-void CFG_read(const char * file, struct CFG_Config * cfg)
+void CFG_read(const char * file)
 {
 	/* load default values */
-	loadDefaults(cfg);
+	loadDefaults(&CFG_config);
 
 	/* open input file */
 	int fd = open(file, O_RDONLY | O_CLOEXEC);
@@ -123,17 +125,17 @@ void CFG_read(const char * file, struct CFG_Config * cfg)
 	}
 
 	/* actually read configuration */
-	readCfg(cfgStr, st.st_size, cfg);
+	readCfg(cfgStr, st.st_size, &CFG_config);
 
 	/* unmap and close file */
 	munmap(cfgStr, st.st_size);
 	close(fd);
 
 	/* fix configuration */
-	fix(cfg);
+	fix(&CFG_config);
 
 	/* check configuration */
-	check(cfg);
+	check(&CFG_config);
 }
 
 /** Checks two strings for equality (neglecting the case) where one string is

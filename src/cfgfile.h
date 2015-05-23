@@ -77,7 +77,9 @@ struct CFG_Config {
 	struct CFG_STATS stats;
 };
 
-void CFG_read(const char * file, struct CFG_Config * cfg);
+extern struct CFG_Config CFG_config;
+
+void CFG_read(const char * file);
 
 
 #endif

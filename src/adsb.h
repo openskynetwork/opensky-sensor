@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <cfgfile.h>
 
 enum ADSB_FRAME_TYPE {
 	ADSB_FRAME_TYPE_NONE = 0,
@@ -43,7 +42,7 @@ struct ADSB_Header {
 	int8_t siglevel;
 };
 
-void ADSB_init(const struct CFG_ADSB * cfg);
+void ADSB_init();
 void ADSB_main();
 
 void ADSB_setFilter(enum ADSB_FRAME_TYPE frameType);

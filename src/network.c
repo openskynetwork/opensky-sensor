@@ -14,6 +14,7 @@
 #include <endian.h>
 #include <statistics.h>
 #include <pthread.h>
+#include <cfgfile.h>
 
 #define DEBUG
 
@@ -40,11 +41,6 @@ static pthread_cond_t condConnected = PTHREAD_COND_INITIALIZER;
 /** Condition for reconnect flag */
 static pthread_cond_t condReconnect = PTHREAD_COND_INITIALIZER;
 
-/** network configuration */
-static const struct CFG_NET * config;
-/** serial number */
-static uint32_t serialNumber;
-
 static inline void emitDisconnect();
 static bool doConnect();
 static bool sendSerial();
@@ -54,10 +50,8 @@ static inline bool sendData(const void * data, size_t len);
  * \param cfg pointer to buffer configuration, see cfgfile.h
  * \param serial serial number of device
  */
-void NET_init(const struct CFG_NET * cfg, uint32_t serial)
+void NET_init()
 {
-	config = cfg;
-	serialNumber = serial;
 }
 
 /** Mainloop for network: (re)established network connection on failure */
@@ -74,8 +68,9 @@ void NET_main()
 	while (true) {
 		/* connect to the server */
 		while (!doConnect()) {
+			/* retry in case of failure */
 			pthread_mutex_unlock(&mutex);
-			sleep(config->reconnectInterval); /* retry in case of failure */
+			sleep(CFG_config.net.reconnectInterval);
 			pthread_mutex_lock(&mutex);
 			++STAT_stats.NET_connectsFail;
 		}
@@ -113,7 +108,7 @@ static bool doConnect()
 		sock = -1;
 	}
 
-	sock = NETC_connect("NET", config->host, config->port);
+	sock = NETC_connect("NET", CFG_config.net.host, CFG_config.net.port);
 	return sock != -1;
 }
 
@@ -239,7 +234,7 @@ static bool sendSerial()
 		uint8_t ca[4];
 		uint32_t serial;
 	} serial;
-	serial.serial = htobe32(serialNumber);
+	serial.serial = htobe32(CFG_config.dev.serial);
 
 	char * cur = buf + 2;
 

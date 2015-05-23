@@ -16,6 +16,7 @@
 #include <statistics.h>
 #include <unistd.h>
 #include <input.h>
+#include <cfgfile.h>
 
 /** receive buffer */
 static uint8_t buf[128];
@@ -35,9 +36,6 @@ static bool synchronizationFilter;
 
 /** synchronization info: true if receiver has a valid GPS timestamp */
 static bool isSynchronized;
-
-/** configuration */
-static const struct CFG_ADSB * config;
 
 /** ADSB Options */
 enum ADSB_OPTION {
@@ -105,10 +103,8 @@ static inline void decodeHeader(const struct ADSB_Frame * frame,
 /** Initialize ADSB Receiver.
  * \param cfg pointer to buffer configuration, see cfgfile.h
  */
-void ADSB_init(const struct CFG_ADSB * cfg)
+void ADSB_init()
 {
-	config = cfg;
-
 	/* setup filter */
 	frameFilter = ADSB_FRAME_TYPE_ALL;
 	frameFilterLong = ADSB_LONG_FRAME_TYPE_ALL;
@@ -116,7 +112,7 @@ void ADSB_init(const struct CFG_ADSB * cfg)
 	/* initialize synchronize info */
 	isSynchronized = false;
 
-	INPUT_init(cfg);
+	INPUT_init();
 }
 
 /** Setup ADSB receiver with some options. */
@@ -124,19 +120,21 @@ static bool configure()
 {
 	/* setup ADSB */
 	return setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN) &&
-		setOption(config->frameFilter ?
+		setOption(CFG_config.adsb.frameFilter ?
 			ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
 			ADSB_OPTION_FRAME_FILTER_ALL) &&
 		setOption(ADSB_OPTION_AVR_FORMAT_MLAT) &&
-		setOption(config->crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
+		setOption(CFG_config.adsb.crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
 			ADSB_OPTION_DF_11_17_18_CRC_DISABLED) &&
-		setOption(config->timestampGPS ? ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
+		setOption(CFG_config.adsb.timestampGPS ?
+			ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
 			ADSB_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ) &&
-		setOption(config->rts ? ADSB_OPTION_RTS_HANDSHAKE_ENABLED :
+		setOption(CFG_config.adsb.rts ? ADSB_OPTION_RTS_HANDSHAKE_ENABLED :
 			ADSB_OPTION_RTS_HANDSHAKE_DISABLED) &&
-		setOption(config->fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
+		setOption(CFG_config.adsb.fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
 			ADSB_OPTION_DF_17_18_FEC_DISABLED) &&
-		setOption(config->modeAC ? ADSB_OPTION_MODE_AC_DECODING_ENABLED :
+		setOption(CFG_config.adsb.modeAC ?
+			ADSB_OPTION_MODE_AC_DECODING_ENABLED :
 			ADSB_OPTION_MODE_AC_DECODING_DISABLED);
 }
 
@@ -188,10 +186,10 @@ void ADSB_main()
 	while (true) {
 		/* connect with input */
 		while (!INPUT_connect())
-			sleep(config->reconnectInterval);
+			sleep(CFG_config.adsb.reconnectInterval);
 
 		/* configure input */
-		if (config->configure && !configure())
+		if (CFG_config.adsb.configure && !configure())
 			continue;
 
 		/* reset buffer */

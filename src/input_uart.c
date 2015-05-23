@@ -10,19 +10,17 @@
 #include <error.h>
 #include <termios.h>
 #include <unistd.h>
+#include <cfgfile.h>
 
 /** file descriptor for UART */
 static int fd;
 /** poll set when waiting for data */
 static struct pollfd fds;
-/** Uart configuration */
-static const struct CFG_ADSB * config;
 
 static void closeUart();
 
-void INPUT_init(const struct CFG_ADSB * cfg)
+void INPUT_init()
 {
-	config = cfg;
 	fd = -1;
 }
 
@@ -40,9 +38,10 @@ bool INPUT_connect()
 		closeUart();
 
 	/* open uart */
-	fd = open(config->uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
+	fd = open(CFG_config.adsb.uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
 	if (fd < 0) {
-		error(0, errno, "INPUT: Could not open UART at '%s'", config->uart);
+		error(0, errno, "INPUT: Could not open UART at '%s'",
+			CFG_config.adsb.uart);
 		fd = -1;
 		return false;
 	}
@@ -58,7 +57,7 @@ bool INPUT_connect()
 	t.c_iflag = IGNPAR;
 	t.c_oflag = ONLCR;
 	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3500000;
-	if (config->rts)
+	if (CFG_config.adsb->rts)
 		t.c_cflag |= CRTSCTS;
 	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
 	t.c_ispeed = B3500000;

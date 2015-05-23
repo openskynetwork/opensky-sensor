@@ -11,17 +11,15 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <net_common.h>
+#include <cfgfile.h>
 
 /** file descriptor for UART */
 static int sock;
-/** Network configuration */
-static const struct CFG_ADSB * config;
 
 static void closeConn();
 
-void INPUT_init(const struct CFG_ADSB * cfg)
+void INPUT_init()
 {
-	config = cfg;
 	sock = -1;
 }
 
@@ -39,7 +37,7 @@ bool INPUT_connect()
 	if (sock != -1)
 		closeConn();
 
-	sock = NETC_connect("INPUT", config->host, config->port);
+	sock = NETC_connect("INPUT", CFG_config.adsb.host, CFG_config.adsb.port);
 	return sock != -1;
 }
 

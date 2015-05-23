@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=0.8.0
+VERSION=0.8.1
 DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 help:

@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <string.h>
+#include <cfgfile.h>
 
 #if defined(DEVELOPMENT) && !defined(FWDIR)
 #define FWDIR "."
@@ -117,17 +118,18 @@ static bool transfer(const uint8_t * rfd, off_t size)
 /** (Re-)Program the FPGA.
 * \param cfg pointer to buffer configuration, see cfgfile.h
  */
-void FPGA_program(const struct CFG_FPGA * cfg)
+void FPGA_program()
 {
 	char file[PATH_MAX];
 
 	struct stat st;
-	if (cfg->file[0] == '/' && stat(cfg->file, &st) == 0) {
-		strncpy(file, cfg->file, sizeof file);
+	if (CFG_config.fpga.file[0] == '/' &&
+		stat(CFG_config.fpga.file, &st) == 0) {
+		strncpy(file, CFG_config.fpga.file, sizeof file);
 	} else {
 		strncpy(file, FWDIR, PATH_MAX);
 		strncat(file, "/", strlen(file) - PATH_MAX);
-		strncat(file, cfg->file, strlen(file) - PATH_MAX);
+		strncat(file, CFG_config.fpga.file, strlen(file) - PATH_MAX);
 	}
 
 	/* open input file */
@@ -149,19 +151,19 @@ void FPGA_program(const struct CFG_FPGA * cfg)
 	}
 
 	uint32_t try;
-	uint32_t retries = cfg->retries + 1;
+	uint32_t retries = CFG_config.fpga.retries + 1;
 	for (try = 1; try < retries; ++try) {
 		printf("FPGA: Programming (attempt %" PRIu32 " of %" PRIu32 ")\n", try,
 			retries);
 
 		/* reset FPGA */
-		reset(cfg->timeout);
+		reset(CFG_config.fpga.timeout);
 
 		puts("FPGA: Transferring RBF");
 		if (!transfer(rfd, st.st_size))
 			continue;
 
-		uint32_t spin = cfg->timeout;
+		uint32_t spin = CFG_config.fpga.timeout;
 		while (GPIO_read(FPGA_CONFD) && spin--)
 			usleep(50);
 		if (!GPIO_read(FPGA_CONFD)) {

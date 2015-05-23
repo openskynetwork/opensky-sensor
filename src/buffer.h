@@ -3,9 +3,8 @@
 
 #include <stdlib.h>
 #include <adsb.h>
-#include <cfgfile.h>
 
-void BUF_init(const struct CFG_BUF * cfg);
+void BUF_init();
 
 void BUF_main();
 

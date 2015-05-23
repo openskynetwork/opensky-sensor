@@ -21,7 +21,7 @@
 
 typedef void*(*PTHREAD_FN)(void*);
 
-static void mainloop(struct CFG_Config * cfg);
+static void mainloop();
 
 #if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
@@ -32,25 +32,24 @@ int main(int argc, char * argv[])
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
 
-	struct CFG_Config config;
 	/* read & check configuration */
-	CFG_read(SYSCONFDIR "/openskyd.conf", &config);
+	CFG_read(SYSCONFDIR "/openskyd.conf");
 
-	if (config.wd.enabled || config.fpga.configure) {
+	if (CFG_config.wd.enabled || CFG_config.fpga.configure) {
 		/* initialize GPIO subsystem */
 		GPIO_init();
 	}
 
 	/* initialize and start statistics */
-	if (config.stats.enabled) {
-		STAT_init(&config.stats);
+	if (CFG_config.stats.enabled) {
+		STAT_init();
 		pthread_t stats;
 		if (pthread_create(&stats, NULL, (PTHREAD_FN)&STAT_main, NULL))
 			error(-1, errno, "Could not create statistics thread");
 	}
 
 	/* Watchdog: initialize and start */
-	if (config.wd.enabled) {
+	if (CFG_config.wd.enabled) {
 		WATCHDOG_init();
 		pthread_t watchdog;
 		if (pthread_create(&watchdog, NULL, (PTHREAD_FN)&WATCHDOG_main, NULL))
@@ -61,34 +60,34 @@ int main(int argc, char * argv[])
 	TB_init(argv);
 
 	/* FPGA: initialize and reprogram */
-	if (config.fpga.configure) {
+	if (CFG_config.fpga.configure) {
 		FPGA_init();
-		FPGA_program(&config.fpga);
+		FPGA_program();
 	}
 
 	/* Buffer: initialize buffer, setup garbage collection and filtering */
-	BUF_init(&config.buf);
-	if (config.buf.gcEnabled) {
+	BUF_init();
+	if (CFG_config.buf.gcEnabled) {
 		pthread_t buf;
 		if (pthread_create(&buf, NULL, (PTHREAD_FN)&BUF_main, NULL))
 			error(-1, errno, "Could not start buffering garbage collector");
 	}
 
 	/* Network: configure network */
-	NET_init(&config.net, config.dev.serial);
+	NET_init();
 
 	/* ADSB: initialize and setup receiver */
-	ADSB_init(&config.adsb);
+	ADSB_init();
 	enum ADSB_FRAME_TYPE frameFilter = ADSB_FRAME_TYPE_NONE;
-	if (config.adsb.modeAC)
+	if (CFG_config.adsb.modeAC)
 		frameFilter |= ADSB_FRAME_TYPE_MODE_AC;
-	if (config.adsb.modeSShort)
+	if (CFG_config.adsb.modeSShort)
 		frameFilter |= ADSB_FRAME_TYPE_MODE_S_SHORT;
-	if (config.adsb.modeSLong)
+	if (CFG_config.adsb.modeSLong)
 		frameFilter |= ADSB_FRAME_TYPE_MODE_S_LONG;
 	ADSB_setFilter(frameFilter);
 	/* for the moment, only extended squitter are relevant */
-	ADSB_setFilterLong(config.adsb.modeSLongExtSquitter ?
+	ADSB_setFilterLong(CFG_config.adsb.modeSLongExtSquitter ?
 		ADSB_LONG_FRAME_TYPE_EXTENDED_SQUITTER_ALL :
 		ADSB_LONG_FRAME_TYPE_ALL);
 	/* relay frames only if they're GPS timestamped */
@@ -109,12 +108,12 @@ int main(int argc, char * argv[])
 	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL))
 		error(-1, errno, "Could not create adsb main loop");
 
-	mainloop(&config);
+	mainloop();
 
 	return 0;
 }
 
-static void mainloop(struct CFG_Config * config)
+static void mainloop()
 {
 	while (1) {
 		/* synchronize with the network (i.e. wait for a connection) */
@@ -122,14 +121,14 @@ static void mainloop(struct CFG_Config * config)
 
 		/* Now we have a new connection to the server */
 
-		if (!config->buf.history) /* flush buffer if history is disabled */
+		if (!CFG_config.buf.history) /* flush buffer if history is disabled */
 			BUF_flush();
 
 		bool success;
 		do {
 			/* read a frame from the buffer */
 			const struct ADSB_Frame * frame =
-				BUF_getFrameTimeout(config->net.timeout);
+				BUF_getFrameTimeout(CFG_config.net.timeout);
 			if (!frame) {
 				/* timeout */
 				success = NET_sendTimeout();
