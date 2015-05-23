@@ -25,13 +25,22 @@ struct Snapshot {
 static time_t start;
 static char startstr[26];
 
+static void construct();
+static void mainloop();
+
+struct Component STAT_comp = {
+	.description = "STAT",
+	.construct = &construct,
+	.main = &mainloop
+};
+
 static void sigStats(int sig);
 static void printStatistics(struct Snapshot * lastSnapshot);
 
 /** Initialize statistics.
  * \param cfg pointer to buffer configuration, see cfgfile.h
  */
-void STAT_init()
+static void construct()
 {
 	start = time(NULL);
 	ctime_r(&start, startstr);
@@ -41,7 +50,7 @@ void STAT_init()
 	signal(SIGUSR1, &sigStats);
 }
 
-void STAT_main()
+static void mainloop()
 {
 	struct Snapshot snapshot;
 

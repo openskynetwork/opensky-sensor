@@ -80,6 +80,19 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Reader condition (for listOut) */
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
+static void construct();
+static void mainloop();
+static bool start(struct Component * c, void * data);
+static void stop(struct Component * c);
+
+struct Component BUF_comp = {
+	.description = "BUF",
+	.construct = &construct,
+	.main = &mainloop,
+	.start = &start,
+	.stop = &stop
+};
+
 static bool deployPool(struct Pool * newPool, size_t size);
 static bool createDynPool();
 static void collectPools();
@@ -98,7 +111,7 @@ static inline void clear(volatile struct FrameList * list);
 /** Initialize frame buffer.
  * \param cfg pointer to buffer configuration, see cfgfile.h
  */
-void BUF_init()
+static void construct()
 {
 	dynMaxIncrements = CFG_config.buf.history ?
 		CFG_config.buf.dynIncrement : 0;
@@ -107,9 +120,22 @@ void BUF_init()
 		error(-1, errno, "malloc failed");
 }
 
+static bool start(struct Component * c, void * data)
+{
+	if (CFG_config.buf.gcEnabled)
+		return COMP_startThreaded(c, data);
+	return true;
+}
+
+static void stop(struct Component * c)
+{
+	if (CFG_config.buf.gcEnabled)
+		COMP_stopThreaded(c);
+}
+
 /** Gargabe collector mainloop.
  * \note intialize garbage collection first using BUF_initGC */
-void BUF_main()
+static void mainloop()
 {
 	while (true) {
 		sleep(CFG_config.buf.gcInterval);

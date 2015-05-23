@@ -36,13 +36,20 @@ static struct Controller controllers[4] = {
 	[3] = { .base = 0x481ae000 }
 };
 
+static void construct();
+
+struct Component GPIO_comp = {
+	.description = "GPIO",
+	.construct = &construct
+};
+
 static void controllerInit(int devmem, struct Controller * ctrl);
 static inline struct Controller * getController(uint32_t gpio);
 static inline uint32_t getBit(uint32_t gpio);
 
 /** Initialize the GPIO subsystem.
  * \note Must be called exactly once before any GPIO functions are used! */
-void GPIO_init()
+static void construct()
 {
 	int devmem;
 

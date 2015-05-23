@@ -41,6 +41,15 @@ static pthread_cond_t condConnected = PTHREAD_COND_INITIALIZER;
 /** Condition for reconnect flag */
 static pthread_cond_t condReconnect = PTHREAD_COND_INITIALIZER;
 
+static void construct();
+static void mainloop();
+
+struct Component NET_comp = {
+	.description = "NET",
+	.construct = &construct,
+	.main = &mainloop
+};
+
 static inline void emitDisconnect();
 static bool doConnect();
 static bool sendSerial();
@@ -50,12 +59,10 @@ static inline bool sendData(const void * data, size_t len);
  * \param cfg pointer to buffer configuration, see cfgfile.h
  * \param serial serial number of device
  */
-void NET_init()
-{
-}
+static void construct() {}
 
 /** Mainloop for network: (re)established network connection on failure */
-void NET_main()
+static void mainloop()
 {
 	connected = false;
 	reconnect = true;

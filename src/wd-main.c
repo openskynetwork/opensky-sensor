@@ -8,11 +8,10 @@
 int main(int argc, char * argv[])
 {
 	/* initialize GPIO subsystem */
-	GPIO_init();
+	GPIO_comp.construct(NULL);
 
-	/* Watchdog: initialize and start */
-	WATCHDOG_init();
-	WATCHDOG_main();
+	WD_comp.construct(NULL);
+	WD_comp.start(&WD_comp, NULL);
 
 	return EXIT_SUCCESS;
 }

@@ -46,10 +46,23 @@
 /** GPIO number for nCONFIG pin of FPGA */
 #define FPGA_NCONF (37)
 #endif
+
+static void construct();
+static bool program();
+
+struct Component FPGA_comp = {
+	.description = "FPGA",
+	.construct = &construct,
+	.start = &program
+};
+
+static void reset(uint32_t timeout);
+static bool transfer(const uint8_t * rfd, off_t size);
+
 /** Initialize FPGA configuration.
  * \note: GPIO_init() must be called prior to that function!
  */
-void FPGA_init()
+static void construct()
 {
 	GPIO_setDirection(FPGA_CONFD, GPIO_DIRECTION_IN);
 	GPIO_setDirection(FPGA_DCLK, GPIO_DIRECTION_OUT);
@@ -60,65 +73,10 @@ void FPGA_init()
 	GPIO_clear(FPGA_DCLK);
 }
 
-/** Reset the FPGA configuration.
- * \param timeout waiting time for the reset to happen in units of 50 us
- */
-static void reset(uint32_t timeout)
-{
-	puts("FPGA: Reset");
-	GPIO_clear(FPGA_NCONF);
-	usleep(50000);
-	GPIO_clear(FPGA_DCLK);
-	GPIO_set(FPGA_NCONF);
-
-	puts("FPGA: Synchronizing");
-	while (timeout--) {
-		if (GPIO_read(FPGA_NSTAT))
-			return;
-		usleep(50);
-	}
-	error(-1, 0, "FPGA: could not synchronize with the FPGA");
-}
-
-/** Transfer data to the FPGA's configuration interface
- * \param rfd data to transfer
- * \param size size of data
- * \param true if transfer done without any error
- */
-static bool transfer(const uint8_t * rfd, off_t size)
-{
-	/* transfer until done */
-	off_t pos;
-	for (pos = 0; pos < size; ++pos) {
-		uint8_t ch = rfd[pos];
-		uint32_t bit;
-		for (bit = 0; bit < 8; ++bit) {
-			/* transfer next bit via DATA0 line */
-			if (ch & 1)
-				GPIO_set(FPGA_DATA0);
-			else
-				GPIO_clear(FPGA_DATA0);
-			/* clock that bit via DCLK toggle */
-			GPIO_set(FPGA_DCLK);
-			GPIO_clear(FPGA_DCLK);
-			/* next bit */
-			ch >>= 1;
-		}
-		/* monitor FPGA status */
-		if (!GPIO_read(FPGA_NSTAT)) {
-			fprintf(stderr, "FPGA: could not program: nSTATUS = 0 "
-				"at byte %lu\n", (unsigned long int)pos);
-			return false;
-		}
-	}
-	/* done */
-	return true;
-}
-
 /** (Re-)Program the FPGA.
 * \param cfg pointer to buffer configuration, see cfgfile.h
  */
-void FPGA_program()
+static bool program()
 {
 	char file[PATH_MAX];
 
@@ -178,4 +136,60 @@ void FPGA_program()
 		puts("FPGA: done");
 		break;
 	}
+	return true;
+}
+
+/** Reset the FPGA configuration.
+ * \param timeout waiting time for the reset to happen in units of 50 us
+ */
+static void reset(uint32_t timeout)
+{
+	puts("FPGA: Reset");
+	GPIO_clear(FPGA_NCONF);
+	usleep(50000);
+	GPIO_clear(FPGA_DCLK);
+	GPIO_set(FPGA_NCONF);
+
+	puts("FPGA: Synchronizing");
+	while (timeout--) {
+		if (GPIO_read(FPGA_NSTAT))
+			return;
+		usleep(50);
+	}
+	error(-1, 0, "FPGA: could not synchronize with the FPGA");
+}
+
+/** Transfer data to the FPGA's configuration interface
+ * \param rfd data to transfer
+ * \param size size of data
+ * \param true if transfer done without any error
+ */
+static bool transfer(const uint8_t * rfd, off_t size)
+{
+	/* transfer until done */
+	off_t pos;
+	for (pos = 0; pos < size; ++pos) {
+		uint8_t ch = rfd[pos];
+		uint32_t bit;
+		for (bit = 0; bit < 8; ++bit) {
+			/* transfer next bit via DATA0 line */
+			if (ch & 1)
+				GPIO_set(FPGA_DATA0);
+			else
+				GPIO_clear(FPGA_DATA0);
+			/* clock that bit via DCLK toggle */
+			GPIO_set(FPGA_DCLK);
+			GPIO_clear(FPGA_DCLK);
+			/* next bit */
+			ch >>= 1;
+		}
+		/* monitor FPGA status */
+		if (!GPIO_read(FPGA_NSTAT)) {
+			fprintf(stderr, "FPGA: could not program: nSTATUS = 0 "
+				"at byte %lu\n", (unsigned long int)pos);
+			return false;
+		}
+	}
+	/* done */
+	return true;
 }

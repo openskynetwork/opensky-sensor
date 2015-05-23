@@ -1,7 +1,8 @@
 #ifndef _HAVE_TB_H
 #define _HAVE_TB_H
 
-void TB_init(char * argv[]);
-void TB_main();
+#include <component.h>
+
+extern struct Component TB_comp;
 
 #endif

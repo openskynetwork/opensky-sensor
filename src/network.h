@@ -5,9 +5,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <adsb.h>
+#include <component.h>
 
-void NET_init();
-void NET_main();
+extern struct Component NET_comp;
 
 void NET_sync_send();
 bool NET_sendFrame(const struct ADSB_Frame * frame);

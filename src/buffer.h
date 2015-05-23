@@ -3,10 +3,9 @@
 
 #include <stdlib.h>
 #include <adsb.h>
+#include <component.h>
 
-void BUF_init();
-
-void BUF_main();
+extern struct Component BUF_comp;
 
 void BUF_flush();
 

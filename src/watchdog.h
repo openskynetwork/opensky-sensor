@@ -1,7 +1,8 @@
 #ifndef _HAVE_WATCHDOG_H
 #define _HAVE_WATCHDOG_H
 
-void WATCHDOG_init();
-void WATCHDOG_main();
+#include <component.h>
+
+extern struct Component WD_comp;
 
 #endif

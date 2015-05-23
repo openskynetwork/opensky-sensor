@@ -35,49 +35,22 @@ int main(int argc, char * argv[])
 	/* read & check configuration */
 	CFG_read(SYSCONFDIR "/openskyd.conf");
 
-	if (CFG_config.wd.enabled || CFG_config.fpga.configure) {
-		/* initialize GPIO subsystem */
-		GPIO_init();
-	}
+	if (CFG_config.wd.enabled || CFG_config.fpga.configure)
+		COMP_register(&GPIO_comp, NULL);
+	if (CFG_config.stats.enabled)
+		COMP_register(&STAT_comp, NULL);
+	if (CFG_config.wd.enabled)
+		COMP_register(&WD_comp, NULL);
+	if (CFG_config.fpga.configure)
+		COMP_register(&FPGA_comp, NULL);
+	COMP_register(&BUF_comp, NULL);
+	COMP_register(&NET_comp, NULL);
+	COMP_register(&TB_comp, argv);
+	COMP_register(&ADSB_comp, NULL);
 
-	/* initialize and start statistics */
-	if (CFG_config.stats.enabled) {
-		STAT_init();
-		pthread_t stats;
-		if (pthread_create(&stats, NULL, (PTHREAD_FN)&STAT_main, NULL))
-			error(-1, errno, "Could not create statistics thread");
-	}
-
-	/* Watchdog: initialize and start */
-	if (CFG_config.wd.enabled) {
-		WATCHDOG_init();
-		pthread_t watchdog;
-		if (pthread_create(&watchdog, NULL, (PTHREAD_FN)&WATCHDOG_main, NULL))
-			error(-1, errno, "Could not create watchdog thread");
-	}
-
-	/* Talkback: configure restart */
-	TB_init(argv);
-
-	/* FPGA: initialize and reprogram */
-	if (CFG_config.fpga.configure) {
-		FPGA_init();
-		FPGA_program();
-	}
-
-	/* Buffer: initialize buffer, setup garbage collection and filtering */
-	BUF_init();
-	if (CFG_config.buf.gcEnabled) {
-		pthread_t buf;
-		if (pthread_create(&buf, NULL, (PTHREAD_FN)&BUF_main, NULL))
-			error(-1, errno, "Could not start buffering garbage collector");
-	}
-
-	/* Network: configure network */
-	NET_init();
+	COMP_initAll();
 
 	/* ADSB: initialize and setup receiver */
-	ADSB_init();
 	enum ADSB_FRAME_TYPE frameFilter = ADSB_FRAME_TYPE_NONE;
 	if (CFG_config.adsb.modeAC)
 		frameFilter |= ADSB_FRAME_TYPE_MODE_AC;
@@ -93,20 +66,8 @@ int main(int argc, char * argv[])
 	/* relay frames only if they're GPS timestamped */
 	ADSB_setSynchronizationFilter(true);
 
-	/* Network: start network mainloop */
-	pthread_t net;
-	if (pthread_create(&net, NULL, (PTHREAD_FN)&NET_main, NULL))
-		error(-1, errno, "Could not create tb main loop");
-
-	/* TB: start talkback mainloop */
-	pthread_t tb;
-	if (pthread_create(&tb, NULL, (PTHREAD_FN)&TB_main, NULL))
-		error(-1, errno, "Could not create tb main loop");
-
-	/* ADSB: start receiver mainloop */
-	pthread_t adsb;
-	if (pthread_create(&adsb, NULL, (PTHREAD_FN)&ADSB_main, NULL))
-		error(-1, errno, "Could not create adsb main loop");
+	if (!COMP_startAll())
+		return EXIT_FAILURE;
 
 	mainloop();
 

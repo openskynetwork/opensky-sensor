@@ -51,6 +51,15 @@ struct TB_Packet {
 /** argument vector of daemon, needed for restart */
 static char ** daemonArgv;
 
+static void construct(void * argv);
+static void mainloop();
+
+struct Component TB_comp = {
+	.description = "TB",
+	.construct = &construct,
+	.main = &mainloop
+};
+
 static void processPacket(const struct TB_Packet * packet);
 
 #ifdef TALKBACK
@@ -84,13 +93,13 @@ static PacketProcessor processors[] = {
 /** Initialize TB.
  * \param argv argument vector of the daemon
  */
-void TB_init(char * argv[])
+static void construct(void * argv)
 {
 	daemonArgv = argv;
 }
 
 /** Mainloop of the TB. */
-void TB_main()
+static void mainloop()
 {
 	uint8_t buf[128];
 	size_t bufLen;

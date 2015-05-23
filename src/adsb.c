@@ -86,6 +86,15 @@ enum RAW_STATUS {
 	RAW_STATUS_CONNFAIL
 };
 
+static void construct();
+static void mainloop();
+
+struct Component ADSB_comp = {
+	.description = "ADSB",
+	.construct = &construct,
+	.main = &mainloop
+};
+
 static bool configure();
 static inline bool discardAndFill();
 static inline void consume();
@@ -103,7 +112,7 @@ static inline void decodeHeader(const struct ADSB_Frame * frame,
 /** Initialize ADSB Receiver.
  * \param cfg pointer to buffer configuration, see cfgfile.h
  */
-void ADSB_init()
+static void construct()
 {
 	/* setup filter */
 	frameFilter = ADSB_FRAME_TYPE_ALL;
@@ -181,7 +190,7 @@ static inline bool setOption(enum ADSB_OPTION option)
 }
 
 /** ADSB main loop: receive, decode, buffer */
-void ADSB_main()
+static void mainloop()
 {
 	while (true) {
 		/* connect with input */

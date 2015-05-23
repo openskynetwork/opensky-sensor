@@ -2,6 +2,7 @@
 #define _HAVE_STATISTICS_H
 
 #include <stdint.h>
+#include <component.h>
 
 struct STAT_Statistics {
 	uint64_t ADSB_outOfSync;
@@ -34,9 +35,8 @@ struct STAT_Statistics {
 	uint64_t NET_recvFailed;
 };
 
-extern volatile struct STAT_Statistics STAT_stats;
+extern struct Component STAT_comp;
 
-void STAT_init();
-void STAT_main();
+extern volatile struct STAT_Statistics STAT_stats;
 
 #endif
