@@ -23,6 +23,11 @@ void INPUT_init()
 	sock = -1;
 }
 
+void INPUT_destruct()
+{
+	closeConn();
+}
+
 static void closeConn()
 {
 	if (sock != -1) {

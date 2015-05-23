@@ -87,11 +87,13 @@ enum RAW_STATUS {
 };
 
 static void construct();
+static void destruct();
 static void mainloop();
 
 struct Component ADSB_comp = {
 	.description = "ADSB",
 	.construct = &construct,
+	.destruct = &destruct,
 	.main = &mainloop
 };
 
@@ -122,6 +124,12 @@ static void construct()
 	isSynchronized = false;
 
 	INPUT_init();
+}
+
+/** Destruct ADSB Receiver. */
+static void destruct()
+{
+	INPUT_destruct();
 }
 
 /** Setup ADSB receiver with some options. */

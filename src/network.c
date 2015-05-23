@@ -41,12 +41,10 @@ static pthread_cond_t condConnected = PTHREAD_COND_INITIALIZER;
 /** Condition for reconnect flag */
 static pthread_cond_t condReconnect = PTHREAD_COND_INITIALIZER;
 
-static void construct();
 static void mainloop();
 
 struct Component NET_comp = {
 	.description = "NET",
-	.construct = &construct,
 	.main = &mainloop
 };
 
@@ -55,11 +53,12 @@ static bool doConnect();
 static bool sendSerial();
 static inline bool sendData(const void * data, size_t len);
 
-/** Initialize Network component.
- * \param cfg pointer to buffer configuration, see cfgfile.h
- * \param serial serial number of device
- */
-static void construct() {}
+static void cleanup(void * arg)
+{
+	printf("Cancellation point\n");
+	pthread_cond_broadcast(&condReconnect);
+	pthread_mutex_unlock(&mutex);
+}
 
 /** Mainloop for network: (re)established network connection on failure */
 static void mainloop()
@@ -72,9 +71,10 @@ static void mainloop()
 	inSend = false;
 
 	pthread_mutex_lock(&mutex);
-	while (true) {
+	pthread_cleanup_push(&cleanup, NULL);
+	while (NET_comp.run) {
 		/* connect to the server */
-		while (!doConnect()) {
+		while (NET_comp.run && !doConnect()) {
 			/* retry in case of failure */
 			pthread_mutex_unlock(&mutex);
 			sleep(CFG_config.net.reconnectInterval);
@@ -98,9 +98,10 @@ static void mainloop()
 		++STAT_stats.NET_connectsSuccess;
 
 		/* wait for failure */
-		while (!reconnect)
+		while (NET_comp.run && !reconnect)
 			pthread_cond_wait(&condReconnect, &mutex);
 	}
+	pthread_cleanup_pop(1);
 }
 
 /** Try to connect to the server.
@@ -119,6 +120,11 @@ static bool doConnect()
 	return sock != -1;
 }
 
+static void unlock()
+{
+	pthread_mutex_unlock(&mutex);
+}
+
 /** Synchronize sending thread: wait for a connection */
 void NET_sync_send()
 {
@@ -126,13 +132,14 @@ void NET_sync_send()
 	puts("NET: send synchronizing");
 #endif
 	pthread_mutex_lock(&mutex);
+	pthread_cleanup_push(&unlock, NULL);
 	while (!connected)
 		pthread_cond_wait(&condConnected, &mutex);
 	reconnectedSend = false;
 #ifdef DEBUG
 	puts("NET: send synchronized");
 #endif
-	pthread_mutex_unlock(&mutex);
+	pthread_cleanup_pop(1);
 }
 
 /** Synchronize receiving thread: wait for a connection */
@@ -142,13 +149,14 @@ void NET_sync_recv()
 	puts("NET: recv synchronizing");
 #endif
 	pthread_mutex_lock(&mutex);
+	pthread_cleanup_push(&unlock, NULL);
 	while (!connected)
 		pthread_cond_wait(&condConnected, &mutex);
 	reconnectedRecv = false;
 #ifdef DEBUG
 	puts("NET: recv synchronized");
 #endif
-	pthread_mutex_unlock(&mutex);
+	pthread_cleanup_pop(1);
 }
 
 static inline void emitDisconnect()

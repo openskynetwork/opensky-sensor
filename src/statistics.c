@@ -26,11 +26,13 @@ static time_t start;
 static char startstr[26];
 
 static void construct();
+static void destruct();
 static void mainloop();
 
 struct Component STAT_comp = {
 	.description = "STAT",
 	.construct = &construct,
+	.destruct = &destruct,
 	.main = &mainloop
 };
 
@@ -48,6 +50,11 @@ static void construct()
 	memset((void*)&STAT_stats, 0, sizeof STAT_stats);
 
 	signal(SIGUSR1, &sigStats);
+}
+
+static void destruct()
+{
+	signal(SIGUSR1, SIG_DFL);
 }
 
 static void mainloop()

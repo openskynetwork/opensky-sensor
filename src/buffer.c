@@ -57,23 +57,23 @@ static struct Pool staticPool;
 /** Dynamic Pool max. increments */
 static size_t dynMaxIncrements;
 /** Dynamic Pool increments */
-static size_t dynIncrements = 0;
+static size_t dynIncrements;
 /** Dynamic Pool List */
-static struct Pool * dynPools = NULL;
+static struct Pool * dynPools;
 
 /** Number of frames discarded in an overflow situation */
 static uint64_t overCapacity;
 static uint64_t overCapacityMax;
 
 /** Overall Pool */
-static volatile struct FrameList pool = { NULL, NULL };
+static volatile struct FrameList pool;
 /** Output Queue */
-static volatile struct FrameList queue = { NULL, NULL };
+static volatile struct FrameList queue;
 
 /** Currently filled frame (by writer), mainly for debugging purposes */
-static struct FrameLink * newFrame = NULL;
+static struct FrameLink * newFrame;
 /** Currently processed frame (by reader), for debugging purposes */
-static struct FrameLink * currentFrame = NULL;
+static struct FrameLink * currentFrame;
 
 /** Mutex */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -81,6 +81,7 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 static void construct();
+static void destruct();
 static void mainloop();
 static bool start(struct Component * c, void * data);
 static void stop(struct Component * c);
@@ -88,6 +89,7 @@ static void stop(struct Component * c);
 struct Component BUF_comp = {
 	.description = "BUF",
 	.construct = &construct,
+	.destruct = &destruct,
 	.main = &mainloop,
 	.start = &start,
 	.stop = &stop
@@ -113,11 +115,30 @@ static inline void clear(volatile struct FrameList * list);
  */
 static void construct()
 {
+	dynIncrements = 0;
+
+	dynPools = NULL;
+	clear(&pool);
+	clear(&queue);
+
+	newFrame = currentFrame = NULL;
+
 	dynMaxIncrements = CFG_config.buf.history ?
 		CFG_config.buf.dynIncrement : 0;
 
 	if (!deployPool(&staticPool, CFG_config.buf.statBacklog))
 		error(-1, errno, "malloc failed");
+}
+
+static void destruct()
+{
+	struct Pool * dyn, * nextDyn;
+	for (dyn = dynPools; dyn; dyn = nextDyn) {
+		nextDyn = dyn->next;
+		free(dyn->pool);
+		free(dyn);
+	}
+	free(staticPool.pool);
 }
 
 static bool start(struct Component * c, void * data)

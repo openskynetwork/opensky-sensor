@@ -13,6 +13,10 @@ static void stopUntil(struct Component * end);
 
 void COMP_register(struct Component * comp, void * initData)
 {
+	if (!comp->destruct) {
+		printf("Component %s has no destructor\n", comp->description);
+	}
+
 	if (!comp->start) {
 		comp->start = &COMP_startThreaded;
 		comp->stop = &COMP_stopThreaded;
@@ -32,7 +36,8 @@ void COMP_initAll()
 {
 	const struct Component * c;
 	for (c = head; c; c = c->next) {
-		c->construct(c->data);
+		if (c->construct)
+			c->construct(c->data);
 		printf("Initalized component '%s'\n", c->description);
 	}
 }
@@ -40,8 +45,11 @@ void COMP_initAll()
 void COMP_destructAll()
 {
 	const struct Component * c;
-	for (c = tail; c; c = c->prev)
-		c->destruct();
+	for (c = tail; c; c = c->prev) {
+		if (c->destruct)
+			c->destruct();
+		printf("Destructed component '%s'\n", c->description);
+	}
 }
 
 bool COMP_startAll()
@@ -61,6 +69,7 @@ bool COMP_startAll()
 
 static void stop(struct Component * c)
 {
+	printf("Stopping component '%s'\n", c->description);
 	if (c->stop)
 		c->stop(c);
 	printf("Stopped component '%s'\n", c->description);

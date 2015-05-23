@@ -36,14 +36,19 @@ static struct Controller controllers[4] = {
 	[3] = { .base = 0x481ae000 }
 };
 
+static void destruct();
 static void construct();
 
 struct Component GPIO_comp = {
 	.description = "GPIO",
-	.construct = &construct
+	.construct = &construct,
+	.destruct = &destruct
 };
 
-static void controllerInit(int devmem, struct Controller * ctrl);
+static int devmem;
+
+static void controllerInit(struct Controller * ctrl);
+static void controllerDestruct(struct Controller * ctrl);
 static inline struct Controller * getController(uint32_t gpio);
 static inline uint32_t getBit(uint32_t gpio);
 
@@ -51,8 +56,6 @@ static inline uint32_t getBit(uint32_t gpio);
  * \note Must be called exactly once before any GPIO functions are used! */
 static void construct()
 {
-	int devmem;
-
 	/* open /dev/mem */
 	devmem = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
 	if (devmem < 0)
@@ -61,7 +64,17 @@ static void construct()
 	/* initialize all 4 controllers */
 	int i;
 	for (i = 0; i < 4; ++i)
-		controllerInit(devmem, &controllers[i]);
+		controllerInit(&controllers[i]);
+}
+
+static void destruct()
+{
+	/* terminate all 4 controllers */
+	int i;
+	for (i = 0; i < 4; ++i)
+		controllerDestruct(&controllers[i]);
+
+	close(devmem);
 }
 
 /** Set Direction of a GPIO.
@@ -112,7 +125,7 @@ uint32_t GPIO_read(uint32_t gpio)
  * \param devmem file handle to /dev/mem
  * \param ctrl controller to be initialized
  */
-static void controllerInit(int devmem, struct Controller * ctrl)
+static void controllerInit(struct Controller * ctrl)
 {
 	ctrl->map = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, devmem,
 		ctrl->base);
@@ -127,6 +140,11 @@ static void controllerInit(int devmem, struct Controller * ctrl)
 	ctrl->clear = (volatile uint32_t*)(ctrl->map + 0x190);
 	ctrl->oe = (volatile uint32_t*)(ctrl->map + 0x134);
 	ctrl->in = (volatile uint32_t*)(ctrl->map + 0x138);
+}
+
+static void controllerDestruct(struct Controller * ctrl)
+{
+	munmap(ctrl->map, 4096);
 }
 
 /** Get GPIO controller from gpio number

@@ -19,8 +19,6 @@
 #include <string.h>
 #include <tb.h>
 
-typedef void*(*PTHREAD_FN)(void*);
-
 static void mainloop();
 
 #if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
@@ -71,7 +69,10 @@ int main(int argc, char * argv[])
 
 	mainloop();
 
-	return 0;
+	COMP_stopAll();
+	COMP_destructAll();
+
+	return EXIT_SUCCESS;
 }
 
 static void mainloop()

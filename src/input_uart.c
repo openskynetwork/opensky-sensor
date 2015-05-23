@@ -24,6 +24,11 @@ void INPUT_init()
 	fd = -1;
 }
 
+void INPUT_destruct()
+{
+	closeUART();
+}
+
 static void closeUart()
 {
 	if (fd != -1) {

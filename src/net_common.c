@@ -12,9 +12,14 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 
 int NETC_connect(const char * component, const char * hostName, uint16_t port)
 {
+	/* TODO: better: cleanup handler */
+	int cancelState;
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cancelState);
+
 	/* resolve name */
 	struct addrinfo * hosts, * host;
 	int rc = getaddrinfo(hostName, NULL, NULL, &hosts);
@@ -55,6 +60,7 @@ int NETC_connect(const char * component, const char * hostName, uint16_t port)
 			printf("%s: connected to '%s:%" PRIu16 "'\n", component, hostName,
 				port);
 			freeaddrinfo(hosts);
+			pthread_setcancelstate(cancelState, NULL);
 			return sock;
 		}
 	}
@@ -63,5 +69,6 @@ int NETC_connect(const char * component, const char * hostName, uint16_t port)
 		component, hostName, port, strerror(errno));
 	freeaddrinfo(hosts);
 
+	pthread_setcancelstate(cancelState, NULL);
 	return -1;
 }
