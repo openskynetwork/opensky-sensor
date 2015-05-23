@@ -592,7 +592,7 @@ static void fix(struct CFG_Config * cfg)
 	if (cfg->buf.gcEnabled && !cfg->buf.history) {
 		cfg->buf.gcEnabled = false;
 		fprintf(stderr, "Configuration warning: ignoring BUFFER.gcEnabled "
-			"because BUFFER.history is not enabled");
+			"because BUFFER.history is not enabled\n");
 
 	}
 
@@ -600,7 +600,8 @@ static void fix(struct CFG_Config * cfg)
 		if (cfg->dev.serial & 0x80000000) {
 			cfg->dev.serial &= 0x7fffffff;
 			fprintf(stderr, "Configuration warning: DEVICE.serial was "
-				"truncated to 31 bits, it's %" PRIu32 " now", cfg->dev.serial);
+				"truncated to 31 bits, it's %" PRIu32 " now\n",
+				cfg->dev.serial);
 		}
 	} else {
 		cfg->dev.serialSet = UTIL_getSerial(&cfg->dev.serial);

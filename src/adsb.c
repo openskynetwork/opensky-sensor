@@ -102,7 +102,7 @@ static inline void decode(const struct ADSB_Frame * frame, size_t skip,
 static inline void decodeHeader(const struct ADSB_Frame * frame,
 	struct ADSB_Header * header);
 
-/** Initialize ADSB UART.
+/** Initialize ADSB Receiver.
  * \param cfg pointer to buffer configuration, see cfgfile.h
  */
 void ADSB_init(const struct CFG_ADSB * cfg)
@@ -298,10 +298,11 @@ decode_frame:
 		/* filter if unsynchronized and filter is enabled */
 		if (!isSynchronized) {
 			++STAT_stats.ADSB_framesUnsynchronized;
-			++STAT_stats.ADSB_framesFiltered;
 			if (synchronizationFilter &&
-				frame->frameType != ADSB_FRAME_TYPE_STATUS)
+				frame->frameType != ADSB_FRAME_TYPE_STATUS) {
+				++STAT_stats.ADSB_framesFiltered;
 				continue;
+			}
 		}
 
 		/* buffer frame */
