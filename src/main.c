@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <error.h>
 #include <errno.h>
-#include <adsb.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <buffer.h>
@@ -18,6 +17,7 @@
 #include <statistics.h>
 #include <string.h>
 #include <tb.h>
+#include <recv.h>
 
 static void mainloop();
 
@@ -44,25 +44,9 @@ int main(int argc, char * argv[])
 	COMP_register(&BUF_comp, NULL);
 	COMP_register(&NET_comp, NULL);
 	COMP_register(&TB_comp, argv);
-	COMP_register(&ADSB_comp, NULL);
+	COMP_register(&RECV_comp, NULL);
 
 	COMP_initAll();
-
-	/* ADSB: initialize and setup receiver */
-	enum ADSB_FRAME_TYPE frameFilter = ADSB_FRAME_TYPE_NONE;
-	if (CFG_config.adsb.modeAC)
-		frameFilter |= ADSB_FRAME_TYPE_MODE_AC;
-	if (CFG_config.adsb.modeSShort)
-		frameFilter |= ADSB_FRAME_TYPE_MODE_S_SHORT;
-	if (CFG_config.adsb.modeSLong)
-		frameFilter |= ADSB_FRAME_TYPE_MODE_S_LONG;
-	ADSB_setFilter(frameFilter);
-	/* for the moment, only extended squitter are relevant */
-	ADSB_setFilterLong(CFG_config.adsb.modeSLongExtSquitter ?
-		ADSB_LONG_FRAME_TYPE_EXTENDED_SQUITTER_ALL :
-		ADSB_LONG_FRAME_TYPE_ALL);
-	/* relay frames only if they're GPS timestamped */
-	ADSB_setSynchronizationFilter(true);
 
 	if (!COMP_startAll())
 		return EXIT_FAILURE;

@@ -17,6 +17,7 @@ static int fd;
 /** poll set when waiting for data */
 static struct pollfd fds;
 
+static bool doConnect()
 static void closeUart();
 
 void INPUT_init()
@@ -37,16 +38,22 @@ static void closeUart()
 	}
 }
 
-bool INPUT_connect()
+void INPUT_connect()
+{
+	while(!doConnect())
+		sleep(CFG_config.input.reconnectInterval);
+}
+
+static bool doConnect()
 {
 	if (fd != -1)
 		closeUart();
 
 	/* open uart */
-	fd = open(CFG_config.adsb.uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
+	fd = open(CFG_config.input.uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
 	if (fd < 0) {
 		error(0, errno, "INPUT: Could not open UART at '%s'",
-			CFG_config.adsb.uart);
+			CFG_config.input.uart);
 		fd = -1;
 		return false;
 	}
@@ -62,7 +69,7 @@ bool INPUT_connect()
 	t.c_iflag = IGNPAR;
 	t.c_oflag = ONLCR;
 	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3500000;
-	if (CFG_config.adsb->rts)
+	if (CFG_config.input->rtscts)
 		t.c_cflag |= CRTSCTS;
 	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
 	t.c_ispeed = B3500000;

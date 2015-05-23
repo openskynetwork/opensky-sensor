@@ -41,8 +41,10 @@ enum SECTION {
 	SECTION_WD,
 	/** Section FPGA */
 	SECTION_FPGA,
-	/** Section ADSB */
-	SECTION_ADSB,
+	/** Section INPUT */
+	SECTION_INPUT,
+	/** Section Receiver */
+	SECTION_RECV,
 	/** Section Network */
 	SECTION_NET,
 	/** Section Buffer */
@@ -78,7 +80,8 @@ static void check(const struct CFG_Config * cfg);
 
 static void scanOptionWD(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg);
-static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg);
+static void scanOptionINPUT(const struct Option * opt, struct CFG_Config * cfg);
+static void scanOptionRECV(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg);
@@ -89,7 +92,8 @@ static const struct Section sections[] = {
 	[SECTION_NONE] = { NULL, NULL },
 	[SECTION_WD] = { "WATCHDOG", &scanOptionWD },
 	[SECTION_FPGA] = { "FPGA", &scanOptionFPGA },
-	[SECTION_ADSB] = { "ADSB", &scanOptionADSB },
+	[SECTION_INPUT] = { "INPUT", &scanOptionINPUT },
+	[SECTION_RECV] = { "RECEIVER", &scanOptionRECV },
 	[SECTION_NET] = { "NETWORK", &scanOptionNET },
 	[SECTION_BUF] = { "BUFFER", &scanOptionBUF },
 	[SECTION_DEVICE] = { "DEVICE", &scanOptionDEV },
@@ -313,19 +317,19 @@ static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg)
 		unknownKey(opt);
 }
 
-/** Scan ADSB Section.
+/** Scan INPUT Section.
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg)
+static void scanOptionINPUT(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "uart")) {
 #ifndef NETWORK
-		parseString(opt, cfg->adsb.uart, sizeof cfg->adsb.uart);
+		parseString(opt, cfg->input.uart, sizeof cfg->input.uart);
 #endif
 	} else if(isOption(opt, "host")) {
 #ifdef NETWORK
-		parseString(opt, cfg->adsb.host, sizeof cfg->adsb.host);
+		parseString(opt, cfg->input.host, sizeof cfg->input.host);
 #endif
 	} else if(isOption(opt, "port")) {
 #ifdef NETWORK
@@ -333,30 +337,34 @@ static void scanOptionADSB(const struct Option * opt, struct CFG_Config * cfg)
 		if (n > 0xffff)
 			error(-1, 0, "Configuration error: Line %" PRIu32
 				": port must be < 65535", bufferLine);
-		cfg->adsb.port = n;
+		cfg->input.port = n;
+#endif
+	} else if (isOption(opt, "rtscts")) {
+#ifndef NETWORK
+		cfg->input.rtscts = parseBool(opt);
 #endif
 	} else if (isOption(opt, "reconnectInterval"))
-		cfg->adsb.reconnectInterval = parseInt(opt);
-	else if (isOption(opt, "configure"))
-		cfg->adsb.configure = parseBool(opt);
-	else if (isOption(opt, "CRC"))
-		cfg->adsb.crc = parseBool(opt);
-	else if (isOption(opt, "FEC"))
-		cfg->adsb.fec = parseBool(opt);
-	else if (isOption(opt, "FrameFilter"))
-		cfg->adsb.frameFilter = parseBool(opt);
-	else if (isOption(opt, "ModeAC"))
-		cfg->adsb.modeAC = parseBool(opt);
-	else if (isOption(opt, "RTS"))
-		cfg->adsb.rts = parseBool(opt);
-	else if (isOption(opt, "GPS"))
-		cfg->adsb.timestampGPS = parseBool(opt);
-	else if (isOption(opt, "ModeS_Short"))
-		cfg->adsb.modeSShort = parseBool(opt);
-	else if (isOption(opt, "ModeS_Long"))
-		cfg->adsb.modeSLong = parseBool(opt);
-	else if (isOption(opt, "ModeS_Long_ExtSquitterOnly"))
-		cfg->adsb.modeSLongExtSquitter = parseBool(opt);
+		cfg->input.reconnectInterval = parseInt(opt);
+	else
+		unknownKey(opt);
+}
+
+/** Scan Receiver Section.
+ * \param opt option to be parsed
+ * \param cfg configuration to be filled
+ */
+static void scanOptionRECV(const struct Option * opt, struct CFG_Config * cfg)
+{
+	if (isOption(opt, "ModeS_Long_ExtSquitterOnly"))
+		cfg->recv.modeSLongExtSquitter = parseBool(opt);
+	else if (isOption(opt, "SynchronizationFilter"))
+		cfg->recv.syncFilter = parseBool(opt);
+	else if (isOption(opt, "crc"))
+		cfg->recv.crc = parseBool(opt);
+	else if (isOption(opt, "fec"))
+		cfg->recv.fec = parseBool(opt);
+	else if (isOption(opt, "gps"))
+		cfg->recv.gps = parseBool(opt);
 	else
 		unknownKey(opt);
 }
@@ -523,26 +531,19 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->fpga.timeout = 10;
 
 #ifdef NETWORK
-	strncpy(cfg->adsb.host, "localhost", sizeof cfg->adsb.host);
-	cfg->adsb.port = 30003;
+	strncpy(cfg->input.host, "localhost", sizeof cfg->input.host);
+	cfg->input.port = 30003;
 #else
-	strncpy(cfg->adsb.uart, "/dev/ttyO5", sizeof cfg->adsb.uart);
+	strncpy(cfg->input.uart, "/dev/ttyO5", sizeof cfg->input.uart);
+	cfg->input.rtscts = true;
 #endif
-#ifdef NETWORK
-	cfg->adsb.configure = false;
-#else
-	cfg->adsb.configure = true;
-#endif
-	cfg->adsb.frameFilter = true;
-	cfg->adsb.crc = true;
-	cfg->adsb.timestampGPS = true;
-	cfg->adsb.rts = true;
-	cfg->adsb.fec = true;
-	cfg->adsb.modeAC = false;
-	cfg->adsb.modeSShort = false;
-	cfg->adsb.modeSLong = true;
-	cfg->adsb.modeSLongExtSquitter = true;
-	cfg->adsb.reconnectInterval = 10;
+	cfg->input.reconnectInterval = 10;
+
+	cfg->recv.modeSLongExtSquitter = true;
+	cfg->recv.syncFilter = true;
+	cfg->recv.crc = true;
+	cfg->recv.fec = true;
+	cfg->recv.gps = true;
 
 	cfg->net.host[0] = '\0';
 	cfg->net.port = 30003;
@@ -578,11 +579,6 @@ static void fix(struct CFG_Config * cfg)
 			"network mode\n");
 	}
 
-	if (cfg->adsb.configure) {
-		cfg->adsb.configure = false;
-		fprintf(stderr, "Configuration warning: ADSB.configure is ignored in "
-			"network mode\n");
-	}
 #endif
 
 	if (cfg->buf.statBacklog < 2) {
@@ -627,12 +623,12 @@ static void check(const struct CFG_Config * cfg)
 		error(-1, 0, "Configuration error: NET.port = 0");
 
 #ifdef NETWORK
-	if (cfg->adsb.host[0] == '\0')
+	if (cfg->input.host[0] == '\0')
 		error(-1, 0, "Configuration error: ADSB.host is empty");
-	if (cfg->adsb.port == 0)
+	if (cfg->input.port == 0)
 		error(-1, 0, "Configuration error: ADSB.port = 0");
 #else
-	if (cfg->adsb.uart[0] == '\0')
+	if (cfg->input.uart[0] == '\0')
 		error(-1, 0, "Configuration error: ADSB.uart is empty");
 #endif
 

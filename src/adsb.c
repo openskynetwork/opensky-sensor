@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <adsb.h>
-#include <buffer.h>
 #include <statistics.h>
 #include <unistd.h>
 #include <input.h>
@@ -25,17 +24,10 @@ static size_t len;
 /** current pointer into buffer */
 static uint8_t * cur;
 
-/** frame filter */
-static enum ADSB_FRAME_TYPE frameFilter;
+static bool doConfig;
 
-/** frame filter (for long frames) */
-static enum ADSB_LONG_FRAME_TYPE frameFilterLong;
-
-/** frame filter */
-static bool synchronizationFilter;
-
-/** synchronization info: true if receiver has a valid GPS timestamp */
-static bool isSynchronized;
+/** configuration */
+static struct ADSB_CONFIG config;
 
 /** ADSB Options */
 enum ADSB_OPTION {
@@ -80,21 +72,10 @@ enum ADSB_OPTION {
 	ADSB_OPTION_MODE_AC_DECODING_DISABLED = 'j'
 };
 
-enum RAW_STATUS {
-	RAW_STATUS_OK,
-	RAW_STATUS_RESYNC,
-	RAW_STATUS_CONNFAIL
-};
-
-static void construct();
-static void destruct();
-static void mainloop();
-
-struct Component ADSB_comp = {
-	.description = "ADSB",
-	.construct = &construct,
-	.destruct = &destruct,
-	.main = &mainloop
+enum DECODE_STATUS {
+	DECODE_STATUS_OK,
+	DECODE_STATUS_RESYNC,
+	DECODE_STATUS_CONNFAIL
 };
 
 static bool configure();
@@ -104,30 +85,21 @@ static inline bool peek(uint8_t * ch);
 static inline bool next(uint8_t * ch);
 static inline bool synchronize();
 static inline bool setOption(enum ADSB_OPTION option);
-static inline void receiveFrames();
-static inline enum RAW_STATUS readRaw(size_t len, struct ADSB_Frame * frame);
-static inline void decode(const struct ADSB_Frame * frame, size_t skip,
-	uint8_t * out, size_t len);
-static inline void decodeHeader(const struct ADSB_Frame * frame,
-	struct ADSB_Header * header);
+static inline enum DECODE_STATUS decode(uint8_t * buf, size_t len,
+	struct ADSB_Frame * frame);
 
-/** Initialize ADSB Receiver.
- * \param cfg pointer to buffer configuration, see cfgfile.h
- */
-static void construct()
+void ADSB_init(const struct ADSB_CONFIG * cfg)
 {
-	/* setup filter */
-	frameFilter = ADSB_FRAME_TYPE_ALL;
-	frameFilterLong = ADSB_LONG_FRAME_TYPE_ALL;
-
-	/* initialize synchronize info */
-	isSynchronized = false;
-
 	INPUT_init();
+	if (cfg) {
+		doConfig = true;
+		memcpy(&config, cfg, sizeof config);
+	} else {
+		doConfig = false;
+	}
 }
 
-/** Destruct ADSB Receiver. */
-static void destruct()
+void ADSB_destruct()
 {
 	INPUT_destruct();
 }
@@ -137,55 +109,20 @@ static bool configure()
 {
 	/* setup ADSB */
 	return setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN) &&
-		setOption(CFG_config.adsb.frameFilter ?
+		setOption(config.frameFilter ?
 			ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
 			ADSB_OPTION_FRAME_FILTER_ALL) &&
 		setOption(ADSB_OPTION_AVR_FORMAT_MLAT) &&
-		setOption(CFG_config.adsb.crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
+		setOption(config.crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
 			ADSB_OPTION_DF_11_17_18_CRC_DISABLED) &&
-		setOption(CFG_config.adsb.timestampGPS ?
-			ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
+		setOption(config.timestampGPS ? ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
 			ADSB_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ) &&
-		setOption(CFG_config.adsb.rts ? ADSB_OPTION_RTS_HANDSHAKE_ENABLED :
+		setOption(config.rtscts ? ADSB_OPTION_RTS_HANDSHAKE_ENABLED :
 			ADSB_OPTION_RTS_HANDSHAKE_DISABLED) &&
-		setOption(CFG_config.adsb.fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
+		setOption(config.fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
 			ADSB_OPTION_DF_17_18_FEC_DISABLED) &&
-		setOption(CFG_config.adsb.modeAC ?
-			ADSB_OPTION_MODE_AC_DECODING_ENABLED :
+		setOption(config.modeAC ? ADSB_OPTION_MODE_AC_DECODING_ENABLED :
 			ADSB_OPTION_MODE_AC_DECODING_DISABLED);
-}
-
-/** Set a filter for all received frames.
- * \param frameType types which pass the filter, or'ed together
- *  All other frames will be discarded.
- * \note This is a software filter. If frames are discarded by the receiver
- *  already, they won't show here. So if Mode-A/C messages should pass, be also
- *  sure to not filter them with ADSB_init.
- */
-void ADSB_setFilter(enum ADSB_FRAME_TYPE frameType)
-{
-	frameFilter = frameType;
-}
-
-/** Set a filter for all received long frames.
- * \param frameType types which pass the filter, or'ed together
- *  All other frames will be discarded.
- * \note This is a software filter. If frames are discarded by the receiver
- *  already, they won't show here. Be sure to be consistent with the options
- *  in ADSB_init.
- */
-void ADSB_setFilterLong(enum ADSB_LONG_FRAME_TYPE frameLongType)
-{
-	frameFilterLong = frameLongType;
-}
-
-/** Filter all frames (except status frames unless they're filtered anyway)
- * until the receiver is synchronized.
- * \param enable true to enable the synchronization filter, false to disable it
- */
-void ADSB_setSynchronizationFilter(bool enable)
-{
-	synchronizationFilter = enable;
 }
 
 /** Set an option for the ADSB decoder.
@@ -197,36 +134,31 @@ static inline bool setOption(enum ADSB_OPTION option)
 	return INPUT_write(w, sizeof w) > 0;
 }
 
-/** ADSB main loop: receive, decode, buffer */
-static void mainloop()
+/** ADSB */
+void ADSB_connect()
 {
 	while (true) {
 		/* connect with input */
-		while (!INPUT_connect())
-			sleep(CFG_config.adsb.reconnectInterval);
+		INPUT_connect();
 
 		/* configure input */
-		if (CFG_config.adsb.configure && !configure())
-			continue;
-
-		/* reset buffer */
-		cur = buf;
-		len = 0;
-		receiveFrames();
+		if (!doConfig || configure())
+			break;
 	}
+
+	/* reset buffer */
+	cur = buf;
+	len = 0;
 }
 
-static inline void receiveFrames()
+bool ADSB_getFrame(struct ADSB_Frame * frame)
 {
-	struct ADSB_Frame * frame = BUF_newFrame();
 	while (true) {
 		/* synchronize */
 		while (true) {
 			uint8_t sync;
-			if (!next(&sync)) {
-				BUF_abortFrame(frame);
-				return;
-			}
+			if (!next(&sync))
+				return false;
 			if (sync == 0x1a)
 				break;
 			fprintf(stderr, "ADSB: Out of Sync: got 0x%2d instead of 0x1a\n",
@@ -240,10 +172,8 @@ static inline void receiveFrames()
 		uint8_t type;
 decode_frame:
 		/* decode type */
-		if (!next(&type)) {
-			BUF_abortFrame(frame);
-			return;
-		}
+		if (!next(&type))
+			return false;
 		size_t payload_len;
 		switch (type) {
 		case '1': /* mode-ac */
@@ -265,96 +195,32 @@ decode_frame:
 			synchronize();
 			continue;
 		}
+		frame->frameType = type - '1';
+		frame->payloadLen = payload_len;
 		frame->raw[1] = type;
-		frame->frameType = 1 << (type - '1');
 		frame->raw_len = 2;
 
 		/* read header */
-		enum RAW_STATUS rs = readRaw(7, frame);
-		if (rs == RAW_STATUS_RESYNC)
+		uint8_t header[7];
+		enum DECODE_STATUS rs = decode(header, sizeof header, frame);
+		if (rs == DECODE_STATUS_RESYNC)
 			goto decode_frame;
-		else if (rs == RAW_STATUS_CONNFAIL)
-			return;
+		else if (rs == DECODE_STATUS_CONNFAIL)
+			return false;
+		/* decode mlat */
+		uint64_t mlat = 0;
+		memcpy(((uint8_t*)&mlat) + 2, header, 6);
+		frame->mlat = be64toh(mlat);
+		frame->siglevel = header[6];
 
-		/* read payload */
-		rs = readRaw(payload_len, frame);
-		if (rs == RAW_STATUS_RESYNC)
+		rs = decode(frame->payload, payload_len, frame);
+		if (rs == DECODE_STATUS_RESYNC)
 			goto decode_frame;
-		else if (rs == RAW_STATUS_CONNFAIL)
-			return;
+		else if (rs == DECODE_STATUS_CONNFAIL)
+			return false;
 
-		++STAT_stats.ADSB_frameType[type - '1'];
-
-		if (frame->frameType == ADSB_FRAME_TYPE_STATUS) {
-			struct ADSB_Header header;
-			decodeHeader(frame, &header);
-			isSynchronized = header.mlat != 0;
-		}
-
-		/* apply filter */
-		if (!(frame->frameType & frameFilter)) {
-			++STAT_stats.ADSB_framesFiltered;
-			continue;
-		}
-
-		if (frame->frameType == ADSB_FRAME_TYPE_MODE_S_LONG) {
-			uint8_t payload_type;
-			decode(frame, 9, &payload_type, sizeof payload_type);
-			uint32_t ftype = (payload_type >> 3) & 0x1f;
-			++STAT_stats.ADSB_longType[ftype];
-			/* apply filter */
-			if (!((1 << ftype) & frameFilterLong)) {
-				++STAT_stats.ADSB_framesFiltered;
-				++STAT_stats.ADSB_framesFilteredLong;
-				continue;
-			}
-		}
-
-		/* filter if unsynchronized and filter is enabled */
-		if (!isSynchronized) {
-			++STAT_stats.ADSB_framesUnsynchronized;
-			if (synchronizationFilter &&
-				frame->frameType != ADSB_FRAME_TYPE_STATUS) {
-				++STAT_stats.ADSB_framesFiltered;
-				continue;
-			}
-		}
-
-		/* buffer frame */
-		BUF_commitFrame(frame);
-		frame = BUF_newFrame();
+		return true;
 	}
-}
-
-static inline void decodeHeader(const struct ADSB_Frame * frame,
-	struct ADSB_Header * header)
-{
-	uint8_t decoded[7];
-
-	decode(frame, 2, decoded, sizeof decoded);
-
-	/* decode mlat */
-	uint64_t mlat = 0;
-	memcpy(((uint8_t*)&mlat) + 2, decoded, 6);
-	header->mlat = be64toh(mlat);
-	header->siglevel = decoded[6];
-}
-
-static inline void decode(const struct ADSB_Frame * frame, size_t skip,
-	uint8_t * out, size_t len)
-{
-	size_t i;
-
-	const uint8_t * in = frame->raw + 1;
-	--skip;
-
-	for (i = 0; i < skip; ++i)
-		if (*in++ == 0x1a)
-			++in;
-
-	for (i = 0; i < len; ++i)
-		if ((*out++ = *in++) == 0x1a)
-			++in;
 }
 
 /** Unescape frame payload.
@@ -364,7 +230,8 @@ static inline void decode(const struct ADSB_Frame * frame, size_t skip,
  * \param rawPtrPtr pointer to pointer of raw buffer
  * \param lenRawPtr pointer to raw buffer length
  */
-static inline enum RAW_STATUS readRaw(size_t len, struct ADSB_Frame * frame)
+static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
+	struct ADSB_Frame * frame)
 {
 	size_t i;
 	uint8_t * rawPtr = frame->raw + frame->raw_len;
@@ -372,13 +239,13 @@ static inline enum RAW_STATUS readRaw(size_t len, struct ADSB_Frame * frame)
 		/* receive one character */
 		uint8_t c;
 		if (!next(&c))
-			return RAW_STATUS_CONNFAIL;
-		/* put into raw buffer */
-		*rawPtr++ = c;
+			return DECODE_STATUS_CONNFAIL;
+		/* put into buffer and raw buffer */
+		*rawPtr++ = *dst++ = c;
 		++frame->raw_len;
 		if (c == 0x1a) { /* escaped character */
 			if (!peek(&c))
-				return RAW_STATUS_CONNFAIL;
+				return DECODE_STATUS_CONNFAIL;
 			if (c == 0x1a) {
 				/* consume character */
 				consume();
@@ -389,19 +256,11 @@ static inline enum RAW_STATUS readRaw(size_t len, struct ADSB_Frame * frame)
 				printf("ADSB: Out of Sync: got unescaped 0x1a in frame, "
 					"treating as resynchronization\n");
 				++STAT_stats.ADSB_outOfSync;
-				return RAW_STATUS_RESYNC;
+				return DECODE_STATUS_RESYNC;
 			}
 		}
 	}
-	return RAW_STATUS_OK;
-}
-
-/** Returns whether the receiver is synchronized by GPS.
- * \return true if the receiver is synchronized, false otherwise
- */
-bool ADSB_isSynchronized()
-{
-	return isSynchronized;
+	return DECODE_STATUS_OK;
 }
 
 /** Discard buffer content and fill it again. */

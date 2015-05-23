@@ -16,6 +16,7 @@
 /** file descriptor for UART */
 static int sock;
 
+static bool doConnect();
 static void closeConn();
 
 void INPUT_init()
@@ -37,12 +38,18 @@ static void closeConn()
 	}
 }
 
-bool INPUT_connect()
+void INPUT_connect()
+{
+	while(!doConnect())
+		sleep(CFG_config.input.reconnectInterval);
+}
+
+static bool doConnect()
 {
 	if (sock != -1)
 		closeConn();
 
-	sock = NETC_connect("INPUT", CFG_config.adsb.host, CFG_config.adsb.port);
+	sock = NETC_connect("INPUT", CFG_config.input.host, CFG_config.input.port);
 	return sock != -1;
 }
 

@@ -17,9 +17,12 @@ struct CFG_FPGA {
 	uint32_t timeout;
 };
 
-struct CFG_ADSB {
+struct CFG_INPUT {
 	union {
-		char uart[PATH_MAX];
+		struct {
+			char uart[PATH_MAX];
+			bool rtscts;
+		};
 		struct {
 			char host[NI_MAXHOST];
 			uint16_t port;
@@ -27,17 +30,14 @@ struct CFG_ADSB {
 	};
 
 	uint32_t reconnectInterval;
+};
 
-	bool configure;
-	bool frameFilter;
-	bool crc;
-	bool timestampGPS;
-	bool rts;
-	bool fec;
-	bool modeAC;
-	bool modeSLong;
-	bool modeSShort;
+struct CFG_RECV {
 	bool modeSLongExtSquitter;
+	bool syncFilter;
+	bool crc;
+	bool fec;
+	bool gps;
 };
 
 struct CFG_NET {
@@ -70,7 +70,8 @@ struct CFG_STATS {
 struct CFG_Config {
 	struct CFG_WD wd;
 	struct CFG_FPGA fpga;
-	struct CFG_ADSB adsb;
+	struct CFG_INPUT input;
+	struct CFG_RECV recv;
 	struct CFG_NET net;
 	struct CFG_BUF buf;
 	struct CFG_DEV dev;
