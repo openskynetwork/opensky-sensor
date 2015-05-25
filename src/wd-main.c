@@ -11,7 +11,7 @@ int main(int argc, char * argv[])
 	GPIO_comp.construct(NULL);
 
 	WD_comp.construct(NULL);
-	WD_comp.start(&WD_comp, NULL);
+	WD_comp.main();
 
 	return EXIT_SUCCESS;
 }
