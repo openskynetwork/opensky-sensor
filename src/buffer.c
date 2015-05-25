@@ -318,6 +318,7 @@ const struct ADSB_Frame * BUF_getFrame()
 const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 {
 	struct timespec ts;
+	struct ADSB_Frame * ret;
 
 	clock_gettime(CLOCK_REALTIME, &ts);
 	ts.tv_sec += timeout_ms / 1000;
@@ -334,17 +335,20 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 	while (!queue.head) {
 		int r = pthread_cond_timedwait(&cond, &mutex, &ts);
 		if (r == ETIMEDOUT) {
-			pthread_mutex_unlock(&mutex);
-			return NULL;
+			ret = NULL;
+			break;
 		} else if (r) {
 			error(-1, r, "pthread_cond_timedwait failed");
 		}
 	}
-	currentFrame = shift(&queue);
+	if (queue.head) {
+		currentFrame = shift(&queue);
+		ret = &currentFrame->frame;
+	}
 
 	CLEANUP_POP();
 
-	return &currentFrame->frame;
+	return ret;
 }
 
 /** Put a frame back into the pool.
