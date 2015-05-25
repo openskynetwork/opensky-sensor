@@ -627,10 +627,7 @@ static inline void append(volatile struct FrameList * dstList,
 	}
 	dstList->size += srcList->size;
 
-	if(!!dstList->head != !!dstList->tail) {
-		while(1);
-		assert(!!dstList->head == !!dstList->tail);
-	}
+	assert(!!dstList->head == !!dstList->tail);
 }
 
 static inline void clear(volatile struct FrameList * list)
