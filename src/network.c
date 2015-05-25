@@ -160,7 +160,7 @@ void NET_sync_recv()
 	NOC_puts("NET: recv synchronizing");
 #endif
 	pthread_mutex_lock(&mutex);
-	CLEANUP_PUSH(&unlock, NULL)
+	CLEANUP_PUSH(&unlock, NULL);
 	while (!connected)
 		pthread_cond_wait(&condConnected, &mutex);
 	reconnectedRecv = false;
