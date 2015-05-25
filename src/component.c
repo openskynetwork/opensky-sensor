@@ -13,10 +13,6 @@ static void stopUntil(struct Component * end);
 
 void COMP_register(struct Component * comp, void * initData)
 {
-	if (!comp->destruct) {
-		printf("Component %s has no destructor\n", comp->description);
-	}
-
 	if (!comp->start) {
 		comp->start = &COMP_startThreaded;
 		comp->stop = &COMP_stopThreaded;
@@ -35,51 +31,57 @@ void COMP_register(struct Component * comp, void * initData)
 void COMP_initAll()
 {
 	const struct Component * c;
+	printf("Initializing components:");
 	for (c = head; c; c = c->next) {
 		if (c->construct)
 			c->construct(c->data);
-		printf("Initalized component '%s'\n", c->description);
+		printf(" %s", c->description);
 	}
+	putchar('\n');
 }
 
 void COMP_destructAll()
 {
 	const struct Component * c;
+	printf("Destructing components");
 	for (c = tail; c; c = c->prev) {
 		if (c->destruct)
 			c->destruct();
-		printf("Destructed component '%s'\n", c->description);
+		printf(" %s", c->description);
 	}
+	putchar('\n');
 }
 
 bool COMP_startAll()
 {
 	struct Component * c;
+	printf("Starting components:");
 	for (c = head; c; c = c->next) {
+		printf(" %s", c->description);
 		if (!c->start(c, c->data)) {
-			printf("Could not start component '%s'\n", c->description);
+			printf(" [FAIL]\n");
 			stopUntil(c);
 			return false;
-		} else {
-			printf("Started component '%s'\n", c->description);
 		}
 	}
+	putchar('\n');
 	return true;
 }
 
 static void stop(struct Component * c)
 {
-	printf("Stopping component '%s'\n", c->description);
+	printf(" %s", c->description);
 	if (c->stop)
 		c->stop(c);
-	printf("Stopped component '%s'\n", c->description);
 }
 
 void COMP_stopAll()
 {
 	struct Component * c;
+	printf("Stopping components:");
 	for (c = tail; c; c = c->prev)
 		stop(c);
+	putchar('\n');
 }
 
 bool COMP_startThreaded(struct Component * c, void * data)
@@ -89,7 +91,7 @@ bool COMP_startThreaded(struct Component * c, void * data)
 		int rc = pthread_create(&c->thread, NULL, (void*(*)(void*))(c->main),
 			data);
 		if (rc) {
-			error(0, rc, "Could not create thread [%s]", c->description);
+			error(0, rc, "\n  Could not create thread [%s]", c->description);
 			return false;
 		}
 	}
@@ -106,6 +108,8 @@ void COMP_stopThreaded(struct Component * c)
 static void stopUntil(struct Component * end)
 {
 	struct Component * c;
+	printf("Stopping components:");
 	for (c = end->prev; c; c = c->prev)
 		stop(c);
+	putchar('\n');
 }
