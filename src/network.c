@@ -72,11 +72,9 @@ static void mainloop()
 	inRecv = false;
 	inSend = false;
 
-	bool locked = false;
-
-	pthread_mutex_lock(&mutex);
-	locked = true;
+	bool locked = true;
 	CLEANUP_PUSH(&cleanup, &locked);
+	pthread_mutex_lock(&mutex);
 	while (NET_comp.run) {
 		/* connect to the server */
 		while (NET_comp.run && !doConnect()) {
