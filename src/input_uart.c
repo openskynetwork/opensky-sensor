@@ -27,7 +27,7 @@ void INPUT_init()
 
 void INPUT_destruct()
 {
-	closeUART();
+	closeUart();
 }
 
 static void closeUart()
@@ -68,7 +68,7 @@ static bool doConnect()
 	t.c_iflag = IGNPAR;
 	t.c_oflag = ONLCR;
 	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3500000;
-	if (CFG_config.input->rtscts)
+	if (CFG_config.input.rtscts)
 		t.c_cflag |= CRTSCTS;
 	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
 	t.c_ispeed = B3500000;
