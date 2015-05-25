@@ -331,7 +331,7 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 			pthread_mutex_unlock(&mutex);
 			return NULL;
 		} else if (r) {
-			error(-1, r, "pthread_cond_wait failed");
+			error(-1, r, "pthread_cond_timedwait failed");
 		}
 	}
 	currentFrame = shift(&queue);
