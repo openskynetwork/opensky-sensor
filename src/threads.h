@@ -1,6 +1,5 @@
 #ifndef _HAVE_THREADS_H
 #define _HAVE_THREADS_H
-#endif
 
 #include <pthread.h>
 
@@ -32,3 +31,5 @@
 #define NOC_fprintf(f, format, args...) NOC_call(fprintf, f, format, args)
 
 #define NOC_puts(str) NOC_call(puts, str)
+
+#endif
