@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <input.h>
 #include <cfgfile.h>
+#include <threads.h>
 
 /** receive buffer */
 static uint8_t buf[128];
@@ -161,8 +162,8 @@ bool ADSB_getFrame(struct ADSB_Frame * frame)
 				return false;
 			if (sync == 0x1a)
 				break;
-			fprintf(stderr, "ADSB: Out of Sync: got 0x%2d instead of 0x1a\n",
-				sync);
+			NOC_fprintf(stderr, "ADSB: Out of Sync: got 0x%2d instead of "
+				"0x1a\n", sync);
 			++STAT_stats.ADSB_outOfSync;
 			synchronize();
 		}
@@ -189,8 +190,8 @@ decode_frame:
 			payload_len = 14;
 			break;
 		default:
-			fprintf(stderr, "ADSB: Unknown frame type %c, resynchronizing\n",
-				type);
+			NOC_fprintf(stderr, "ADSB: Unknown frame type %c, "
+				"resynchronizing\n", type);
 			++STAT_stats.ADSB_frameTypeUnknown;
 			synchronize();
 			continue;
@@ -253,8 +254,8 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 				*rawPtr++ = c;
 				++frame->raw_len;
 			} else {
-				printf("ADSB: Out of Sync: got unescaped 0x1a in frame, "
-					"treating as resynchronization\n");
+				NOC_puts("ADSB: Out of Sync: got unescaped 0x1a in frame, "
+					"treating as resynchronization");
 				++STAT_stats.ADSB_outOfSync;
 				return DECODE_STATUS_RESYNC;
 			}

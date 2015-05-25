@@ -17,7 +17,7 @@ static int fd;
 /** poll set when waiting for data */
 static struct pollfd fds;
 
-static bool doConnect()
+static bool doConnect();
 static void closeUart();
 
 void INPUT_init()
@@ -46,8 +46,7 @@ void INPUT_connect()
 
 static bool doConnect()
 {
-	if (fd != -1)
-		closeUart();
+	closeUart();
 
 	/* open uart */
 	fd = open(CFG_config.input.uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);

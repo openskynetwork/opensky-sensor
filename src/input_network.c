@@ -46,8 +46,7 @@ void INPUT_connect()
 
 static bool doConnect()
 {
-	if (sock != -1)
-		closeConn();
+	closeConn();
 
 	sock = NETC_connect("INPUT", CFG_config.input.host, CFG_config.input.port);
 	return sock != -1;

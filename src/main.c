@@ -18,6 +18,7 @@
 #include <string.h>
 #include <tb.h>
 #include <recv.h>
+#include <threads.h>
 
 static void mainloop();
 
@@ -59,6 +60,12 @@ int main(int argc, char * argv[])
 	return EXIT_SUCCESS;
 }
 
+static void cleanup(struct ADSB_Frame * frame)
+{
+	if (frame)
+		BUF_putFrame(frame);
+}
+
 static void mainloop()
 {
 	while (1) {
@@ -79,12 +86,14 @@ static void mainloop()
 				/* timeout */
 				success = NET_sendTimeout();
 			} else {
+				CLEANUP_PUSH(&cleanup, frame);
 				/* got a frame */
 				success = NET_sendFrame(frame);
 				if (success)
 					BUF_releaseFrame(frame);
 				else
 					BUF_putFrame(frame);
+				CLEANUP_POP0();
 			}
 		} while(success);
 		/* if sending failed, synchronize with the network */

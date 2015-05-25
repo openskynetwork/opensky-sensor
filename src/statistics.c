@@ -11,6 +11,7 @@
 #include <buffer.h>
 #include <signal.h>
 #include <cfgfile.h>
+#include <threads.h>
 
 volatile struct STAT_Statistics STAT_stats;
 
@@ -67,7 +68,10 @@ static void mainloop()
 	while (true) {
 		sleep(CFG_config.stats.interval);
 
+		int r;
+		CANCEL_DISABLE(&r);
 		printStatistics(&snapshot);
+		CANCEL_RESTORE(&r);
 	}
 }
 

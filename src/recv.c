@@ -6,6 +6,7 @@
 #include <buffer.h>
 #include <statistics.h>
 #include <cfgfile.h>
+#include <threads.h>
 
 enum RECV_LONG_FRAME_TYPE {
 	RECV_LONG_FRAME_TYPE_NONE = 0,
@@ -60,14 +61,23 @@ static void destruct()
 	ADSB_destruct();
 }
 
+static void cleanup(struct ADSB_Frame * frame)
+{
+	if (frame)
+		BUF_abortFrame(frame);
+}
+
 static void mainloop()
 {
-	while (true) {
+	struct ADSB_Frame * frame = NULL;
+
+	CLEANUP_PUSH(&cleanup, frame);
+	while (RECV_comp.run) {
 		ADSB_connect();
 		isSynchronized = false;
 
-		struct ADSB_Frame * frame = BUF_newFrame();
-		while (true) {
+		frame = BUF_newFrame();
+		while (RECV_comp.run) {
 			bool success = ADSB_getFrame(frame);
 			if (success) {
 				++STAT_stats.ADSB_frameType[frame->frameType];
@@ -109,4 +119,5 @@ static void mainloop()
 			}
 		}
 	}
+	CLEANUP_POP();
 }

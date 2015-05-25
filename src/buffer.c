@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <statistics.h>
 #include <cfgfile.h>
+#include <threads.h>
 
 /** Define to 1 to enable debugging messages */
 #define BUF_DEBUG 1
@@ -166,7 +167,7 @@ static void mainloop()
 				CFG_config.buf.gcLevel) {
 			++STAT_stats.BUF_GCRuns;
 #ifdef BUF_DEBUG
-			puts("BUF: Running Garbage Collector");
+			NOC_puts("BUF: Running Garbage Collector");
 #endif
 			collectPools();
 			destroyUnusedPools();
@@ -210,7 +211,7 @@ static struct FrameLink * getFrameFromPool()
 		/* pool was empty, but we could uncollect a pool which was about to be
 		 *  garbage collected */
 #ifdef BUF_DEBUG
-		puts("BUF: Uncollected pool");
+		NOC_puts("BUF: Uncollected pool");
 #endif
 		++STAT_stats.BUF_uncollects;
 		overCapacity = 0;
@@ -218,7 +219,7 @@ static struct FrameLink * getFrameFromPool()
 	} else if (dynIncrements < dynMaxIncrements && createDynPool()) {
 		/* pool was empty, but we just created another one */
 #ifdef BUF_DEBUG
-		printf("BUF: Created another pool (%zu/%zu)\n", dynIncrements,
+		NOC_printf("BUF: Created another pool (%zu/%zu)\n", dynIncrements,
 			dynMaxIncrements);
 #endif
 		overCapacity = 0;
@@ -227,7 +228,7 @@ static struct FrameLink * getFrameFromPool()
 		/* no more space in the pool and no more pools
 		 * -> sacrifice oldest frame */
 #if defined(BUF_DEBUG) && BUF_DEBUG > 1
-		puts("BUF: Sacrificing oldest frame\n");
+		NOC_puts("BUF: Sacrificing oldest frame\n");
 #endif
 		if (++overCapacity > overCapacityMax)
 			overCapacityMax = overCapacity;
@@ -287,13 +288,18 @@ void BUF_abortFrame(struct ADSB_Frame * frame)
 	newFrame = NULL;
 }
 
+static void cleanup(void * dummy)
+{
+	pthread_mutex_unlock(&mutex);
+}
+
 /** Get a frame from the queue.
  * \return adsb frame
  */
 const struct ADSB_Frame * BUF_getFrame()
 {
 	assert (!currentFrame);
-
+	CLEANUP_PUSH(&cleanup, NULL);
 	pthread_mutex_lock(&mutex);
 	while (!queue.head) {
 		int r = pthread_cond_wait(&cond, &mutex);
@@ -301,8 +307,7 @@ const struct ADSB_Frame * BUF_getFrame()
 			error(-1, r, "pthread_cond_wait failed");
 	}
 	currentFrame = shift(&queue);
-	pthread_mutex_unlock(&mutex);
-
+	CLEANUP_POP();
 	return &currentFrame->frame;
 }
 
@@ -325,6 +330,7 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 	assert (!currentFrame);
 
 	pthread_mutex_lock(&mutex);
+	CLEANUP_PUSH(&cleanup, NULL);
 	while (!queue.head) {
 		int r = pthread_cond_timedwait(&cond, &mutex, &ts);
 		if (r == ETIMEDOUT) {
@@ -335,7 +341,8 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 		}
 	}
 	currentFrame = shift(&queue);
-	pthread_mutex_unlock(&mutex);
+
+	CLEANUP_POP();
 
 	return &currentFrame->frame;
 }
@@ -473,7 +480,7 @@ static void collectPools()
 		}
 	}
 #ifdef BUF_DEBUG
-	printf("BUF: Collected %zu of %zu frames from overall pool to their "
+	NOC_printf("BUF: Collected %zu of %zu frames from overall pool to their "
 		"dynamic pools\n", prevSize - pool.size, prevSize);
 #endif
 }
@@ -532,7 +539,7 @@ static void destroyUnusedPools()
 		}
 	}
 #ifdef BUF_DEBUG
-	printf("BUF: Destroyed %zu of %zu dynamic pools\n",
+	NOC_printf("BUF: Destroyed %zu of %zu dynamic pools\n",
 		prevSize - dynIncrements, prevSize);
 #endif
 }

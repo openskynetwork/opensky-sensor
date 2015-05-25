@@ -14,6 +14,7 @@
 #include <endian.h>
 #include <statistics.h>
 #include <pthread.h>
+#include <threads.h>
 #include <cfgfile.h>
 
 #define DEBUG
@@ -53,11 +54,12 @@ static bool doConnect();
 static bool sendSerial();
 static inline bool sendData(const void * data, size_t len);
 
-static void cleanup(void * arg)
+static void cleanup(bool * locked)
 {
-	printf("Cancellation point\n");
-	pthread_cond_broadcast(&condReconnect);
-	pthread_mutex_unlock(&mutex);
+	if (*locked) {
+		pthread_cond_broadcast(&condReconnect);
+		pthread_mutex_unlock(&mutex);
+	}
 }
 
 /** Mainloop for network: (re)established network connection on failure */
@@ -70,14 +72,19 @@ static void mainloop()
 	inRecv = false;
 	inSend = false;
 
+	bool locked = false;
+
 	pthread_mutex_lock(&mutex);
-	pthread_cleanup_push(&cleanup, NULL);
+	locked = true;
+	CLEANUP_PUSH(&cleanup, &locked);
 	while (NET_comp.run) {
 		/* connect to the server */
 		while (NET_comp.run && !doConnect()) {
 			/* retry in case of failure */
 			pthread_mutex_unlock(&mutex);
+			locked = false;
 			sleep(CFG_config.net.reconnectInterval);
+			locked = true;
 			pthread_mutex_lock(&mutex);
 			++STAT_stats.NET_connectsFail;
 		}
@@ -101,7 +108,7 @@ static void mainloop()
 		while (NET_comp.run && !reconnect)
 			pthread_cond_wait(&condReconnect, &mutex);
 	}
-	pthread_cleanup_pop(1);
+	CLEANUP_POP();
 }
 
 /** Try to connect to the server.
@@ -125,53 +132,59 @@ static void unlock()
 	pthread_mutex_unlock(&mutex);
 }
 
+static void unlockIfLocked(bool * locked)
+{
+	if (*locked)
+		pthread_mutex_unlock(&mutex);
+}
+
 /** Synchronize sending thread: wait for a connection */
 void NET_sync_send()
 {
 #ifdef DEBUG
-	puts("NET: send synchronizing");
+	NOC_puts("NET: send synchronizing");
 #endif
 	pthread_mutex_lock(&mutex);
-	pthread_cleanup_push(&unlock, NULL);
+	CLEANUP_PUSH(&unlock, NULL);
 	while (!connected)
 		pthread_cond_wait(&condConnected, &mutex);
 	reconnectedSend = false;
 #ifdef DEBUG
-	puts("NET: send synchronized");
+	NOC_puts("NET: send synchronized");
 #endif
-	pthread_cleanup_pop(1);
+	CLEANUP_POP();
 }
 
 /** Synchronize receiving thread: wait for a connection */
 void NET_sync_recv()
 {
 #ifdef DEBUG
-	puts("NET: recv synchronizing");
+	NOC_puts("NET: recv synchronizing");
 #endif
 	pthread_mutex_lock(&mutex);
-	pthread_cleanup_push(&unlock, NULL);
+	CLEANUP_PUSH(&unlock, NULL)
 	while (!connected)
 		pthread_cond_wait(&condConnected, &mutex);
 	reconnectedRecv = false;
 #ifdef DEBUG
-	puts("NET: recv synchronized");
+	NOC_puts("NET: recv synchronized");
 #endif
-	pthread_cleanup_pop(1);
+	CLEANUP_POP();
 }
 
 static inline void emitDisconnect()
 {
 	shutdown(sock, SHUT_RDWR);
 #ifdef DEBUG
-	printf("NET: Disconnect Event. Connected: %d, inRecv: %d, inSend: %d -> ",
-		connected, inRecv, inSend);
+	NOC_printf("NET: Disconnect Event. Connected: %d, inRecv: %d, inSend: "
+		"%d -> ", connected, inRecv, inSend);
 #endif
 	if (!connected || (!inRecv && !inSend)) {
-		puts("reconnect");
+		NOC_puts("reconnect");
 		reconnect = true;
 		pthread_cond_signal(&condReconnect);
 	} else {
-		puts("wait");
+		NOC_puts("wait");
 	}
 	connected = false;
 }
@@ -186,7 +199,7 @@ static inline bool sendDataUnlocked(const void * data, size_t len)
 {
 	ssize_t rc = send(sock, data, len, MSG_NOSIGNAL);
 	if (rc <= 0) {
-		fprintf(stderr, "NET: could not send: %s\n",
+		NOC_fprintf(stderr, "NET: could not send: %s\n",
 			rc == 0 ? "Connection lost" : strerror(errno));
 		++STAT_stats.NET_framesFailed;
 		emitDisconnect();
@@ -204,26 +217,31 @@ static inline bool sendDataUnlocked(const void * data, size_t len)
  */
 static inline bool sendData(const void * data, size_t len)
 {
+	bool ret;
+	bool locked;
+
 	pthread_mutex_lock(&mutex);
+	locked = true;
+	CLEANUP_PUSH(&unlockIfLocked, &locked);
 	if (!connected || reconnectedSend) {
-		fprintf(stderr, "NET: could not send: %s\n",
+		NOC_fprintf(stderr, "NET: could not send: %s\n",
 			!connected ? "not connected" : "unsynchronized");
-		pthread_mutex_unlock(&mutex);
 		++STAT_stats.NET_framesFailed;
-		return false;
+		ret = false;
 	} else {
 		inSend = true;
 		pthread_mutex_unlock(&mutex);
+		locked = false;
 		ssize_t rc = send(sock, data, len, MSG_NOSIGNAL);
+		locked = true;
 		pthread_mutex_lock(&mutex);
 		inSend = false;
 		if (rc <= 0) {
-			fprintf(stderr, "NET: could not send: %s\n",
+			NOC_fprintf(stderr, "NET: could not send: %s\n",
 				rc == 0 ? "Connection lost" : strerror(errno));
 			++STAT_stats.NET_framesFailed;
 			emitDisconnect();
-			pthread_mutex_unlock(&mutex);
-			return false;
+			ret = false;
 		} else {
 			if (!connected) {
 				/* Receiver thread detected connection failure, but send
@@ -231,11 +249,12 @@ static inline bool sendData(const void * data, size_t len)
 				 * the sender thread to acknowledge the failure, so we do it */
 				emitDisconnect();
 			}
-			pthread_mutex_unlock(&mutex);
 			++STAT_stats.NET_framesSent;
-			return true;
+			ret = true;
 		}
 	}
+	CLEANUP_POP();
+	return ret;
 }
 
 /** Send the serial number of the device to the server.
@@ -292,29 +311,34 @@ bool NET_sendTimeout()
 
 ssize_t NET_receive(uint8_t * buf, size_t len)
 {
+	ssize_t ret;
+	bool locked;
 	pthread_mutex_lock(&mutex);
+	locked = true;
+	CLEANUP_PUSH(&unlockIfLocked, &locked);
 	if (!connected || reconnectedRecv) {
-		fprintf(stderr, "NET: could not receive: %s\n",
+		NOC_fprintf(stderr, "NET: could not receive: %s\n",
 			!connected ? "not connected" : "unsynchronized");
-		pthread_mutex_unlock(&mutex);
 		++STAT_stats.NET_recvFailed;
-		return false;
+		ret = -1;
 	} else {
 		inRecv = true;
 		pthread_mutex_unlock(&mutex);
-		ssize_t rc = recv(sock, buf, 128, 0);
+		locked = false;
+		ret = recv(sock, buf, 128, 0);
+		locked = true;
 		pthread_mutex_lock(&mutex);
 		inRecv = false;
-		if (rc <= 0) {
-			fprintf(stderr, "NET: could not receive: %s\n",
-				rc == 0 ? "Connection lost" : strerror(errno));
+		if (ret <= 0) {
+			NOC_fprintf(stderr, "NET: could not receive: %s\n",
+					ret == 0 ? "Connection lost" : strerror(errno));
 			++STAT_stats.NET_recvFailed;
 			emitDisconnect();
 		} else if (!connected) {
-			rc = -1;
+			ret = -1;
 			emitDisconnect();
 		}
-		pthread_mutex_unlock(&mutex);
-		return rc;
 	}
+	CLEANUP_POP();
+	return ret;
 }

@@ -12,20 +12,26 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
-#include <pthread.h>
+#include <threads.h>
+
+static void cleanup(struct addrinfo * hosts)
+{
+	if (hosts)
+		freeaddrinfo(hosts);
+}
 
 int NETC_connect(const char * component, const char * hostName, uint16_t port)
 {
-	/* TODO: better: cleanup handler */
-	int cancelState;
-	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cancelState);
+	struct addrinfo * hosts = NULL, * host;
+	int sock;
 
 	/* resolve name */
-	struct addrinfo * hosts, * host;
 	int rc = getaddrinfo(hostName, NULL, NULL, &hosts);
+	CLEANUP_PUSH(&cleanup, hosts);
+
 	if (rc) {
-		fprintf(stderr, "%s: could not resolve '%s': %s\n", component, hostName,
-			gai_strerror(rc));
+		NOC_fprintf(stderr, "%s: could not resolve '%s': %s\n",
+			component, hostName, gai_strerror(rc));
 		return -1;
 	}
 
@@ -42,13 +48,13 @@ int NETC_connect(const char * component, const char * hostName, uint16_t port)
 			((struct sockaddr_in6*)addr)->sin6_port = port_be;
 			break;
 		default:
-			printf("%s: ignoring unknown family %d for address '%s'",
+			NOC_printf("%s: ignoring unknown family %d for address '%s'",
 				component, host->ai_family, hostName);
 			continue;
 		}
 
 		/* create socket */
-		int sock = socket(host->ai_family, SOCK_STREAM | SOCK_CLOEXEC, 0);
+		sock = socket(host->ai_family, SOCK_STREAM | SOCK_CLOEXEC, 0);
 		if (sock < 0)
 			error(EXIT_FAILURE, errno, "socket");
 
@@ -57,18 +63,19 @@ int NETC_connect(const char * component, const char * hostName, uint16_t port)
 		if (rc < 0) {
 			close(sock);
 		} else {
-			printf("%s: connected to '%s:%" PRIu16 "'\n", component, hostName,
-				port);
-			freeaddrinfo(hosts);
-			pthread_setcancelstate(cancelState, NULL);
-			return sock;
+			NOC_printf("%s: connected to '%s:%" PRIu16 "'\n", component,
+				hostName, port);
+			break;
 		}
 	}
 
-	fprintf(stderr, "%s: could not connect to '%s:%" PRIu16 "': %s\n",
-		component, hostName, port, strerror(errno));
-	freeaddrinfo(hosts);
+	CLEANUP_POP();
 
-	pthread_setcancelstate(cancelState, NULL);
-	return -1;
+	if (!host) {
+		NOC_fprintf(stderr, "%s: could not connect to '%s:%" PRIu16 "': %s\n",
+			component, hostName, port, strerror(errno));
+		return -1;
+	} else {
+		return sock;
+	}
 }
