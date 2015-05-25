@@ -78,6 +78,16 @@ AC_ARG_ENABLE([bb-black],
 AS_IF([test x"$bbblack" = x"yes"],
   [AC_DEFINE([BEAGLEBONE_BLACK], [1], [Build for BeagleBone Black])])
 
+AC_ARG_ENABLE([cleanup],
+  [AS_HELP_STRING([--enable-cleanup], [Add cleanup routines @<:@yes@:>@])],
+  [case "${enableval}" in
+    yes) cleanup=yes ;;
+    no)  cleanup=no ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-cleanup]) ;;
+   esac], [cleanup=yes])
+AS_IF([test x"$cleanup" = x"yes"],
+  [AC_DEFINE([CLEANUP], [1], [Add cleanup routines])])
+
 AC_ARG_WITH([systemd],
   [AS_HELP_STRING([--with-systemd], [Compile with systemd integration @<:@check@:>@])],
   [:],[with_systemd=check])

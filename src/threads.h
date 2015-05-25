@@ -1,6 +1,8 @@
 #ifndef _HAVE_THREADS_H
 #define _HAVE_THREADS_H
 
+#ifdef CLEANUP
+
 #include <pthread.h>
 
 #define CLEANUP_PUSH(fun, arg) \
@@ -25,6 +27,28 @@
 	CANCEL_RESTORE(&r); \
 	r; \
 })
+
+#else
+
+#define CLEANUP_PUSH(fun, arg) \
+	do { \
+		__attribute__((unused)) __typeof__(fun) _clean_fn = (fun); \
+		__attribute__((unused)) __typeof__(arg) _clean_arg = (arg);
+
+#define CLEANUP_POP() \
+		_clean_fn(_clean_arg); \
+	} while (0)
+
+#define CLEANUP_POP0() \
+	} while (0)
+
+#define CANCEL_DISABLE(r) do {} while(0)
+
+#define CANCEL_RESTORE(r) do {} while(0)
+
+#define NOC_call(func, args...) func(args)
+
+#endif
 
 #define NOC_printf(format, args...) NOC_call(printf, format, args)
 

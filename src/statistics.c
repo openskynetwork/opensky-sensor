@@ -68,7 +68,7 @@ static void mainloop()
 	while (true) {
 		sleep(CFG_config.stats.interval);
 
-		int r;
+		__attribute__((unused)) int r;
 		CANCEL_DISABLE(&r);
 		printStatistics(&snapshot);
 		CANCEL_RESTORE(&r);

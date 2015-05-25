@@ -53,7 +53,9 @@ int main(int argc, char * argv[])
 		return EXIT_FAILURE;
 
 	pthread_mutex_lock(&sigmutex);
+#ifdef CLEANUP
 	signal(SIGINT, &sigint);
+#endif
 	pthread_cond_wait(&sigcond, &sigmutex);
 	signal(SIGINT, SIG_DFL);
 	pthread_mutex_unlock(&sigmutex);
@@ -64,6 +66,7 @@ int main(int argc, char * argv[])
 	return EXIT_SUCCESS;
 }
 
+__attribute__((unused))
 static void sigint(int sig)
 {
 	pthread_mutex_lock(&sigmutex);
