@@ -4,27 +4,26 @@
 #include <gpio.h>
 #include <watchdog.h>
 #include <fpga.h>
-#include <pthread.h>
 #include <stdlib.h>
-#include <error.h>
-#include <errno.h>
-#include <inttypes.h>
 #include <stdio.h>
 #include <buffer.h>
 #include <network.h>
-#include <unistd.h>
 #include <cfgfile.h>
 #include <statistics.h>
-#include <string.h>
 #include <tb.h>
 #include <recv.h>
-#include <threads.h>
-
-static void mainloop();
+#include <relay.h>
+#include <signal.h>
+#include <pthread.h>
 
 #if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
 #endif
+
+static void sigint(int sig);
+
+static pthread_mutex_t sigmutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t sigcond = PTHREAD_COND_INITIALIZER;
 
 int main(int argc, char * argv[])
 {
@@ -46,13 +45,18 @@ int main(int argc, char * argv[])
 	COMP_register(&NET_comp, NULL);
 	COMP_register(&TB_comp, argv);
 	COMP_register(&RECV_comp, NULL);
+	COMP_register(&RELAY_comp, NULL);
 
 	COMP_initAll();
 
 	if (!COMP_startAll())
 		return EXIT_FAILURE;
 
-	mainloop();
+	pthread_mutex_lock(&sigmutex);
+	signal(SIGINT, &sigint);
+	pthread_cond_wait(&sigcond, &sigmutex);
+	signal(SIGINT, SIG_DFL);
+	pthread_mutex_unlock(&sigmutex);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -60,42 +64,9 @@ int main(int argc, char * argv[])
 	return EXIT_SUCCESS;
 }
 
-static void cleanup(struct ADSB_Frame * frame)
+static void sigint(int sig)
 {
-	if (frame)
-		BUF_putFrame(frame);
-}
-
-static void mainloop()
-{
-	while (1) {
-		/* synchronize with the network (i.e. wait for a connection) */
-		NET_sync_send();
-
-		/* Now we have a new connection to the server */
-
-		if (!CFG_config.buf.history) /* flush buffer if history is disabled */
-			BUF_flush();
-
-		bool success;
-		do {
-			/* read a frame from the buffer */
-			const struct ADSB_Frame * frame =
-				BUF_getFrameTimeout(CFG_config.net.timeout);
-			if (!frame) {
-				/* timeout */
-				success = NET_sendTimeout();
-			} else {
-				CLEANUP_PUSH(&cleanup, frame);
-				/* got a frame */
-				success = NET_sendFrame(frame);
-				if (success)
-					BUF_releaseFrame(frame);
-				else
-					BUF_putFrame(frame);
-				CLEANUP_POP0();
-			}
-		} while(success);
-		/* if sending failed, synchronize with the network */
-	}
+	pthread_mutex_lock(&sigmutex);
+	pthread_cond_broadcast(&sigcond);
+	pthread_mutex_unlock(&sigmutex);
 }
