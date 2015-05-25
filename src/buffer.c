@@ -13,6 +13,7 @@
 #include <statistics.h>
 #include <cfgfile.h>
 #include <threads.h>
+#include <util.h>
 
 /** Define to 1 to enable debugging messages */
 #define BUF_DEBUG 1
@@ -71,8 +72,6 @@ static volatile struct FrameList pool;
 /** Output Queue */
 static volatile struct FrameList queue;
 
-/** Currently filled frame (by writer), mainly for debugging purposes */
-static struct FrameLink * newFrame;
 /** Currently processed frame (by reader), for debugging purposes */
 static struct FrameLink * currentFrame;
 
@@ -122,7 +121,7 @@ static void construct()
 	clear(&pool);
 	clear(&queue);
 
-	newFrame = currentFrame = NULL;
+	currentFrame = NULL;
 
 	dynMaxIncrements = CFG_config.buf.history ?
 		CFG_config.buf.dynIncrement : 0;
@@ -245,12 +244,11 @@ static struct FrameLink * getFrameFromPool()
  */
 struct ADSB_Frame * BUF_newFrame()
 {
-	assert (!newFrame);
 	pthread_mutex_lock(&mutex);
-	newFrame = getFrameFromPool();
+	struct FrameLink * link = getFrameFromPool();
 	pthread_mutex_unlock(&mutex);
-	assert (newFrame);
-	return &newFrame->frame;
+	assert (link);
+	return &link->frame;
 }
 
 /** Commit a filled frame from writer to reader queue.
@@ -259,17 +257,15 @@ struct ADSB_Frame * BUF_newFrame()
 void BUF_commitFrame(struct ADSB_Frame * frame)
 {
 	assert (frame);
-	assert (&newFrame->frame == frame);
+	struct FrameLink * link = container_of(frame, struct FrameLink, frame);
 
 	pthread_mutex_lock(&mutex);
-	push(&queue, newFrame);
+	push(&queue, link);
 	pthread_cond_broadcast(&cond);
 	pthread_mutex_unlock(&mutex);
 
 	if (queue.size > STAT_stats.BUF_maxQueue)
 		STAT_stats.BUF_maxQueue = queue.size;
-
-	newFrame = NULL;
 }
 
 /** Abort filling a frame and return it to the pool.
@@ -278,14 +274,11 @@ void BUF_commitFrame(struct ADSB_Frame * frame)
 void BUF_abortFrame(struct ADSB_Frame * frame)
 {
 	assert (frame);
-	assert (&newFrame->frame == frame);
+	struct FrameLink * link = container_of(frame, struct FrameLink, frame);
 
 	pthread_mutex_lock(&mutex);
-	push(&pool, newFrame);
-	newFrame = NULL;
+	push(&pool, link);
 	pthread_mutex_unlock(&mutex);
-
-	newFrame = NULL;
 }
 
 static void cleanup(void * dummy)
