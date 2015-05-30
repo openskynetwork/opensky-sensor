@@ -27,6 +27,8 @@ struct FrameLink {
 	struct ADSB_Frame frame;
 	/** Next Element */
 	struct FrameLink * next;
+	/** Previous Element */
+	struct FrameLink * prev;
 	/** Containing pool */
 	struct Pool * pool;
 };
@@ -406,9 +408,10 @@ static bool deployPool(struct Pool * newPool, size_t size)
 	struct FrameLink * frame = initFrames;
 	for (i = 0; i < size; ++i, ++frame) {
 		frame->next = frame + 1;
+		frame->prev = frame - 1;
 		frame->pool = newPool;
 	}
-	list.tail->next = NULL;
+	list.head->prev = list.tail->next = NULL;
 	list.size = size;
 
 	/* append frames to the overall pool */
@@ -462,12 +465,16 @@ static void collectPools()
 			/* collect only frames of dynamic pools */
 
 			/* unlink from the overall pool */
+			assert (prev == frame->prev);
+			assert (!prev == !!(pool.head == frame));
 			if (prev)
-				prev->next = next;
+				frame->prev->next = next;
 			else
 				pool.head = next;
 			if (frame == pool.tail)
-				pool.tail = prev;
+				pool.tail = frame->prev;
+			else
+				next->prev = frame->prev;
 			--pool.size;
 
 			/* add them to their pools' collection */
@@ -557,8 +564,11 @@ static inline struct FrameLink * shift(volatile struct FrameList * list)
 
 	/* unlink */
 	list->head = ret->next;
+	assert (!!(list->tail == ret) == !!(!list->head));
 	if (list->tail == ret)
 		list->tail = NULL;
+	else
+		list->head->prev = NULL;
 	ret->next = NULL;
 	--list->size;
 
@@ -577,11 +587,14 @@ static inline void unshift(volatile struct FrameList * list,
 
 	/* frame will be the new head */
 	frame->next = list->head;
+	frame->prev = NULL;
 
 	/* link into container */
-	list->head = frame;
 	if (!list->tail)
 		list->tail = frame;
+	else
+		list->head->prev = frame;
+	list->head = frame;
 	++list->size;
 
 	assert(!!list->head == !!list->tail);
@@ -598,14 +611,14 @@ static inline void push(volatile struct FrameList * list,
 
 	/* frame will be new tail */
 	frame->next = NULL;
+	frame->prev = list->tail;
 
 	/* link into container */
-	if (!list->head) {
-		list->head = list->tail = frame;
-	} else {
+	if (!list->head)
+		list->head = frame;
+	else
 		list->tail->next = frame;
-		list->tail = frame;
-	}
+	list->tail = frame;
 	++list->size;
 
 	assert(!!list->head == !!list->tail);
@@ -628,6 +641,7 @@ static inline void append(volatile struct FrameList * dstList,
 	if (srcList->tail) {
 		/* link tail */
 		dstList->tail = srcList->tail;
+		srcList->head->prev = dstList->tail;
 	}
 	dstList->size += srcList->size;
 
