@@ -21,24 +21,24 @@
 /* Forward declaration */
 struct Pool;
 
-/** Linked Frame List */
-struct FrameLink {
-	/** Frame */
-	struct ADSB_Frame frame;
+/** Linked Message List */
+struct MsgLink {
+	/** Message */
+	struct ADSB_Frame message;
 	/** Next Element */
-	struct FrameLink * next;
+	struct MsgLink * next;
 	/** Previous Element */
-	struct FrameLink * prev;
+	struct MsgLink * prev;
 	/** Containing pool */
 	struct Pool * pool;
 };
 
 /** Linked List Container */
-struct FrameList {
+struct MsgList {
 	/** Head Pointer or NULL if empty */
-	struct FrameLink * head;
+	struct MsgLink * head;
 	/** Tail Pointer or NULL if empty */
-	struct FrameLink * tail;
+	struct MsgLink * tail;
 	/** Size of list */
 	size_t size;
 };
@@ -46,16 +46,16 @@ struct FrameList {
 /** Buffer Pool */
 struct Pool {
 	/** Pool start */
-	struct FrameLink * pool;
+	struct MsgLink * pool;
 	/** Pool size */
 	size_t size;
 	/** Linked List: next pool */
 	struct Pool * next;
-	/** Garbage collection: collected frames */
-	struct FrameList collect;
+	/** Garbage collection: collected messages */
+	struct MsgList collect;
 };
 
-/** Static Pool (those frames are always allocated in advance) */
+/** Static Pool (those messages are always allocated in advance) */
 static struct Pool staticPool;
 
 /** Dynamic Pool max. increments */
@@ -65,17 +65,17 @@ static size_t dynIncrements;
 /** Dynamic Pool List */
 static struct Pool * dynPools;
 
-/** Number of frames discarded in an overflow situation */
+/** Number of messages discarded in an overflow situation */
 static uint64_t overCapacity;
 static uint64_t overCapacityMax;
 
 /** Overall Pool */
-static struct FrameList pool;
+static struct MsgList pool;
 /** Output Queue */
-static struct FrameList queue;
+static struct MsgList queue;
 
-/** Currently processed frame (by reader), for debugging purposes */
-static struct FrameLink * currentFrame;
+/** Currently processed message (by reader), for debugging purposes */
+static struct MsgLink * currentMessage;
 
 /** Mutex */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -103,18 +103,16 @@ static void collectPools();
 static bool uncollectPools();
 static void destroyUnusedPools();
 
-static inline struct FrameLink * shift(struct FrameList * list);
-static inline void unshift(struct FrameList * list,
-	struct FrameLink * frame);
-static inline void push(struct FrameList * list,
-	struct FrameLink * frame);
-static inline void append(struct FrameList * dstList,
-	const volatile struct FrameList * srcList);
-static inline void clear(struct FrameList * list);
+static inline struct MsgLink * shift(struct MsgList * list);
+static inline void unshift(struct MsgList * list,
+	struct MsgLink * msg);
+static inline void push(struct MsgList * list,
+	struct MsgLink * msg);
+static inline void append(struct MsgList * dstList,
+	const volatile struct MsgList * srcList);
+static inline void clear(struct MsgList * list);
 
-/** Initialize frame buffer.
- * \param cfg pointer to buffer configuration, see cfgfile.h
- */
+/** Initialize message buffer. */
 static void construct()
 {
 	dynIncrements = 0;
@@ -123,7 +121,7 @@ static void construct()
 	clear(&pool);
 	clear(&queue);
 
-	currentFrame = NULL;
+	currentMessage = NULL;
 
 	dynMaxIncrements = CFG_config.buf.history ?
 		CFG_config.buf.dynIncrement : 0;
@@ -177,7 +175,7 @@ static void mainloop()
 	}
 }
 
-/** Flush Buffer queue. This discards all buffered but not processed frames */
+/** Flush Buffer queue. This discards all buffered but not processed messages */
 void BUF_flush()
 {
 	pthread_mutex_lock(&mutex);
@@ -196,16 +194,16 @@ void BUF_fillStatistics()
 	STAT_stats.BUF_sacrificeMax = overCapacityMax;
 }
 
-/** Get a new frame from the pool. Extend the pool if there are more dynamic
- *  pools to get. Discard oldest frame if there is no more dynamic pool
- * \return a frame, which can be filled
+/** Get a new message from the pool. Extend the pool if there are more dynamic
+ *  pools to get. Discard oldest message if there is no more dynamic pool
+ * \return a message which can be filled
  */
-static struct FrameLink * getFrameFromPool()
+static struct MsgLink * getMessageFromPool()
 {
-	struct FrameLink * ret;
+	struct MsgLink * ret;
 
 	if (pool.head) {
-		/* pool is not empty -> unlink and return first frame */
+		/* pool is not empty -> unlink and return first message */
 		ret = shift(&pool);
 		overCapacity = 0;
 	} else if (uncollectPools()) {
@@ -227,9 +225,9 @@ static struct FrameLink * getFrameFromPool()
 		ret = shift(&pool);
 	} else {
 		/* no more space in the pool and no more pools
-		 * -> sacrifice oldest frame */
+		 * -> sacrifice oldest message */
 #if defined(BUF_DEBUG) && BUF_DEBUG > 1
-		NOC_puts("BUF: Sacrificing oldest frame\n");
+		NOC_puts("BUF: Sacrificing oldest message");
 #endif
 		if (++overCapacity > overCapacityMax)
 			overCapacityMax = overCapacity;
@@ -241,25 +239,26 @@ static struct FrameLink * getFrameFromPool()
 	return ret;
 }
 
-/** Get a frame from the unused frame pool for the writer in order to fill it.
- * \return new frame
+/** Get a message from the unused message pool for the writer in order to fill
+ *  it.
+ * \return new message
  */
-struct ADSB_Frame * BUF_newFrame()
+struct ADSB_Frame * BUF_newMessage()
 {
 	pthread_mutex_lock(&mutex);
-	struct FrameLink * link = getFrameFromPool();
+	struct MsgLink * link = getMessageFromPool();
 	pthread_mutex_unlock(&mutex);
 	assert (link);
-	return &link->frame;
+	return &link->message;
 }
 
-/** Commit a filled frame from writer to reader queue.
- * \param frame filled frame to be delivered to the reader
+/** Commit a filled message from writer to reader queue.
+ * \param msg filled message to be delivered to the reader
  */
-void BUF_commitFrame(struct ADSB_Frame * frame)
+void BUF_commitMessage(struct ADSB_Frame * msg)
 {
-	assert (frame);
-	struct FrameLink * link = container_of(frame, struct FrameLink, frame);
+	assert (msg);
+	struct MsgLink * link = container_of(msg, struct MsgLink, message);
 
 	pthread_mutex_lock(&mutex);
 	push(&queue, link);
@@ -270,13 +269,13 @@ void BUF_commitFrame(struct ADSB_Frame * frame)
 		STAT_stats.BUF_maxQueue = queue.size;
 }
 
-/** Abort filling a frame and return it to the pool.
- * \param frame aborted frame
+/** Abort filling a message and return it to the pool.
+ * \param msg aborted message
  */
-void BUF_abortFrame(struct ADSB_Frame * frame)
+void BUF_abortMessage(struct ADSB_Frame * msg)
 {
-	assert (frame);
-	struct FrameLink * link = container_of(frame, struct FrameLink, frame);
+	assert (msg);
+	struct MsgLink * link = container_of(msg, struct MsgLink, message);
 
 	pthread_mutex_lock(&mutex);
 	push(&pool, link);
@@ -288,12 +287,12 @@ static void cleanup(void * dummy)
 	pthread_mutex_unlock(&mutex);
 }
 
-/** Get a frame from the queue.
- * \return adsb frame
+/** Get a message from the queue.
+ * \return adsb message
  */
-const struct ADSB_Frame * BUF_getFrame()
+const struct ADSB_Frame * BUF_getMessage()
 {
-	assert (!currentFrame);
+	assert (!currentMessage);
 	CLEANUP_PUSH(&cleanup, NULL);
 	pthread_mutex_lock(&mutex);
 	while (!queue.head) {
@@ -301,16 +300,16 @@ const struct ADSB_Frame * BUF_getFrame()
 		if (r)
 			error(-1, r, "pthread_cond_wait failed");
 	}
-	currentFrame = shift(&queue);
+	currentMessage = shift(&queue);
 	CLEANUP_POP();
-	return &currentFrame->frame;
+	return &currentMessage->message;
 }
 
-/** Get a frame from the queue.
+/** Get a message from the queue.
  * \param timeout_ms timeout in milliseconds
- * \return adsb frame or NULL on timeout
+ * \return message or NULL on timeout
  */
-const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
+const struct ADSB_Frame * BUF_getMessageTimeout(uint32_t timeout_ms)
 {
 	struct timespec ts;
 	struct ADSB_Frame * ret;
@@ -323,7 +322,7 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 		ts.tv_nsec -= 1000000000;
 	}
 
-	assert (!currentFrame);
+	assert (!currentMessage);
 
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&cleanup, NULL);
@@ -337,8 +336,8 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 		}
 	}
 	if (queue.head) {
-		currentFrame = shift(&queue);
-		ret = &currentFrame->frame;
+		currentMessage = shift(&queue);
+		ret = &currentMessage->message;
 	}
 
 	CLEANUP_POP();
@@ -346,75 +345,74 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 	return ret;
 }
 
-/** Put a frame back into the pool.
- * \note Can be called by the reader after a frame is processed in order to
- *  put the frame into the pool again. If it is not called explicitly, it is
- *  called by the next call of FB_get implicitly.
- * \param frame frame to be put, must be the last one returned by one of
- *  BUF_getFrame() or BUF_getFrameTimeout()
+/** Put a message back into the pool.
+ * \note Can be called by the reader after a message is processed in order to
+ *  put the message into the pool again.
+ * \param msg message to be put, must be the last one returned by one of
+ *  BUF_getMessage() or BUF_getMessageTimeout()
  */
-void BUF_releaseFrame(const struct ADSB_Frame * frame)
+void BUF_releaseMessage(const struct ADSB_Frame * msg)
 {
-	assert (frame);
-	assert (frame == &currentFrame->frame);
+	assert (msg);
+	assert (msg == &currentMessage->message);
 
 	pthread_mutex_lock(&mutex);
-	push(&pool, currentFrame);
+	push(&pool, currentMessage);
 	pthread_mutex_unlock(&mutex);
-	currentFrame = NULL;
+	currentMessage = NULL;
 }
 
-/** Put a frame back into the queue.
+/** Put a message back into the queue.
  * \note This is meant for unsuccessful behavior of the reader. It should be
- *  called if the reader wants to get that frame again next time when
- *  BUF_getFrame() or BUF_getFrameTimeout() is called.
- * \param frame frame to be put, must be the last one returned by one of
- *  BUF_getFrame() or BUF_getFrameTimeout()
+ *  called if the reader wants to get that message again next time when
+ *  BUF_getMessage() or BUF_getMessageTimeout() is called.
+ * \param msg message to be put, must be the last one returned by one of
+ *  BUF_getMessage() or BUF_getMessageTimeout()
  */
-void BUF_putFrame(const struct ADSB_Frame * frame)
+void BUF_putMessage(const struct ADSB_Frame * msg)
 {
-	assert (frame);
-	assert (frame == &currentFrame->frame);
+	assert (msg);
+	assert (msg == &currentMessage->message);
 
 	pthread_mutex_lock(&mutex);
-	unshift(&queue, currentFrame);
+	unshift(&queue, currentMessage);
 	pthread_mutex_unlock(&mutex);
-	currentFrame = NULL;
+	currentMessage = NULL;
 }
 
-/** Deploy a new pool: allocate frames and append them to the overall pool.
+/** Deploy a new pool: allocate messages and append them to the overall pool.
  * \param newPool pool to be deployed
- * \param size number of frames in that pool
+ * \param size number of messages in that pool
  * \return true if deployment succeeded, false if allocation failed
  */
 static bool deployPool(struct Pool * newPool, size_t size)
 {
-	/* allocate new frames */
-	struct FrameLink * initFrames = malloc(size * sizeof *initFrames);
-	if (!initFrames)
+	/* allocate new messages */
+	struct MsgLink * initMsgs = malloc(size * sizeof *initMsgs);
+	if (!initMsgs)
 		return false;
 
 	/* initialize pool */
-	newPool->pool = initFrames;
+	newPool->pool = initMsgs;
 	newPool->size = size;
 	newPool->next = NULL;
 	clear(&newPool->collect);
 
-	/* setup frame list */
-	struct FrameList list;
-	list.head = initFrames;
-	list.tail = initFrames + size - 1;
+	/* setup message list */
+	struct MsgList list;
+	list.head = initMsgs;
+	list.tail = initMsgs + size - 1;
 	size_t i;
-	struct FrameLink * frame = initFrames;
-	for (i = 0; i < size; ++i, ++frame) {
-		frame->next = frame + 1;
-		frame->prev = frame - 1;
-		frame->pool = newPool;
+	struct MsgLink * msg = initMsgs;
+	for (i = 0; i < size; ++i, ++msg) {
+		msg->next = msg + 1;
+		msg->prev = msg - 1;
+		msg->pool = newPool;
 	}
 	list.head->prev = list.tail->next = NULL;
 	list.size = size;
 
-	/* append frames to the overall pool */
+	/* append messages to the overall pool */
 	append(&pool, &list);
 
 	return true;
@@ -447,40 +445,40 @@ static bool createDynPool()
 	return true;
 }
 
-/** Collect unused frames from the overall pool to their own pool.
+/** Collect unused messages from the overall pool to their own pool.
  * \note used for garbage collection
  */
 static void collectPools()
 {
-	struct FrameLink * frame, * next;
+	struct MsgLink * msg, * next;
 #ifdef BUF_DEBUG
 	const size_t prevSize = pool.size;
 #endif
 
-	/* iterate over all frames of the pool and keep a pointer to the
+	/* iterate over all messages of the pool and keep a pointer to the
 	 * predecessor */
-	for (frame = pool.head; frame; frame = next) {
-		next = frame->next;
-		if (frame->pool != &staticPool) {
-			/* collect only frames of dynamic pools */
+	for (msg = pool.head; msg; msg = next) {
+		next = msg->next;
+		if (msg->pool != &staticPool) {
+			/* collect only messages of dynamic pools */
 
 			/* unlink from the overall pool */
-			if (frame->prev)
-				frame->prev->next = next;
+			if (msg->prev)
+				msg->prev->next = next;
 			else
 				pool.head = next;
 			if (next)
-				next->prev = frame->prev;
+				next->prev = msg->prev;
 			else
-				pool.tail = frame->prev;
+				pool.tail = msg->prev;
 			--pool.size;
 
 			/* add them to their pools' collection */
-			unshift(&frame->pool->collect, frame);
+			unshift(&msg->pool->collect, msg);
 		}
 	}
 #ifdef BUF_DEBUG
-	NOC_printf("BUF: Collected %zu of %zu frames from overall pool to their "
+	NOC_printf("BUF: Collected %zu of %zu messages from overall pool to their "
 		"dynamic pools\n", prevSize - pool.size, prevSize);
 #endif
 }
@@ -496,7 +494,7 @@ static bool uncollectPools()
 	/* iterate over all dynamic pools */
 	for (p = dynPools; p; p = p->next) {
 		if (p->collect.head) {
-			/* pools' collection was not empty, put frames back into the
+			/* pools' collection was not empty, put messages back into the
 			 * overall pool */
 			append(&pool, &p->collect);
 			/* clear collection */
@@ -530,7 +528,7 @@ static void destroyUnusedPools()
 				dynPools = next;
 			--dynIncrements;
 
-			/* delete frames */
+			/* delete messages */
 			free(pool->pool);
 			/* delete pool itself */
 			free(pool);
@@ -548,7 +546,7 @@ static void destroyUnusedPools()
  * \param list list container
  * \return first element of the list or NULL if list was empty
  */
-static inline struct FrameLink * shift(struct FrameList * list)
+static inline struct MsgLink * shift(struct MsgList * list)
 {
 	assert(!!list->head == !!list->tail);
 
@@ -556,7 +554,7 @@ static inline struct FrameLink * shift(struct FrameList * list)
 		return NULL;
 
 	/* first element */
-	struct FrameLink * ret = list->head;
+	struct MsgLink * ret = list->head;
 
 	/* unlink */
 	list->head = ret->next;
@@ -571,60 +569,58 @@ static inline struct FrameLink * shift(struct FrameList * list)
 	return ret;
 }
 
-/** Enqueue a new frame at front of a list.
+/** Enqueue a new message at front of a list.
  * \param list list container
- * \param frame the frame to be enqueued
+ * \param msg the message to be enqueued
  */
-static inline void unshift(struct FrameList * list,
-	struct FrameLink * frame)
+static inline void unshift(struct MsgList * list, struct MsgLink * msg)
 {
 	assert(!!list->head == !!list->tail);
 
-	/* frame will be the new head */
-	frame->next = list->head;
-	frame->prev = NULL;
+	/* message will be the new head */
+	msg->next = list->head;
+	msg->prev = NULL;
 
 	/* link into container */
 	if (!list->tail)
-		list->tail = frame;
+		list->tail = msg;
 	else
-		list->head->prev = frame;
-	list->head = frame;
+		list->head->prev = msg;
+	list->head = msg;
 	++list->size;
 
 	assert(!!list->head == !!list->tail);
 }
 
-/** Enqueue a new frame at the end of a list.
+/** Enqueue a new message at the end of a list.
  * \param list list container
- * \param frame frame to be appended to the list
+ * \param msg message to be appended to the list
  */
-static inline void push(struct FrameList * list,
-	struct FrameLink * frame)
+static inline void push(struct MsgList * list, struct MsgLink * msg)
 {
 	assert(!!list->head == !!list->tail);
 
-	/* frame will be new tail */
-	frame->next = NULL;
-	frame->prev = list->tail;
+	/* message will be new tail */
+	msg->next = NULL;
+	msg->prev = list->tail;
 
 	/* link into container */
 	if (!list->head)
-		list->head = frame;
+		list->head = msg;
 	else
-		list->tail->next = frame;
-	list->tail = frame;
+		list->tail->next = msg;
+	list->tail = msg;
 	++list->size;
 
 	assert(!!list->head == !!list->tail);
 }
 
-/** Append a new frame list at the end of a list.
+/** Append a new message list at the end of a list.
  * \param dstList destination list container
  * \param srcList source list container to be appended to the first list
  */
-static inline void append(struct FrameList * dstList,
-	const volatile struct FrameList * srcList)
+static inline void append(struct MsgList * dstList,
+	const volatile struct MsgList * srcList)
 {
 	assert(!!dstList->head == !!dstList->tail);
 	assert(!!srcList->head == !!srcList->tail);
@@ -643,7 +639,7 @@ static inline void append(struct FrameList * dstList,
 	assert(!!dstList->head == !!dstList->tail);
 }
 
-static inline void clear(struct FrameList * list)
+static inline void clear(struct MsgList * list)
 {
 	list->head = list->tail = NULL;
 	list->size = 0;

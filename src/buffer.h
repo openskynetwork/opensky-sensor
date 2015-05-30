@@ -11,13 +11,13 @@ void BUF_flush();
 
 void BUF_fillStatistics();
 
-struct ADSB_Frame * BUF_newFrame();
-void BUF_commitFrame(struct ADSB_Frame * frame);
-void BUF_abortFrame(struct ADSB_Frame * frame);
+struct ADSB_Frame * BUF_newMessage();
+void BUF_commitMessage(struct ADSB_Frame * msg);
+void BUF_abortMessage(struct ADSB_Frame * msg);
 
-const struct ADSB_Frame * BUF_getFrame();
-const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms);
-void BUF_releaseFrame(const struct ADSB_Frame * frame);
-void BUF_putFrame(const struct ADSB_Frame * frame);
+const struct ADSB_Frame * BUF_getMessage();
+const struct ADSB_Frame * BUF_getMessageTimeout(uint32_t timeout_ms);
+void BUF_releaseMessage(const struct ADSB_Frame * msg);
+void BUF_putMessage(const struct ADSB_Frame * msg);
 
 #endif
