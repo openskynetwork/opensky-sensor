@@ -109,7 +109,7 @@ static inline void unshift(struct MsgList * list,
 static inline void push(struct MsgList * list,
 	struct MsgLink * msg);
 static inline void append(struct MsgList * dstList,
-	const volatile struct MsgList * srcList);
+	const struct MsgList * srcList);
 static inline void clear(struct MsgList * list);
 
 /** Initialize message buffer. */
@@ -620,7 +620,7 @@ static inline void push(struct MsgList * list, struct MsgLink * msg)
  * \param srcList source list container to be appended to the first list
  */
 static inline void append(struct MsgList * dstList,
-	const volatile struct MsgList * srcList)
+	const struct MsgList * srcList)
 {
 	assert(!!dstList->head == !!dstList->tail);
 	assert(!!srcList->head == !!srcList->tail);
