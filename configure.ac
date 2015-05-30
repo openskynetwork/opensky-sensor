@@ -50,6 +50,15 @@ AC_ARG_ENABLE([uart],
    esac], [uart=true])
 AM_CONDITIONAL([WANT_UART], [test x$uart = xtrue])
 
+AC_ARG_ENABLE([dummy],
+  [AS_HELP_STRING([--enable-dummy], [Build dummy input layer @<:@no@:>@])],
+  [case "${enableval}" in
+    yes) dummy=true ;;
+    no)  dummy=false ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-dummy]) ;;
+   esac], [dummy=false])
+AM_CONDITIONAL([WANT_DUMMY], [test x$dummy = xtrue])
+
 AC_ARG_ENABLE([wd],
   [AS_HELP_STRING([--enable-wd], [Build Watchdog Daemon @<:@no@:>@])],
   [case "${enableval}" in

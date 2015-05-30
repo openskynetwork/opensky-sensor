@@ -7,6 +7,9 @@ endif
 if WANT_UART
 bin_PROGRAMS += openskyd-uart
 endif
+if WANT_DUMMY
+bin_PROGRAMS += openskyd-dummy
+endif
 if WANT_WD
 bin_PROGRAMS += wd
 endif
@@ -28,10 +31,13 @@ endif
 # extra sources
 openskyd_net_SOURCES = $(SOURCES) input_network.c
 openskyd_uart_SOURCES = $(SOURCES) input_uart.c
+openskyd_dummy_SOURCES = $(SOURCES) input_dummy.c
 
 # libs and cflags
 openskyd_net_LIBS = @PTHREAD_LIBS@
 openskyd_uart_LIBS = @PTHREAD_LIBS@
+openskyd_dummy_LIBS = @PTHREAD_LIBS@
+openskyd_dummy_LDADD = -lm
 AM_CFLAGS = @PTHREAD_CFLAGS@
 
 # flags for development
@@ -43,13 +49,16 @@ endif
 #  will be named properly
 openskyd_net_CPPFLAGS = $(AM_CPPFLAGS) -DNETWORK
 openskyd_uart_CPPFLAGS = $(AM_CPPFLAGS)
+openskyd_dummy_CPPFLAGS = $(AM_CPPFLAGS)
 wd_CPPFLAGS = -DWD_ONLY
 
 # data files
 openskyd_net_DATA = openskyd.conf
 openskyd_uart_DATA = openskyd.conf
+openskyd_dummy_DATA = openskyd.conf
 EXTRA_DIST = openskyd.conf
 
 # configuration directory
 openskyd_netdir = $(sysconfdir)
 openskyd_uartdir = $(sysconfdir)
+openskyd_dummydir = $(sysconfdir)
