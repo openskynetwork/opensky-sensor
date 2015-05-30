@@ -22,6 +22,7 @@
 
 static void sigint(int sig);
 
+bool run;
 static pthread_mutex_t sigmutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t sigcond = PTHREAD_COND_INITIALIZER;
 
@@ -52,11 +53,13 @@ int main(int argc, char * argv[])
 	if (!COMP_startAll())
 		return EXIT_FAILURE;
 
+	run = true;
 	pthread_mutex_lock(&sigmutex);
 #ifdef CLEANUP
 	signal(SIGINT, &sigint);
 #endif
-	pthread_cond_wait(&sigcond, &sigmutex);
+	while (run)
+		pthread_cond_wait(&sigcond, &sigmutex);
 	signal(SIGINT, SIG_DFL);
 	pthread_mutex_unlock(&sigmutex);
 
@@ -70,6 +73,7 @@ __attribute__((unused))
 static void sigint(int sig)
 {
 	pthread_mutex_lock(&sigmutex);
+	run = false;
 	pthread_cond_broadcast(&sigcond);
 	pthread_mutex_unlock(&sigmutex);
 }
