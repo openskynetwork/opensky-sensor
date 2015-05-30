@@ -452,7 +452,7 @@ static bool createDynPool()
  */
 static void collectPools()
 {
-	struct FrameLink * frame, * prev = NULL, * next;
+	struct FrameLink * frame, * next;
 #ifdef BUF_DEBUG
 	const size_t prevSize = pool.size;
 #endif
@@ -465,22 +465,18 @@ static void collectPools()
 			/* collect only frames of dynamic pools */
 
 			/* unlink from the overall pool */
-			assert (prev == frame->prev);
-			assert (!prev == !!(pool.head == frame));
-			if (prev)
+			if (frame->prev)
 				frame->prev->next = next;
 			else
 				pool.head = next;
-			if (frame == pool.tail)
-				pool.tail = frame->prev;
-			else
+			if (next)
 				next->prev = frame->prev;
+			else
+				pool.tail = frame->prev;
 			--pool.size;
 
 			/* add them to their pools' collection */
 			unshift(&frame->pool->collect, frame);
-		} else {
-			prev = frame;
 		}
 	}
 #ifdef BUF_DEBUG
@@ -564,11 +560,10 @@ static inline struct FrameLink * shift(volatile struct FrameList * list)
 
 	/* unlink */
 	list->head = ret->next;
-	assert (!!(list->tail == ret) == !!(!list->head));
-	if (list->tail == ret)
-		list->tail = NULL;
-	else
+	if (list->head)
 		list->head->prev = NULL;
+	else
+		list->tail = NULL;
 	ret->next = NULL;
 	--list->size;
 
