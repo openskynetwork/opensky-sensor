@@ -77,7 +77,7 @@ static void mainloop()
 		ADSB_connect();
 		isSynchronized = false;
 
-		msg = BUF_newMessage();
+		msg = BUF_newMessage(MSG_TYPE_ADSB);
 		while (RECV_comp.run) {
 			struct ADSB_Frame * frame = &msg->adsb;
 			bool success = ADSB_getFrame(frame);
@@ -114,7 +114,7 @@ static void mainloop()
 				}
 
 				BUF_commitMessage(msg);
-				msg = BUF_newMessage();
+				msg = BUF_newMessage(MSG_TYPE_ADSB);
 			} else {
 				BUF_abortMessage(msg);
 				break;

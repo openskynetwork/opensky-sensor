@@ -198,7 +198,7 @@ void BUF_fillStatistics()
  *  pools to get. Discard oldest message if there is no more dynamic pool
  * \return a message which can be filled
  */
-static struct MsgLink * getMessageFromPool()
+static struct MsgLink * getMessageFromPool(enum MSG_TYPE type)
 {
 	struct MsgLink * ret;
 
@@ -243,10 +243,10 @@ static struct MsgLink * getMessageFromPool()
  *  it.
  * \return new message
  */
-struct MSG_Message * BUF_newMessage()
+struct MSG_Message * BUF_newMessage(enum MSG_TYPE type)
 {
 	pthread_mutex_lock(&mutex);
-	struct MsgLink * link = getMessageFromPool();
+	struct MsgLink * link = getMessageFromPool(type);
 	pthread_mutex_unlock(&mutex);
 	assert (link);
 	return &link->message;
