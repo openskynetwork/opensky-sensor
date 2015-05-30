@@ -70,9 +70,9 @@ static uint64_t overCapacity;
 static uint64_t overCapacityMax;
 
 /** Overall Pool */
-static volatile struct FrameList pool;
+static struct FrameList pool;
 /** Output Queue */
-static volatile struct FrameList queue;
+static struct FrameList queue;
 
 /** Currently processed frame (by reader), for debugging purposes */
 static struct FrameLink * currentFrame;
@@ -103,14 +103,14 @@ static void collectPools();
 static bool uncollectPools();
 static void destroyUnusedPools();
 
-static inline struct FrameLink * shift(volatile struct FrameList * list);
-static inline void unshift(volatile struct FrameList * list,
+static inline struct FrameLink * shift(struct FrameList * list);
+static inline void unshift(struct FrameList * list,
 	struct FrameLink * frame);
-static inline void push(volatile struct FrameList * list,
+static inline void push(struct FrameList * list,
 	struct FrameLink * frame);
-static inline void append(volatile struct FrameList * dstList,
+static inline void append(struct FrameList * dstList,
 	const volatile struct FrameList * srcList);
-static inline void clear(volatile struct FrameList * list);
+static inline void clear(struct FrameList * list);
 
 /** Initialize frame buffer.
  * \param cfg pointer to buffer configuration, see cfgfile.h
@@ -548,7 +548,7 @@ static void destroyUnusedPools()
  * \param list list container
  * \return first element of the list or NULL if list was empty
  */
-static inline struct FrameLink * shift(volatile struct FrameList * list)
+static inline struct FrameLink * shift(struct FrameList * list)
 {
 	assert(!!list->head == !!list->tail);
 
@@ -575,7 +575,7 @@ static inline struct FrameLink * shift(volatile struct FrameList * list)
  * \param list list container
  * \param frame the frame to be enqueued
  */
-static inline void unshift(volatile struct FrameList * list,
+static inline void unshift(struct FrameList * list,
 	struct FrameLink * frame)
 {
 	assert(!!list->head == !!list->tail);
@@ -599,7 +599,7 @@ static inline void unshift(volatile struct FrameList * list,
  * \param list list container
  * \param frame frame to be appended to the list
  */
-static inline void push(volatile struct FrameList * list,
+static inline void push(struct FrameList * list,
 	struct FrameLink * frame)
 {
 	assert(!!list->head == !!list->tail);
@@ -623,7 +623,7 @@ static inline void push(volatile struct FrameList * list,
  * \param dstList destination list container
  * \param srcList source list container to be appended to the first list
  */
-static inline void append(volatile struct FrameList * dstList,
+static inline void append(struct FrameList * dstList,
 	const volatile struct FrameList * srcList)
 {
 	assert(!!dstList->head == !!dstList->tail);
@@ -643,7 +643,7 @@ static inline void append(volatile struct FrameList * dstList,
 	assert(!!dstList->head == !!dstList->tail);
 }
 
-static inline void clear(volatile struct FrameList * list)
+static inline void clear(struct FrameList * list)
 {
 	list->head = list->tail = NULL;
 	list->size = 0;
