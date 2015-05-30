@@ -24,7 +24,7 @@ struct Pool;
 /** Linked Message List */
 struct MsgLink {
 	/** Message */
-	struct ADSB_Frame message;
+	struct MSG_Message message;
 	/** Next Element */
 	struct MsgLink * next;
 	/** Previous Element */
@@ -243,7 +243,7 @@ static struct MsgLink * getMessageFromPool()
  *  it.
  * \return new message
  */
-struct ADSB_Frame * BUF_newMessage()
+struct MSG_Message * BUF_newMessage()
 {
 	pthread_mutex_lock(&mutex);
 	struct MsgLink * link = getMessageFromPool();
@@ -255,7 +255,7 @@ struct ADSB_Frame * BUF_newMessage()
 /** Commit a filled message from writer to reader queue.
  * \param msg filled message to be delivered to the reader
  */
-void BUF_commitMessage(struct ADSB_Frame * msg)
+void BUF_commitMessage(struct MSG_Message * msg)
 {
 	assert (msg);
 	struct MsgLink * link = container_of(msg, struct MsgLink, message);
@@ -272,7 +272,7 @@ void BUF_commitMessage(struct ADSB_Frame * msg)
 /** Abort filling a message and return it to the pool.
  * \param msg aborted message
  */
-void BUF_abortMessage(struct ADSB_Frame * msg)
+void BUF_abortMessage(struct MSG_Message * msg)
 {
 	assert (msg);
 	struct MsgLink * link = container_of(msg, struct MsgLink, message);
@@ -288,9 +288,9 @@ static void cleanup(void * dummy)
 }
 
 /** Get a message from the queue.
- * \return adsb message
+ * \return message
  */
-const struct ADSB_Frame * BUF_getMessage()
+const struct MSG_Message * BUF_getMessage()
 {
 	assert (!currentMessage);
 	CLEANUP_PUSH(&cleanup, NULL);
@@ -309,10 +309,10 @@ const struct ADSB_Frame * BUF_getMessage()
  * \param timeout_ms timeout in milliseconds
  * \return message or NULL on timeout
  */
-const struct ADSB_Frame * BUF_getMessageTimeout(uint32_t timeout_ms)
+const struct MSG_Message * BUF_getMessageTimeout(uint32_t timeout_ms)
 {
 	struct timespec ts;
-	struct ADSB_Frame * ret;
+	struct MSG_Message * ret;
 
 	clock_gettime(CLOCK_REALTIME, &ts);
 	ts.tv_sec += timeout_ms / 1000;
@@ -351,7 +351,7 @@ const struct ADSB_Frame * BUF_getMessageTimeout(uint32_t timeout_ms)
  * \param msg message to be put, must be the last one returned by one of
  *  BUF_getMessage() or BUF_getMessageTimeout()
  */
-void BUF_releaseMessage(const struct ADSB_Frame * msg)
+void BUF_releaseMessage(const struct MSG_Message * msg)
 {
 	assert (msg);
 	assert (msg == &currentMessage->message);
@@ -369,7 +369,7 @@ void BUF_releaseMessage(const struct ADSB_Frame * msg)
  * \param msg message to be put, must be the last one returned by one of
  *  BUF_getMessage() or BUF_getMessageTimeout()
  */
-void BUF_putMessage(const struct ADSB_Frame * msg)
+void BUF_putMessage(const struct MSG_Message * msg)
 {
 	assert (msg);
 	assert (msg == &currentMessage->message);

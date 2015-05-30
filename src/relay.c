@@ -3,7 +3,7 @@
 #endif
 #include <relay.h>
 #include <stdbool.h>
-#include <adsb.h>
+#include <message.h>
 #include <buffer.h>
 #include <network.h>
 #include <cfgfile.h>
@@ -16,10 +16,10 @@ struct Component RELAY_comp = {
 	.main = &mainloop
 };
 
-static void cleanup(struct ADSB_Frame * frame)
+static void cleanup(struct MSG_Message * msg)
 {
-	if (frame)
-		BUF_putMessage(frame);
+	if (msg)
+		BUF_putMessage(msg);
 }
 
 static void mainloop()
@@ -35,20 +35,20 @@ static void mainloop()
 
 		bool success;
 		do {
-			/* read a frame from the buffer */
-			const struct ADSB_Frame * frame =
+			/* read a message from the buffer */
+			const struct MSG_Message * msg =
 				BUF_getMessageTimeout(CFG_config.net.timeout);
-			if (!frame) {
+			if (!msg) {
 				/* timeout */
 				success = NET_sendTimeout();
 			} else {
-				CLEANUP_PUSH(&cleanup, frame);
-				/* got a frame */
-				success = NET_sendFrame(frame);
+				CLEANUP_PUSH(&cleanup, msg);
+				/* got a message */
+				success = NET_sendFrame(&msg->adsb);
 				if (success)
-					BUF_releaseMessage(frame);
+					BUF_releaseMessage(msg);
 				else
-					BUF_putMessage(frame);
+					BUF_putMessage(msg);
 				CLEANUP_POP0();
 			}
 		} while(success && RELAY_comp.run);

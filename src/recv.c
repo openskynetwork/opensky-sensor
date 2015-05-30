@@ -2,6 +2,7 @@
 #include <config.h>
 #endif
 #include <recv.h>
+#include <message.h>
 #include <adsb.h>
 #include <buffer.h>
 #include <statistics.h>
@@ -61,23 +62,24 @@ static void destruct()
 	ADSB_destruct();
 }
 
-static void cleanup(struct ADSB_Frame * frame)
+static void cleanup(struct MSG_Message * msg)
 {
-	if (frame)
-		BUF_abortMessage(frame);
+	if (msg)
+		BUF_abortMessage(msg);
 }
 
 static void mainloop()
 {
-	struct ADSB_Frame * frame = NULL;
+	struct MSG_Message * msg = NULL;
 
-	CLEANUP_PUSH(&cleanup, frame);
+	CLEANUP_PUSH(&cleanup, msg);
 	while (RECV_comp.run) {
 		ADSB_connect();
 		isSynchronized = false;
 
-		frame = BUF_newMessage();
+		msg = BUF_newMessage();
 		while (RECV_comp.run) {
+			struct ADSB_Frame * frame = &msg->adsb;
 			bool success = ADSB_getFrame(frame);
 			if (success) {
 				++STAT_stats.ADSB_frameType[frame->frameType];
@@ -111,10 +113,10 @@ static void mainloop()
 					continue;
 				}
 
-				BUF_commitMessage(frame);
-				frame = BUF_newMessage();
+				BUF_commitMessage(msg);
+				msg = BUF_newMessage();
 			} else {
-				BUF_abortMessage(frame);
+				BUF_abortMessage(msg);
 				break;
 			}
 		}
