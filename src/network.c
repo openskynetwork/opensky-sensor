@@ -195,6 +195,9 @@ static inline void emitDisconnect()
  */
 static inline bool sendDataUnlocked(const void * data, size_t len)
 {
+	if (!len)
+		return true;
+
 	ssize_t rc = send(sock, data, len, MSG_NOSIGNAL);
 	if (rc <= 0) {
 		NOC_fprintf(stderr, "NET: could not send: %s\n",
@@ -217,6 +220,9 @@ static inline bool sendData(const void * data, size_t len)
 {
 	bool ret;
 	bool locked;
+
+	if (!len)
+		return true;
 
 	pthread_mutex_lock(&mutex);
 	locked = true;
