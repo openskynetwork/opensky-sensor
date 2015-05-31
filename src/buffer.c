@@ -255,7 +255,7 @@ static struct MsgLink * getMessageFromPool(enum MSG_TYPE type)
 			overCapacityMax = overCapacity;
 		++STAT_stats.BUF_sacrifices;
 
-		struct MsgList * lists = tqueues + MSG_TYPES;
+		struct MsgList * lists = tqueues + MSG_TYPES - 1;
 #ifdef BUF_ASSERT
 		while (lists >= tqueues && (ret = shiftTQueue(lists)) == NULL)
 			--lists;
@@ -392,14 +392,13 @@ const struct MSG_Message * BUF_getMessageTimeout(uint32_t timeout_ms)
 	}
 	if (queue.head) {
 		currentMessage = shiftQueue();
+#ifdef BUF_ASSERT
+	assert (currentMessage->message.type < MSG_TYPES);
+#endif
 		ret = &currentMessage->message;
 	}
 	checkLists();
 	CLEANUP_POP();
-
-#ifdef BUF_ASSERT
-	assert (currentMessage->message.type < MSG_TYPES);
-#endif
 
 	return ret;
 }
@@ -770,6 +769,11 @@ static inline struct MsgLink * shiftTQueue(struct MsgList * list)
 	if (!list->head)
 		return NULL;
 
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
+	assert(!!list->head == !!list->tail);
+	assert(!!queue.head == !!queue.tail);
+#endif
+
 	struct MsgLink * link = list->head;
 
 #ifdef BUF_ASSERT
@@ -784,7 +788,7 @@ static inline struct MsgLink * shiftTQueue(struct MsgList * list)
 	if (queue.head == link)
 		queue.head = link->next;
 	if (queue.tail == link)
-		queue.tail = NULL;
+		queue.tail = link->prev;
 	link->next = link->prev = NULL;
 	--queue.size;
 
@@ -796,6 +800,11 @@ static inline struct MsgLink * shiftTQueue(struct MsgList * list)
 	--list->size;
 
 	link->message.type = MSG_INVALID;
+
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
+	assert(!!list->head == !!list->tail);
+	assert(!!queue.head == !!queue.tail);
+#endif
 
 	return link;
 }
