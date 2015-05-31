@@ -23,9 +23,9 @@
 #define NOC_call(func, args...) ({ \
 	int r; \
 	CANCEL_DISABLE(&r); \
-	__attribute__((unused)) __typeof__((func(args))) ret = func(args); \
+	__attribute__((unused)) __typeof__((func(args))) __ret = func(args); \
 	CANCEL_RESTORE(&r); \
-	r; \
+	__ret; \
 })
 
 #else
