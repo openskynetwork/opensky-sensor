@@ -12,6 +12,7 @@ void BUF_flush();
 void BUF_fillStatistics();
 
 struct MSG_Message * BUF_newMessage(enum MSG_TYPE type);
+struct MSG_Message * BUF_newMessageWait(enum MSG_TYPE type);
 void BUF_commitMessage(struct MSG_Message * msg);
 void BUF_abortMessage(struct MSG_Message * msg);
 

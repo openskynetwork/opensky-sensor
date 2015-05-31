@@ -19,7 +19,7 @@
 #define BUF_DEBUG 1
 /** Define to 1 for general asserts, 2 for list checks and
  *   3 for exhaustive checks */
-#define BUF_ASSERT 2
+#define BUF_ASSERT 3
 
 /* Forward declaration */
 struct Pool;
@@ -86,14 +86,18 @@ static struct MsgLink * currentMessage;
 
 /** Mutex */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-/** Reader condition (for listOut) */
-static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+/** Consumer condition */
+static pthread_cond_t queuecond = PTHREAD_COND_INITIALIZER;
+/** Producer condition */
+static pthread_cond_t poolcond = PTHREAD_COND_INITIALIZER;
 
 static void construct();
 static void destruct();
 static void mainloop();
 static bool start(struct Component * c, void * data);
 static void stop(struct Component * c);
+
+static void cleanup(void * dummy);
 
 struct Component BUF_comp = {
 	.description = "BUF",
@@ -256,18 +260,11 @@ static struct MsgLink * getMessageFromPool(enum MSG_TYPE type)
 		++STAT_stats.BUF_sacrifices;
 
 		struct MsgList * lists = tqueues + MSG_TYPES - 1;
-#ifdef BUF_ASSERT
-		while (lists >= tqueues && (ret = shiftTQueue(lists)) == NULL)
+		const struct MsgList * end = tqueues + type;
+		while (lists >= end && (ret = shiftTQueue(lists)) == NULL)
 			--lists;
-		assert (lists >= tqueues);
-#else
-		while ((ret = shiftTQueue(lists--)) == NULL);
-#endif
 	}
 
-#ifdef BUF_ASSERT
-	assert (ret);
-#endif
 	checkLists();
 	return ret;
 }
@@ -280,12 +277,33 @@ struct MSG_Message * BUF_newMessage(enum MSG_TYPE type)
 {
 	pthread_mutex_lock(&mutex);
 	struct MsgLink * link = getMessageFromPool(type);
+	pthread_mutex_unlock(&mutex);
+	if (link) {
+#if defined(BUF_ASSERT) && BUF_ASSERT >= 3
+		assert (link->message.type == MSG_INVALID);
+#endif
+		link->message.type = type;
+		return &link->message;
+	} else {
+		return NULL;
+	}
+}
 
+/** Get a message from the unused message pool for the writer in order to fill
+ *  it.
+ * \return new message
+ */
+struct MSG_Message * BUF_newMessageWait(enum MSG_TYPE type)
+{
+	pthread_mutex_lock(&mutex);
+	struct MsgLink * link;
+	CLEANUP_PUSH(&cleanup, NULL);
+	while (!(link = getMessageFromPool(type)))
+		pthread_cond_wait(&poolcond, &mutex);
+	CLEANUP_POP();
 #if defined(BUF_ASSERT) && BUF_ASSERT >= 3
 	assert (link->message.type == MSG_INVALID);
 #endif
-	pthread_mutex_unlock(&mutex);
-	assert (link);
 	link->message.type = type;
 	return &link->message;
 }
@@ -304,7 +322,7 @@ void BUF_commitMessage(struct MSG_Message * msg)
 	pthread_mutex_lock(&mutex);
 	pushQueue(link);
 	checkLists();
-	pthread_cond_broadcast(&cond);
+	pthread_cond_broadcast(&queuecond);
 	pthread_mutex_unlock(&mutex);
 
 	if (queue.size > STAT_stats.BUF_maxQueue)
@@ -325,6 +343,7 @@ void BUF_abortMessage(struct MSG_Message * msg)
 	pthread_mutex_lock(&mutex);
 	push(&pool, link);
 	checkLists();
+	pthread_cond_broadcast(&poolcond);
 	pthread_mutex_unlock(&mutex);
 }
 
@@ -344,7 +363,7 @@ const struct MSG_Message * BUF_getMessage()
 	CLEANUP_PUSH(&cleanup, NULL);
 	pthread_mutex_lock(&mutex);
 	while (!queue.head) {
-		int r = pthread_cond_wait(&cond, &mutex);
+		int r = pthread_cond_wait(&queuecond, &mutex);
 		if (r)
 			error(-1, r, "pthread_cond_wait failed");
 	}
@@ -382,7 +401,7 @@ const struct MSG_Message * BUF_getMessageTimeout(uint32_t timeout_ms)
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&cleanup, NULL);
 	while (!queue.head) {
-		int r = pthread_cond_timedwait(&cond, &mutex, &ts);
+		int r = pthread_cond_timedwait(&queuecond, &mutex, &ts);
 		if (r == ETIMEDOUT) {
 			ret = NULL;
 			break;
@@ -420,6 +439,7 @@ void BUF_releaseMessage(const struct MSG_Message * msg)
 	pthread_mutex_lock(&mutex);
 	push(&pool, currentMessage);
 	checkLists();
+	pthread_cond_broadcast(&poolcond);
 	pthread_mutex_unlock(&mutex);
 	currentMessage = NULL;
 }
@@ -442,6 +462,7 @@ void BUF_putMessage(const struct MSG_Message * msg)
 	pthread_mutex_lock(&mutex);
 	unshiftQueue(currentMessage);
 	checkLists();
+	pthread_cond_broadcast(&poolcond);
 	pthread_mutex_unlock(&mutex);
 	currentMessage = NULL;
 }
