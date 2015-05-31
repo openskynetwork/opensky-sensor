@@ -202,11 +202,11 @@ static inline bool sendDataUnlocked(const void * data, size_t len)
 	if (rc <= 0) {
 		NOC_fprintf(stderr, "NET: could not send: %s\n",
 			rc == 0 ? "Connection lost" : strerror(errno));
-		++STAT_stats.NET_framesFailed;
+		++STAT_stats.NET_msgsFailed;
 		emitDisconnect();
 		return false;
 	} else {
-		++STAT_stats.NET_framesSent;
+		++STAT_stats.NET_msgsSent;
 		return true;
 	}
 }
@@ -230,7 +230,7 @@ static inline bool sendData(const void * data, size_t len)
 	if (!connected || reconnectedSend) {
 		NOC_fprintf(stderr, "NET: could not send: %s\n",
 			!connected ? "not connected" : "unsynchronized");
-		++STAT_stats.NET_framesFailed;
+		++STAT_stats.NET_msgsFailed;
 		ret = false;
 	} else {
 		inSend = true;
@@ -243,7 +243,7 @@ static inline bool sendData(const void * data, size_t len)
 		if (rc <= 0) {
 			NOC_fprintf(stderr, "NET: could not send: %s\n",
 				rc == 0 ? "Connection lost" : strerror(errno));
-			++STAT_stats.NET_framesFailed;
+			++STAT_stats.NET_msgsFailed;
 			emitDisconnect();
 			ret = false;
 		} else {
@@ -253,7 +253,7 @@ static inline bool sendData(const void * data, size_t len)
 				 * the sender thread to acknowledge the failure, so we do it */
 				emitDisconnect();
 			}
-			++STAT_stats.NET_framesSent;
+			++STAT_stats.NET_msgsSent;
 			ret = true;
 		}
 	}
@@ -323,7 +323,7 @@ ssize_t NET_receive(uint8_t * buf, size_t len)
 	if (!connected || reconnectedRecv) {
 		NOC_fprintf(stderr, "NET: could not receive: %s\n",
 			!connected ? "not connected" : "unsynchronized");
-		++STAT_stats.NET_recvFailed;
+		++STAT_stats.NET_msgsRecvFailed;
 		ret = -1;
 	} else {
 		inRecv = true;
@@ -336,7 +336,7 @@ ssize_t NET_receive(uint8_t * buf, size_t len)
 		if (ret <= 0) {
 			NOC_fprintf(stderr, "NET: could not receive: %s\n",
 					ret == 0 ? "Connection lost" : strerror(errno));
-			++STAT_stats.NET_recvFailed;
+			++STAT_stats.NET_msgsRecvFailed;
 			emitDisconnect();
 		} else if (!connected) {
 			ret = -1;

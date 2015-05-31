@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <unistd.h>
 #include <statistics.h>
 #include <cfgfile.h>
@@ -70,9 +71,10 @@ static size_t dynIncrements;
 /** Dynamic Pool List */
 static struct Pool * dynPools;
 
-/** Number of messages discarded in an overflow situation */
-static uint64_t overCapacity;
-static uint64_t overCapacityMax;
+/** Number of messages discarded in an overload situation */
+static uint64_t overload;
+static uint64_t overloadMax;
+static bool inOverload;
 
 /** Overall Pool */
 static struct MsgList pool;
@@ -185,7 +187,7 @@ static void mainloop()
 	while (true) {
 		sleep(CFG_config.buf.gcInterval);
 		pthread_mutex_lock(&mutex);
-		if (queue.size <
+		if (!inOverload && queue.size <
 			(dynIncrements * CFG_config.buf.dynBacklog) /
 				CFG_config.buf.gcLevel) {
 			++STAT_stats.BUF_GCRuns;
@@ -217,7 +219,28 @@ void BUF_fillStatistics()
 	STAT_stats.BUF_pools = dynIncrements;
 	STAT_stats.BUF_queue = queue.size;
 	STAT_stats.BUF_pool = pool.size;
-	STAT_stats.BUF_sacrificeMax = overCapacityMax;
+	STAT_stats.BUF_sacrificeMax = overloadMax;
+	STAT_stats.BUF_overload = inOverload;
+}
+
+static inline void overrun()
+{
+	if (overload == 0) {
+		NOC_puts("BUF: running in overload mode -> sacrificing messages");
+		inOverload = true;
+	}
+	if (++overload > overloadMax)
+		overloadMax = overload;
+}
+
+static inline void overrunEnd()
+{
+	if (overload != 0) {
+		NOC_printf("BUF: running in normal mode again. Sacrificed %" PRIu64
+			" messages.\n", overload);
+		overload = 0;
+		inOverload = false;
+	}
 }
 
 /** Get a new message from the pool. Extend the pool if there are more dynamic
@@ -231,7 +254,7 @@ static struct MsgLink * getMessageFromPool(enum MSG_TYPE type)
 	if (pool.head) {
 		/* pool is not empty -> unlink and return first message */
 		ret = shift(&pool);
-		overCapacity = 0;
+		overrunEnd();
 	} else if (uncollectPools()) {
 		/* pool was empty, but we could uncollect a pool which was about to be
 		 *  garbage collected */
@@ -239,7 +262,7 @@ static struct MsgLink * getMessageFromPool(enum MSG_TYPE type)
 		NOC_puts("BUF: Uncollected pool");
 #endif
 		++STAT_stats.BUF_uncollects;
-		overCapacity = 0;
+		overrunEnd();
 		ret = shift(&pool);
 	} else if (dynIncrements < dynMaxIncrements && createDynPool()) {
 		/* pool was empty, but we just created another one */
@@ -247,22 +270,25 @@ static struct MsgLink * getMessageFromPool(enum MSG_TYPE type)
 		NOC_printf("BUF: Created another pool (%zu/%zu)\n", dynIncrements,
 			dynMaxIncrements);
 #endif
-		overCapacity = 0;
+		overrunEnd();
 		ret = shift(&pool);
 	} else {
 		/* no more space in the pool and no more pools
 		 * -> sacrifice oldest message */
-#if defined(BUF_DEBUG) && BUF_DEBUG > 1
-		NOC_puts("BUF: Sacrificing oldest message");
-#endif
-		if (++overCapacity > overCapacityMax)
-			overCapacityMax = overCapacity;
-		++STAT_stats.BUF_sacrifices;
-
-		struct MsgList * lists = tqueues + MSG_TYPES - 1;
+		struct MsgList * tqueue = tqueues + MSG_TYPES - 1;
 		const struct MsgList * end = tqueues + type;
-		while (lists >= end && (ret = shiftTQueue(lists)) == NULL)
-			--lists;
+		while (tqueue >= end && (ret = shiftTQueue(tqueue)) == NULL)
+			--tqueue;
+
+		if (ret) {
+			overrun();
+			ptrdiff_t qindex = tqueue - tqueues;
+			++STAT_stats.BUF_sacrifices[qindex];
+#if defined(BUF_DEBUG) && BUF_DEBUG > 1
+			NOC_printf("BUF: sacrificing oldest %s for %s\n",
+				MSG_TYPE_NAMES[qindex], MSG_TYPE_NAMES[type]);
+#endif
+		}
 	}
 
 	checkLists();

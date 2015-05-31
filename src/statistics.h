@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <component.h>
+#include <message.h>
 
 struct STAT_Statistics {
 	uint64_t ADSB_outOfSync;
@@ -20,19 +21,20 @@ struct STAT_Statistics {
 	uint64_t BUF_pools;
 	uint64_t BUF_poolsCreated;
 	uint64_t BUF_maxPools;
-	uint64_t BUF_sacrifices;
+	uint64_t BUF_sacrifices[MSG_TYPES];
+	uint64_t BUF_overload;
 	uint64_t BUF_maxQueue;
 	uint64_t BUF_queue;
 	uint64_t BUF_sacrificeMax;
 
 	uint64_t WD_events;
 
-	uint64_t NET_framesFailed;
-	uint64_t NET_framesSent;
+	uint64_t NET_msgsFailed;
+	uint64_t NET_msgsSent;
 	uint64_t NET_connectsFail;
 	uint64_t NET_connectsSuccess;
 	uint64_t NET_keepAlives;
-	uint64_t NET_recvFailed;
+	uint64_t NET_msgsRecvFailed;
 };
 
 extern struct Component STAT_comp;

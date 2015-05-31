@@ -178,11 +178,21 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 		stats->BUF_queue);
 	printf(" - %27" PRIu64 " queued messages (max)\n",
 		stats->BUF_maxQueue);
-	printf(" - %27" PRIu64 " discarded messages (overall)\n",
-		stats->BUF_sacrifices);
+	if (stats->BUF_overload)
+		puts(" -                             currently in overload");
+	uint64_t sacrifices = 0;
+	int i1;
+	for (i1 = 0; i1 < MSG_TYPES; ++i1)
+		sacrifices += stats->BUF_sacrifices[i1];
+	printf(" - %27" PRIu64 " discarded messages (overall)\n", sacrifices);
+	for (i1 = 0; i1 < MSG_TYPES; ++i1)
+		printf("   - %27" PRIu64 " [%3.0f%%] discarded %ss (overall)\n",
+			stats->BUF_sacrifices[i1], sacrifices ?
+			100. * stats->BUF_sacrifices[i1] / sacrifices : 0.,
+			MSG_TYPE_NAMES[i1]);
 	printf(" - %27" PRIu64 " discarded messages (in one overflow "
 		"situation)\n", stats->BUF_sacrificeMax);
-	printf(" - %27" PRIu64 " frames in pool (Usage %.2f%%)\n",
+	printf(" - %27" PRIu64 " messages in pool (Usage %.2f%%)\n",
 		stats->BUF_pool, (100. * stats->BUF_queue) /
 		(double)(stats->BUF_queue + stats->BUF_pool));
 	printf(" - %27" PRIu64 " dynamic pools (current)\n",
@@ -203,12 +213,12 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 		stats->NET_connectsSuccess);
 	printf(" - %27" PRIu64 " unsuccessful connection attempts\n",
 		stats->NET_connectsFail);
-	printf(" - %27" PRIu64 " frames sent successfully\n",
-		stats->NET_framesSent);
-	printf(" - %27" PRIu64 " frames sent unsuccessfully\n",
-		stats->NET_framesFailed);
-	printf(" - %27" PRIu64 " frames received unsuccessfully\n",
-		stats->NET_recvFailed);
+	printf(" - %27" PRIu64 " messages sent successfully\n",
+		stats->NET_msgsSent);
+	printf(" - %27" PRIu64 " messages sent unsuccessfully\n",
+		stats->NET_msgsFailed);
+	printf(" - %27" PRIu64 " messages received unsuccessfully\n",
+		stats->NET_msgsRecvFailed);
 	printf(" - %27" PRIu64 " keep alive messages\n",
 		stats->NET_keepAlives);
 

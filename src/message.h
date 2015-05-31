@@ -13,6 +13,8 @@ enum MSG_TYPE {
 	MSG_INVALID = 0xff
 };
 
+extern const char * MSG_TYPE_NAMES[MSG_TYPES];
+
 struct MSG_Message {
 	enum MSG_TYPE type;
 
