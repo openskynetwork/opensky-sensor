@@ -9,6 +9,8 @@ enum MSG_TYPE {
 	MSG_TYPE_STAT = 2,
 
 	MSG_TYPES = 3,
+
+	MSG_INVALID = 0xff
 };
 
 struct MSG_Message {

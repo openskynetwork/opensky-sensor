@@ -17,6 +17,9 @@
 
 /** Define to 1 to enable debugging messages */
 #define BUF_DEBUG 1
+/** Define to 1 for general asserts, 2 for list checks and
+ *   3 for exhaustive checks */
+#define BUF_ASSERT 2
 
 /* Forward declaration */
 struct Pool;
@@ -29,6 +32,8 @@ struct MsgLink {
 	struct MsgLink * next;
 	/** Previous Element */
 	struct MsgLink * prev;
+	/** Next Element in typed queue */
+	struct MsgLink * qnext;
 	/** Containing pool */
 	struct Pool * pool;
 };
@@ -73,6 +78,8 @@ static uint64_t overCapacityMax;
 static struct MsgList pool;
 /** Output Queue */
 static struct MsgList queue;
+/** Output Queues (Typed) */
+static struct MsgList tqueues[MSG_TYPES];
 
 /** Currently processed message (by reader), for debugging purposes */
 static struct MsgLink * currentMessage;
@@ -104,13 +111,24 @@ static bool uncollectPools();
 static void destroyUnusedPools();
 
 static inline struct MsgLink * shift(struct MsgList * list);
-static inline void unshift(struct MsgList * list,
-	struct MsgLink * msg);
+static inline void unshift(struct MsgList * list, struct MsgLink * msg);
 static inline void push(struct MsgList * list,
 	struct MsgLink * msg);
-static inline void append(struct MsgList * dstList,
-	const struct MsgList * srcList);
 static inline void clear(struct MsgList * list);
+
+static inline void appendPool(const struct MsgList * newPool);
+
+static inline struct MsgLink * shiftQueue();
+static inline struct MsgLink * shiftTQueue(struct MsgList * list);
+static inline void unshiftQueue(struct MsgLink * msg);
+static inline void pushQueue(struct MsgLink * msg);
+static inline void clearQueue();
+
+#if defined(BUF_ASSERT) && BUF_ASSERT >= 3
+static void checkLists();
+#else
+#define checkLists() do {} while(0)
+#endif
 
 /** Initialize message buffer. */
 static void construct()
@@ -119,7 +137,9 @@ static void construct()
 
 	dynPools = NULL;
 	clear(&pool);
-	clear(&queue);
+	clearQueue();
+
+	checkLists();
 
 	currentMessage = NULL;
 
@@ -170,6 +190,7 @@ static void mainloop()
 #endif
 			collectPools();
 			destroyUnusedPools();
+			checkLists();
 		}
 		pthread_mutex_unlock(&mutex);
 	}
@@ -179,8 +200,9 @@ static void mainloop()
 void BUF_flush()
 {
 	pthread_mutex_lock(&mutex);
-	append(&pool, &queue);
-	clear(&queue);
+	appendPool(&queue);
+	clearQueue();
+	checkLists();
 	pthread_mutex_unlock(&mutex);
 	++STAT_stats.BUF_flushes;
 }
@@ -232,10 +254,21 @@ static struct MsgLink * getMessageFromPool(enum MSG_TYPE type)
 		if (++overCapacity > overCapacityMax)
 			overCapacityMax = overCapacity;
 		++STAT_stats.BUF_sacrifices;
-		ret = shift(&queue);
+
+		struct MsgList * lists = tqueues + MSG_TYPES;
+#ifdef BUF_ASSERT
+		while (lists >= tqueues && (ret = shiftTQueue(lists)) == NULL)
+			--lists;
+		assert (lists >= tqueues);
+#else
+		while ((ret = shiftTQueue(lists--)) == NULL);
+#endif
 	}
 
+#ifdef BUF_ASSERT
 	assert (ret);
+#endif
+	checkLists();
 	return ret;
 }
 
@@ -247,8 +280,13 @@ struct MSG_Message * BUF_newMessage(enum MSG_TYPE type)
 {
 	pthread_mutex_lock(&mutex);
 	struct MsgLink * link = getMessageFromPool(type);
+
+#if defined(BUF_ASSERT) && BUF_ASSERT >= 3
+	assert (link->message.type == MSG_INVALID);
+#endif
 	pthread_mutex_unlock(&mutex);
 	assert (link);
+	link->message.type = type;
 	return &link->message;
 }
 
@@ -260,8 +298,12 @@ void BUF_commitMessage(struct MSG_Message * msg)
 	assert (msg);
 	struct MsgLink * link = container_of(msg, struct MsgLink, message);
 
+#ifdef BUF_ASSERT
+	assert (link->message.type < MSG_TYPES);
+#endif
 	pthread_mutex_lock(&mutex);
-	push(&queue, link);
+	pushQueue(link);
+	checkLists();
 	pthread_cond_broadcast(&cond);
 	pthread_mutex_unlock(&mutex);
 
@@ -277,8 +319,12 @@ void BUF_abortMessage(struct MSG_Message * msg)
 	assert (msg);
 	struct MsgLink * link = container_of(msg, struct MsgLink, message);
 
+#if defined(BUF_ASSERT) && BUF_ASSERT >= 3
+	link->message.type = MSG_INVALID;
+#endif
 	pthread_mutex_lock(&mutex);
 	push(&pool, link);
+	checkLists();
 	pthread_mutex_unlock(&mutex);
 }
 
@@ -292,7 +338,9 @@ static void cleanup(void * dummy)
  */
 const struct MSG_Message * BUF_getMessage()
 {
+#ifdef BUF_ASSERT
 	assert (!currentMessage);
+#endif
 	CLEANUP_PUSH(&cleanup, NULL);
 	pthread_mutex_lock(&mutex);
 	while (!queue.head) {
@@ -300,8 +348,13 @@ const struct MSG_Message * BUF_getMessage()
 		if (r)
 			error(-1, r, "pthread_cond_wait failed");
 	}
-	currentMessage = shift(&queue);
+	currentMessage = shiftQueue();
+	checkLists();
 	CLEANUP_POP();
+
+#ifdef BUF_ASSERT
+	assert (currentMessage->message.type < MSG_TYPES);
+#endif
 	return &currentMessage->message;
 }
 
@@ -322,7 +375,9 @@ const struct MSG_Message * BUF_getMessageTimeout(uint32_t timeout_ms)
 		ts.tv_nsec -= 1000000000;
 	}
 
+#ifdef BUF_ASSERT
 	assert (!currentMessage);
+#endif
 
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&cleanup, NULL);
@@ -336,11 +391,15 @@ const struct MSG_Message * BUF_getMessageTimeout(uint32_t timeout_ms)
 		}
 	}
 	if (queue.head) {
-		currentMessage = shift(&queue);
+		currentMessage = shiftQueue();
 		ret = &currentMessage->message;
 	}
-
+	checkLists();
 	CLEANUP_POP();
+
+#ifdef BUF_ASSERT
+	assert (currentMessage->message.type < MSG_TYPES);
+#endif
 
 	return ret;
 }
@@ -356,8 +415,12 @@ void BUF_releaseMessage(const struct MSG_Message * msg)
 	assert (msg);
 	assert (msg == &currentMessage->message);
 
+#if defined(BUF_ASSERT) && BUF_ASSERT >= 3
+	currentMessage->message.type = MSG_INVALID;
+#endif
 	pthread_mutex_lock(&mutex);
 	push(&pool, currentMessage);
+	checkLists();
 	pthread_mutex_unlock(&mutex);
 	currentMessage = NULL;
 }
@@ -374,8 +437,12 @@ void BUF_putMessage(const struct MSG_Message * msg)
 	assert (msg);
 	assert (msg == &currentMessage->message);
 
+#ifdef BUF_ASSERT
+	assert (msg->type < MSG_TYPES);
+#endif
 	pthread_mutex_lock(&mutex);
-	unshift(&queue, currentMessage);
+	unshiftQueue(currentMessage);
+	checkLists();
 	pthread_mutex_unlock(&mutex);
 	currentMessage = NULL;
 }
@@ -413,7 +480,8 @@ static bool deployPool(struct Pool * newPool, size_t size)
 	list.size = size;
 
 	/* append messages to the overall pool */
-	append(&pool, &list);
+	appendPool(&list);
+	checkLists();
 
 	return true;
 }
@@ -496,10 +564,9 @@ static bool uncollectPools()
 		if (p->collect.head) {
 			/* pools' collection was not empty, put messages back into the
 			 * overall pool */
-			append(&pool, &p->collect);
+			appendPool(&p->collect);
 			/* clear collection */
-			p->collect.head = p->collect.tail = NULL;
-			p->collect.size = 0;
+			clear(&p->collect);
 			return true;
 		}
 	}
@@ -548,7 +615,9 @@ static void destroyUnusedPools()
  */
 static inline struct MsgLink * shift(struct MsgList * list)
 {
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
 	assert(!!list->head == !!list->tail);
+#endif
 
 	if (!list->head) /* empty list */
 		return NULL;
@@ -565,7 +634,9 @@ static inline struct MsgLink * shift(struct MsgList * list)
 	ret->next = NULL;
 	--list->size;
 
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
 	assert(!!list->head == !!list->tail);
+#endif
 	return ret;
 }
 
@@ -575,7 +646,9 @@ static inline struct MsgLink * shift(struct MsgList * list)
  */
 static inline void unshift(struct MsgList * list, struct MsgLink * msg)
 {
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
 	assert(!!list->head == !!list->tail);
+#endif
 
 	/* message will be the new head */
 	msg->next = list->head;
@@ -589,7 +662,9 @@ static inline void unshift(struct MsgList * list, struct MsgLink * msg)
 	list->head = msg;
 	++list->size;
 
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
 	assert(!!list->head == !!list->tail);
+#endif
 }
 
 /** Enqueue a new message at the end of a list.
@@ -598,7 +673,9 @@ static inline void unshift(struct MsgList * list, struct MsgLink * msg)
  */
 static inline void push(struct MsgList * list, struct MsgLink * msg)
 {
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
 	assert(!!list->head == !!list->tail);
+#endif
 
 	/* message will be new tail */
 	msg->next = NULL;
@@ -612,31 +689,44 @@ static inline void push(struct MsgList * list, struct MsgLink * msg)
 	list->tail = msg;
 	++list->size;
 
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
 	assert(!!list->head == !!list->tail);
+#endif
 }
 
 /** Append a new message list at the end of a list.
  * \param dstList destination list container
  * \param srcList source list container to be appended to the first list
  */
-static inline void append(struct MsgList * dstList,
-	const struct MsgList * srcList)
+static inline void appendPool(const struct MsgList * newPool)
 {
-	assert(!!dstList->head == !!dstList->tail);
-	assert(!!srcList->head == !!srcList->tail);
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
+	assert(!!pool.head == !!pool.tail);
+	assert(!!newPool->head == !!newPool->tail);
+#endif
 
-	if (!dstList->head) /* link head if dst is empty */
-		dstList->head = srcList->head;
-	else /* link last element otherwise */
-		dstList->tail->next = srcList->head;
-	if (srcList->tail) {
-		/* link tail */
-		dstList->tail = srcList->tail;
-		srcList->head->prev = dstList->tail;
+#if defined BUF_ASSERT && BUF_ASSERT >= 3
+	struct MsgLink * msg;
+	for (msg = newPool->head; msg; msg = msg->next) {
+		msg->message.type = MSG_INVALID;
+		msg->qnext = NULL;
 	}
-	dstList->size += srcList->size;
+#endif
 
-	assert(!!dstList->head == !!dstList->tail);
+	if (!pool.head) /* link head if dst is empty */
+		pool.head = newPool->head;
+	else /* link last element otherwise */
+		pool.tail->next = newPool->head;
+	if (newPool->tail) {
+		/* link tail */
+		newPool->head->prev = pool.tail;
+		pool.tail = newPool->tail;
+	}
+	pool.size += newPool->size;
+
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
+	assert(!!pool.head == !!pool.tail);
+#endif
 }
 
 static inline void clear(struct MsgList * list)
@@ -644,3 +734,196 @@ static inline void clear(struct MsgList * list)
 	list->head = list->tail = NULL;
 	list->size = 0;
 }
+
+/** Unqueue the first element of a list and return it.
+ * \param list list container
+ * \return first element of the list or NULL if list was empty
+ */
+static inline struct MsgLink * shiftQueue()
+{
+	struct MsgLink * link = shift(&queue);
+
+#if defined BUF_ASSERT && BUF_ASSERT >= 2
+	assert (link->message.type < MSG_TYPES);
+#endif
+
+	/* unlink from tqueue */
+	struct MsgList * tqueue = &tqueues[link->message.type];
+#ifdef BUF_ASSERT
+	assert (tqueue->head == link);
+#endif
+	tqueue->head = link->qnext;
+	if (!tqueue->head)
+		tqueue->tail = NULL;
+	link->qnext = NULL;
+	--tqueue->size;
+
+	return link;
+}
+
+/** Unqueue the first element of a list and return it.
+ * \param list list container
+ * \return first element of the list or NULL if list was empty
+ */
+static inline struct MsgLink * shiftTQueue(struct MsgList * list)
+{
+	if (!list->head)
+		return NULL;
+
+	struct MsgLink * link = list->head;
+
+#ifdef BUF_ASSERT
+	assert (link->message.type == list - tqueues);
+#endif
+
+	/* unlink from queue */
+	if (link->prev)
+		link->prev->next = link->next;
+	if (link->next)
+		link->next->prev = link->prev;
+	if (queue.head == link)
+		queue.head = link->next;
+	if (queue.tail == link)
+		queue.tail = NULL;
+	link->next = link->prev = NULL;
+	--queue.size;
+
+	/* unlink from tqueue */
+	list->head = link->qnext;
+	if (!list->head)
+		list->tail = NULL;
+	link->qnext = NULL;
+	--list->size;
+
+	link->message.type = MSG_INVALID;
+
+	return link;
+}
+
+/** Enqueue a new message at front of a list.
+ * \param list list container
+ * \param msg the message to be enqueued
+ */
+static inline void unshiftQueue(struct MsgLink * msg)
+{
+	assert (!msg->next && !msg->prev && !msg->qnext);
+
+	unshift(&queue, msg);
+
+	/* link into tqueue */
+	struct MsgList * tqueue = &tqueues[msg->message.type];
+	msg->qnext = tqueue->head;
+	tqueue->head = msg;
+	if (!tqueue->tail)
+		tqueue->tail = msg;
+	++tqueue->size;
+}
+
+/** Enqueue a new message at the end of a list.
+ * \param list list container
+ * \param msg message to be appended to the list
+ */
+static inline void pushQueue(struct MsgLink * msg)
+{
+#if defined(BUF_ASSERT) && BUF_ASSERT >= 3
+	assert (!msg->next && !msg->prev && !msg->qnext);
+#endif
+
+	push(&queue, msg);
+
+	/* link into tqueue */
+	struct MsgList * tqueue = &tqueues[msg->message.type];
+	msg->qnext = NULL;
+	if (!tqueue->head)
+		tqueue->head = msg;
+	else
+		tqueue->tail->qnext = msg;
+	tqueue->tail = msg;
+	++tqueue->size;
+}
+
+static inline void clearQueue()
+{
+	clear(&queue);
+	int i;
+	for (i = 0; i < MSG_TYPES; ++i)
+		clear(&tqueues[i]);
+}
+
+#if defined(BUF_ASSERT) && BUF_ASSERT >= 3
+static void checkList(const struct MsgList * list)
+{
+	const struct MsgLink * msg, * prev = NULL;
+	size_t size = 0;
+
+	assert(!!list->head == !!list->tail);
+	assert (list->size != 0 || list->head == NULL);
+	assert (list->size > 1 || list->head == list->tail);
+
+	for (msg = list->head; msg != NULL; msg = msg->next) {
+		++size;
+		assert (prev == msg->prev);
+		prev = msg;
+	}
+
+	assert (size == list->size);
+	assert (prev == list->tail);
+}
+
+static void checkTQueue(enum MSG_TYPE type)
+{
+	const struct MsgList * list = &tqueues[type];
+	const struct MsgLink * msg, * prev = NULL;
+	size_t size = 0;
+
+	assert(!!list->head == !!list->tail);
+	assert (list->size != 0 || list->head == NULL);
+	assert (list->size > 1 || list->head == list->tail);
+
+	for (msg = list->head; msg; msg = msg->qnext) {
+		assert (msg->message.type == type);
+		prev = msg;
+		++size;
+	}
+
+	assert (size == list->size);
+	assert (prev == list->tail);
+
+	for (msg = queue.head; msg; msg = msg->next) {
+		if (msg->message.type == type) {
+			assert (list->head == msg);
+			break;
+		}
+	}
+
+	for (msg = queue.tail; msg; msg = msg->prev) {
+		if (msg->message.type == type) {
+			assert (list->tail == msg);
+			break;
+		}
+	}
+}
+
+static void checkLists()
+{
+	checkList(&pool);
+	checkList(&queue);
+
+	struct MsgLink * msg;
+	for (msg = queue.head; msg; msg = msg->next)
+		assert (msg->message.type < MSG_TYPES);
+
+	for (msg = pool.head; msg; msg = msg->next) {
+		assert (msg->message.type == MSG_INVALID);
+		assert (!msg->qnext);
+	}
+
+	int i;
+	size_t sz = 0;
+	for (i = 0; i < MSG_TYPES; ++i) {
+		checkTQueue(i);
+		sz += tqueues[i].size;
+	}
+	assert (sz == queue.size);
+}
+#endif
