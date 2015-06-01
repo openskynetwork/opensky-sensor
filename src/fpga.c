@@ -23,29 +23,40 @@
 #define FWDIR "."
 #endif
 
-#ifdef BEAGLEBONE_BLACK
-/** GPIO number for CONF_DONE pin of FPGA */
-#define FPGA_CONFD (45)
-/** GPIO number for DCLK pin of FPGA */
-#define FPGA_DCLK (47)
-/** GPIO number for nSTATUS pin of FPGA */
-#define FPGA_NSTAT (46)
-/** GPIO number for DATA0 pin of FPGA */
-#define FPGA_DATA0 (44)
-/** GPIO number for nCONFIG pin of FPGA */
-#define FPGA_NCONF (61)
-#else
-/** GPIO number for CONF_DONE pin of FPGA */
-#define FPGA_CONFD (38)
-/** GPIO number for DCLK pin of FPGA */
-#define FPGA_DCLK (39)
-/** GPIO number for nSTATUS pin of FPGA */
-#define FPGA_NSTAT (34)
-/** GPIO number for DATA0 pin of FPGA */
-#define FPGA_DATA0 (44)
-/** GPIO number for nCONFIG pin of FPGA */
-#define FPGA_NCONF (37)
-#endif
+struct FPGApins {
+	const char * name;
+	const uint32_t confd;
+	const uint32_t dclk;
+	const uint32_t nstat;
+	const uint32_t data0;
+	const uint32_t nconf;
+};
+
+enum BB_TYPE {
+	BB_TYPE_WHITE = 0,
+	BB_TYPE_BLACK = 1
+};
+
+static const struct FPGApins pins[2] = {
+	[BB_TYPE_WHITE] = {
+		.name = "white",
+		.confd = 38,
+		.dclk = 39,
+		.nstat = 34,
+		.data0 = 44,
+		.nconf = 37
+	},
+	[BB_TYPE_BLACK] = {
+		.name = "black",
+		.confd = 45,
+		.dclk = 47,
+		.nstat = 46,
+		.data0 = 44,
+		.nconf = 61
+	}
+};
+
+static const struct FPGApins * fpga;
 
 static void construct();
 static bool program();
@@ -62,15 +73,17 @@ static bool transfer(const uint8_t * rfd, off_t size);
 /** Initialize FPGA configuration.
  * \note: GPIO_init() must be called prior to that function!
  */
-static void construct()
+static void construct(const bool * bbwhite)
 {
-	GPIO_setDirection(FPGA_CONFD, GPIO_DIRECTION_IN);
-	GPIO_setDirection(FPGA_DCLK, GPIO_DIRECTION_OUT);
-	GPIO_setDirection(FPGA_NSTAT, GPIO_DIRECTION_IN);
-	GPIO_setDirection(FPGA_DATA0, GPIO_DIRECTION_OUT);
-	GPIO_setDirection(FPGA_NCONF, GPIO_DIRECTION_OUT);
+	fpga = &pins[*bbwhite ? BB_TYPE_WHITE : BB_TYPE_BLACK];
 
-	GPIO_clear(FPGA_DCLK);
+	GPIO_setDirection(fpga->confd, GPIO_DIRECTION_IN);
+	GPIO_setDirection(fpga->dclk, GPIO_DIRECTION_OUT);
+	GPIO_setDirection(fpga->nstat, GPIO_DIRECTION_IN);
+	GPIO_setDirection(fpga->data0, GPIO_DIRECTION_OUT);
+	GPIO_setDirection(fpga->nconf, GPIO_DIRECTION_OUT);
+
+	GPIO_clear(fpga->dclk);
 }
 
 /** (Re-)Program the FPGA.
@@ -117,14 +130,14 @@ static bool program()
 		/* reset FPGA */
 		reset(CFG_config.fpga.timeout);
 
-		puts("FPGA: Transferring RBF");
+		printf("FPGA: Transferring RBF for beagle bone %s\n", fpga->name);
 		if (!transfer(rfd, st.st_size))
 			continue;
 
 		uint32_t spin = CFG_config.fpga.timeout;
-		while (GPIO_read(FPGA_CONFD) && spin--)
+		while (GPIO_read(fpga->confd) && spin--)
 			usleep(50);
-		if (!GPIO_read(FPGA_CONFD)) {
+		if (!GPIO_read(fpga->confd)) {
 			fprintf(stderr, "FPGA: could not program: CONF_DONE = 0 after "
 				"last byte");
 			continue;
@@ -145,14 +158,14 @@ static bool program()
 static void reset(uint32_t timeout)
 {
 	puts("FPGA: Reset");
-	GPIO_clear(FPGA_NCONF);
+	GPIO_clear(fpga->nconf);
 	usleep(50000);
-	GPIO_clear(FPGA_DCLK);
-	GPIO_set(FPGA_NCONF);
+	GPIO_clear(fpga->dclk);
+	GPIO_set(fpga->nconf);
 
 	puts("FPGA: Synchronizing");
 	while (timeout--) {
-		if (GPIO_read(FPGA_NSTAT))
+		if (GPIO_read(fpga->nstat))
 			return;
 		usleep(50);
 	}
@@ -174,17 +187,17 @@ static bool transfer(const uint8_t * rfd, off_t size)
 		for (bit = 0; bit < 8; ++bit) {
 			/* transfer next bit via DATA0 line */
 			if (ch & 1)
-				GPIO_set(FPGA_DATA0);
+				GPIO_set(fpga->data0);
 			else
-				GPIO_clear(FPGA_DATA0);
+				GPIO_clear(fpga->data0);
 			/* clock that bit via DCLK toggle */
-			GPIO_set(FPGA_DCLK);
-			GPIO_clear(FPGA_DCLK);
+			GPIO_set(fpga->dclk);
+			GPIO_clear(fpga->dclk);
 			/* next bit */
 			ch >>= 1;
 		}
 		/* monitor FPGA status */
-		if (!GPIO_read(FPGA_NSTAT)) {
+		if (!GPIO_read(fpga->nstat)) {
 			fprintf(stderr, "FPGA: could not program: nSTATUS = 0 "
 				"at byte %lu\n", (unsigned long int)pos);
 			return false;

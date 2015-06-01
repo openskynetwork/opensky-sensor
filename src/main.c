@@ -15,6 +15,8 @@
 #include <relay.h>
 #include <signal.h>
 #include <pthread.h>
+#include <string.h>
+#include <error.h>
 
 #if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
@@ -31,6 +33,15 @@ int main(int argc, char * argv[])
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
 
+	bool bbwhite = true;
+	if (argc == 2) {
+		if (!strcmp(argv[1], "--black")) {
+			bbwhite = false;
+		} else {
+			error(EXIT_FAILURE, 0, "Usage: %s [--black]", argv[0]);
+		}
+	}
+
 	/* read & check configuration */
 	CFG_read(SYSCONFDIR "/openskyd.conf");
 
@@ -41,7 +52,7 @@ int main(int argc, char * argv[])
 	if (CFG_config.wd.enabled)
 		COMP_register(&WD_comp, NULL);
 	if (CFG_config.fpga.configure)
-		COMP_register(&FPGA_comp, NULL);
+		COMP_register(&FPGA_comp, &bbwhite);
 	COMP_register(&BUF_comp, NULL);
 	COMP_register(&NET_comp, NULL);
 	COMP_register(&TB_comp, argv);
