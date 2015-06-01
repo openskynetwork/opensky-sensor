@@ -1,0 +1,44 @@
+# Maintainer: Markus Engel <m_engel at cs dot uni-kl dot de>
+pkgname=openskyd
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="RadarCape Replacement Daemon for OpenSky network"
+url="http://www.opensky-network.org"
+arch=('armv7h')
+license=('GPL3')
+depends=(gcc-libs bash)
+makedepends=(gcc binutils make dtc-git-patched pkg-config)
+optdepends=(rcc)
+backup=(etc/openskyd.conf)
+install=${pkgname}.install
+source=("${pkgname}-${pkgver}.tar.gz" "${pkgname}.service"
+	"${pkgname}-start.sh" "${pkgname}.rbf"
+	"BB-W-Radarcape.dts" "BB-B-Radarcape.dts")
+md5sums=('SKIP'
+         'e196ebef4681cd476987b127f21b346b'
+         'e6dcd81e5078f75c658277e8f9b70086'
+         'f6453aa6ec4188c739ec8c6ecc5bef55'
+         'ee20625a0e3af1e8d002e040e4e1c37f'
+         'e3267d871cd4f9881d27de6b31e7cf02')
+
+build() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd \
+    --enable-silent-rules \
+    --disable-network --enable-talkback --with-systemd --with-pacman
+  make
+  cd "${srcdir}"
+  dtc -O dtb -o BB-W-Radarcape-00A0.dtbo -b 0 -@ BB-W-Radarcape.dts
+  dtc -O dtb -o BB-B-Radarcape-00A0.dtbo -b 0 -@ BB-B-Radarcape.dts
+}
+
+package() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  make DESTDIR="${pkgdir}" install
+  mv "${pkgdir}/usr/bin/openskyd-uart" "${pkgdir}/usr/bin/openskyd"
+  install -Dm644 "${srcdir}/${pkgname}.service" "${pkgdir}/usr/lib/systemd/system/${pkgname}.service"
+  install -Dm755 "${srcdir}/${pkgname}-start.sh" "${pkgdir}/usr/bin/${pkgname}-start.sh"
+  install -Dm644 "${srcdir}/${pkgname}.rbf" "${pkgdir}/usr/lib/openskyd/${pkgname}.rbf"
+  install -Dm644 "${srcdir}/BB-B-Radarcape-00A0.dtbo" "${pkgdir}/usr/lib/firmware/BB-B-Radarcape-00A0.dtbo"
+  install -Dm644 "${srcdir}/BB-W-Radarcape-00A0.dtbo" "${pkgdir}/usr/lib/firmware/BB-W-Radarcape-00A0.dtbo"
+}

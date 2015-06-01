@@ -1,1 +1,0 @@
-../common/openskyd-start.sh

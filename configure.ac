@@ -1,5 +1,5 @@
 dnl initialize autoconf
-AC_INIT(openskyd, 0.9.0)
+AC_INIT(openskyd, 1.0.0)
 
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR(config)
@@ -76,16 +76,6 @@ AC_ARG_ENABLE([talkback],
      *)  AC_MSG_ERROR([bad value ${enableval} for --enable-talkback]) ;;
    esac], [talkback=true])
 AM_CONDITIONAL([TALKBACK], [test x$talkback = xtrue])
-
-AC_ARG_ENABLE([bb-black],
-  [AS_HELP_STRING([--enable-bb-black], [Build openskyd for BeagleBone Black @<:@no@:>@])],
-  [case "${enableval}" in
-    yes) bbblack=yes ;;
-    no)  bbblack=no ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-bb-black]) ;;
-   esac], [bbblack=no])
-AS_IF([test x"$bbblack" = x"yes"],
-  [AC_DEFINE([BEAGLEBONE_BLACK], [1], [Build for BeagleBone Black])])
 
 AC_ARG_ENABLE([cleanup],
   [AS_HELP_STRING([--enable-cleanup], [Add cleanup routines @<:@yes@:>@])],

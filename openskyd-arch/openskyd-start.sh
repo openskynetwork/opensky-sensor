@@ -1,5 +1,6 @@
 #!/bin/sh
 
+BOARD=$(dmesg | grep compatible-baseboard | cut -d',' -f2)
 SLOTS=$(find /sys/devices -name slots)
 
 BBUART5STATE=`grep BB-UART5 $SLOTS | wc -l`
@@ -15,10 +16,25 @@ if [ $BBUART2STATE == 0 ]; then
 fi
 
 if [ $BBRadarcapeSTATE == 0 ]; then
+  if [ $BOARD == beaglebone ]; then
     echo BB-W-Radarcape > ${SLOTS}
+
+  elif [ $BOARD == beaglebone-black ]; then
+    echo BB-B-Radarcape > ${SLOTS}
+
+  else
+    echo "Non supported board $BOARD"
+    exit 1
+  fi
+  
+  cat $SLOTS
 fi
 
-cat $SLOTS
+if [ $BOARD == beaglebone-black ]; then
+  arg=--black
+else
+  arg=
+fi
 
-exec /usr/bin/openskyd
+exec /usr/bin/openskyd $arg
 

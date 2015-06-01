@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=0.9.0
+VERSION=1.0.0
 DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 help:
@@ -17,7 +17,8 @@ build:
 	tar xzf openskyd-$(VERSION).tar.gz
 	cd openskyd-$(VERSION) && ./configure --host=arm-angstrom-linux-gnueabi \
 		--prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd \
-		--disable-uart --enable-network --disable-talkback --with-systemd \
+		--enable-silent-rules \
+		--disable-uart --enable-network --disable-talkback --without-systemd \
 		--without-pacman \
 		CFLAGS="-O2 -g"
 	make -C openskyd-$(VERSION)
