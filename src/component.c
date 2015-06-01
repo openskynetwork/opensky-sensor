@@ -13,7 +13,7 @@ static void stopUntil(struct Component * end);
 
 void COMP_register(struct Component * comp, void * initData)
 {
-	if (!comp->start) {
+	if (!comp->start && comp->main) {
 		comp->start = &COMP_startThreaded;
 		comp->stop = &COMP_stopThreaded;
 	}
@@ -58,7 +58,7 @@ bool COMP_startAll()
 	printf("Starting components:");
 	for (c = head; c; c = c->next) {
 		printf(" %s", c->description);
-		if (!c->start(c, c->data)) {
+		if (c->start && !c->start(c, c->data)) {
 			printf(" [FAIL]\n");
 			stopUntil(c);
 			return false;
