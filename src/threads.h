@@ -6,7 +6,7 @@
 #include <pthread.h>
 
 #define CLEANUP_PUSH(fun, arg) \
-	pthread_cleanup_push(fun, arg)
+	pthread_cleanup_push((void(*)(void*))(fun), (void*)(arg))
 
 #define CLEANUP_POP() \
 	pthread_cleanup_pop(1)

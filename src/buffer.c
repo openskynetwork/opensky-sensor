@@ -277,6 +277,7 @@ static struct MsgLink * getMessageFromPool(enum MSG_TYPE type)
 		 * -> sacrifice oldest message */
 		struct MsgList * tqueue = tqueues + MSG_TYPES - 1;
 		const struct MsgList * end = tqueues + type;
+		ret = NULL;
 		while (tqueue >= end && (ret = shiftTQueue(tqueue)) == NULL)
 			--tqueue;
 

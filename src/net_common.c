@@ -23,7 +23,7 @@ static void cleanup(struct addrinfo * hosts)
 int NETC_connect(const char * component, const char * hostName, uint16_t port)
 {
 	struct addrinfo * hosts = NULL, * host;
-	int sock;
+	int sock = -1;
 
 	/* resolve name */
 	int rc = getaddrinfo(hostName, NULL, NULL, &hosts);
