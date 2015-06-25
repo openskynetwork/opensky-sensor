@@ -105,7 +105,7 @@ static inline void printSubFrames(uint32_t type,
 	uint64_t n = snapshot->stats.ADSB_longType[type];
 	if (n) {
 		printf("   - %27" PRIu64 " [%3.0f%%] type %" PRIu32 " (%.02f /s",
-			n, 100. * snapshot->stats.ADSB_frameType[2] / n, type,
+			n, 100. * n / snapshot->stats.ADSB_frameType[2], type,
 			(double)n / snapshot->secs);
 		if (lastSnapshot && snapshot->delta) {
 			printf(", %.02f /s)\n",
