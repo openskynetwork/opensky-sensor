@@ -180,16 +180,7 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 		stats->BUF_maxQueue);
 	if (stats->BUF_overload)
 		puts(" -                             currently in overload");
-	uint64_t sacrifices = 0;
-	int i1;
-	for (i1 = 0; i1 < MSG_TYPES; ++i1)
-		sacrifices += stats->BUF_sacrifices[i1];
-	printf(" - %27" PRIu64 " discarded messages (overall)\n", sacrifices);
-	for (i1 = 0; i1 < MSG_TYPES; ++i1)
-		printf("   - %27" PRIu64 " [%3.0f%%] discarded %ss (overall)\n",
-			stats->BUF_sacrifices[i1], sacrifices ?
-			100. * stats->BUF_sacrifices[i1] / sacrifices : 0.,
-			MSG_TYPE_NAMES[i1]);
+	printf(" - %27" PRIu64 " discarded messages\n", stats->BUF_sacrifices);
 	printf(" - %27" PRIu64 " discarded messages (in one overflow "
 		"situation)\n", stats->BUF_sacrificeMax);
 	printf(" - %27" PRIu64 " messages in pool (Usage %.2f%%)\n",

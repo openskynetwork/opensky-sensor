@@ -62,24 +62,23 @@ static void destruct()
 	ADSB_destruct();
 }
 
-static void cleanup(struct MSG_Message * msg)
+static void cleanup(struct ADSB_Frame ** msg)
 {
-	if (msg)
-		BUF_abortMessage(msg);
+	if (*msg)
+		BUF_abortMessage(*msg);
 }
 
 static void mainloop()
 {
-	struct MSG_Message * msg = NULL;
+	struct ADSB_Frame * frame = NULL;
 
-	CLEANUP_PUSH(&cleanup, msg);
+	CLEANUP_PUSH(&cleanup, &frame);
 	while (RECV_comp.run) {
 		ADSB_connect();
 		isSynchronized = false;
 
-		msg = BUF_newMessage(MSG_TYPE_ADSB);
+		frame = BUF_newMessage();
 		while (RECV_comp.run) {
-			struct ADSB_Frame * frame = &msg->adsb;
 			bool success = ADSB_getFrame(frame);
 			if (success) {
 				++STAT_stats.ADSB_frameType[frame->frameType];
@@ -113,10 +112,10 @@ static void mainloop()
 					continue;
 				}
 
-				BUF_commitMessage(msg);
-				msg = BUF_newMessage(MSG_TYPE_ADSB);
+				BUF_commitMessage(frame);
+				frame = BUF_newMessage();
 			} else {
-				BUF_abortMessage(msg);
+				BUF_abortMessage(frame);
 				break;
 			}
 		}

@@ -3,7 +3,7 @@
 #endif
 #include <relay.h>
 #include <stdbool.h>
-#include <message.h>
+#include <adsb.h>
 #include <buffer.h>
 #include <network.h>
 #include <cfgfile.h>
@@ -16,10 +16,9 @@ struct Component RELAY_comp = {
 	.main = &mainloop
 };
 
-static void cleanup(struct MSG_Message * msg)
+static void cleanup(struct ADSB_Frame * msg)
 {
-	if (msg)
-		BUF_putMessage(msg);
+	BUF_putMessage(msg);
 }
 
 static void mainloop()
@@ -36,7 +35,7 @@ static void mainloop()
 		bool success;
 		do {
 			/* read a message from the buffer */
-			const struct MSG_Message * msg =
+			const struct ADSB_Frame * msg =
 				BUF_getMessageTimeout(CFG_config.net.timeout);
 			if (!msg) {
 				/* timeout */
@@ -44,7 +43,7 @@ static void mainloop()
 			} else {
 				CLEANUP_PUSH(&cleanup, msg);
 				/* got a message */
-				success = NET_sendFrame(&msg->adsb);
+				success = NET_sendFrame(msg);
 				if (success)
 					BUF_releaseMessage(msg);
 				else

@@ -21,7 +21,7 @@ struct STAT_Statistics {
 	uint64_t BUF_pools;
 	uint64_t BUF_poolsCreated;
 	uint64_t BUF_maxPools;
-	uint64_t BUF_sacrifices[MSG_TYPES];
+	uint64_t BUF_sacrifices;
 	uint64_t BUF_overload;
 	uint64_t BUF_maxQueue;
 	uint64_t BUF_queue;
