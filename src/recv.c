@@ -65,7 +65,7 @@ static void destruct()
 static void cleanup(struct ADSB_Frame ** msg)
 {
 	if (*msg)
-		BUF_abortMessage(*msg);
+		BUF_abortFrame(*msg);
 }
 
 static void mainloop()
@@ -77,7 +77,7 @@ static void mainloop()
 		ADSB_connect();
 		isSynchronized = false;
 
-		frame = BUF_newMessage();
+		frame = BUF_newFrame();
 		while (RECV_comp.run) {
 			bool success = ADSB_getFrame(frame);
 			if (success) {
@@ -112,10 +112,10 @@ static void mainloop()
 					continue;
 				}
 
-				BUF_commitMessage(frame);
-				frame = BUF_newMessage();
+				BUF_commitFrame(frame);
+				frame = BUF_newFrame();
 			} else {
-				BUF_abortMessage(frame);
+				BUF_abortFrame(frame);
 				break;
 			}
 		}
