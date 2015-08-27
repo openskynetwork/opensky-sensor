@@ -468,6 +468,7 @@ static Suite * buffer_suite()
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("Sacrifice");
+	tcase_add_checked_fixture(tc, setup, NULL);
 	tcase_add_test(tc, test_sacrifice);
 	tcase_add_loop_test(tc, test_sacrifice_n, 2, 20);
 	tcase_add_test(tc, test_sacrifice_get);
@@ -475,6 +476,7 @@ static Suite * buffer_suite()
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("Dynamic");
+	tcase_add_checked_fixture(tc, setup, NULL);
 	tcase_add_test(tc, test_dynamic);
 	tcase_add_test(tc, test_dynamic_sacrifice);
 	suite_add_tcase(s, tc);
