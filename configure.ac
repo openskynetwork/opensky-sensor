@@ -119,7 +119,7 @@ AS_IF([test x"$with_pacman" != x"no"],
 AS_IF([test x"$with_pacman" != x"no"],
   [AC_DEFINE([WITH_PACMAN], [1], [Enable pacman integration])])
 
-AS_IF([test x$network = xfalse -a x$uart = xfalse -a x$wd = xfalse],
+AS_IF([test x$network = xfalse -a x$uart = xfalse -a x$wd = xfalse -a x$dummy = xfalse],
   [AC_MSG_ERROR([No input layer chosen])])
 
 AS_IF([test x$development = xtrue],
