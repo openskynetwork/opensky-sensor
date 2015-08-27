@@ -206,6 +206,43 @@ START_TEST(test_queue_put)
 }
 END_TEST
 
+START_TEST(test_put_new)
+{
+	cfg->statBacklog = 2;
+	COMP_initAll();
+
+	struct ADSB_Frame * frame = BUF_newFrame();
+	ck_assert_ptr_ne(frame, NULL);
+	frame->siglevel = 0x56;
+	BUF_commitFrame(frame);
+
+	const struct ADSB_Frame * frame2 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame2, frame);
+	ck_assert_int_eq(frame2->siglevel, 0x56);
+
+	struct ADSB_Frame * frame3 = BUF_newFrame();
+	ck_assert_ptr_ne(frame3, frame2);
+	ck_assert_ptr_ne(frame3, NULL);
+	frame3->siglevel = 0x57;
+	BUF_commitFrame(frame3);
+
+	BUF_putFrame(frame2);
+	const struct ADSB_Frame * frame4 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame4, frame);
+	ck_assert_ptr_eq(frame4, frame2);
+	ck_assert_int_eq(frame4->siglevel, 0x56);
+	BUF_releaseFrame(frame4);
+
+	frame4 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame4, frame3);
+	ck_assert_int_eq(frame4->siglevel, 0x57);
+	BUF_releaseFrame(frame4);
+
+	frame4 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame4, NULL);
+}
+END_TEST
+
 START_TEST(test_sacrifice)
 {
 	cfg->statBacklog = 2;
@@ -266,6 +303,83 @@ START_TEST(test_sacrifice_n)
 }
 END_TEST
 
+START_TEST(test_sacrifice_get)
+{
+	cfg->statBacklog = 2;
+	COMP_initAll();
+
+	struct ADSB_Frame * frame = BUF_newFrame();
+	ck_assert_ptr_ne(frame, NULL);
+	frame->siglevel = 0x56;
+	BUF_commitFrame(frame);
+
+	const struct ADSB_Frame * frame2 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame2, frame);
+	ck_assert_int_eq(frame2->siglevel, 0x56);
+
+	struct ADSB_Frame * frame3 = BUF_newFrame();
+	ck_assert_ptr_ne(frame3, frame2);
+	ck_assert_ptr_ne(frame3, NULL);
+	frame3->siglevel = 0x57;
+	BUF_commitFrame(frame3);
+
+	struct ADSB_Frame * frame4 = BUF_newFrame();
+	ck_assert_ptr_eq(frame4, frame3);
+	frame3->siglevel = 0x58;
+	BUF_commitFrame(frame4);
+
+	BUF_releaseFrame(frame2);
+	frame2 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame2, frame3);
+	ck_assert_int_eq(frame2->siglevel, 0x58);
+	BUF_releaseFrame(frame2);
+
+	frame2 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame2, NULL);
+}
+END_TEST
+
+START_TEST(test_sacrifice_put_get)
+{
+	cfg->statBacklog = 2;
+	COMP_initAll();
+
+	struct ADSB_Frame * frame = BUF_newFrame();
+	ck_assert_ptr_ne(frame, NULL);
+	frame->siglevel = 0x56;
+	BUF_commitFrame(frame);
+
+	const struct ADSB_Frame * frame2 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame2, frame);
+	ck_assert_int_eq(frame2->siglevel, 0x56);
+
+	struct ADSB_Frame * frame3 = BUF_newFrame();
+	ck_assert_ptr_ne(frame3, frame2);
+	ck_assert_ptr_ne(frame3, NULL);
+	frame3->siglevel = 0x57;
+	BUF_commitFrame(frame3);
+
+	struct ADSB_Frame * frame4 = BUF_newFrame();
+	ck_assert_ptr_eq(frame4, frame3);
+	frame3->siglevel = 0x58;
+	BUF_commitFrame(frame4);
+
+	BUF_putFrame(frame2);
+	const struct ADSB_Frame * frame5 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame5, frame2);
+	ck_assert_int_eq(frame5->siglevel, 0x56);
+	BUF_releaseFrame(frame5);
+
+	frame5 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame5, frame4);
+	ck_assert_int_eq(frame5->siglevel, 0x58);
+	BUF_releaseFrame(frame5);
+
+	frame5 = BUF_getFrameTimeout(0);
+	ck_assert_ptr_eq(frame5, NULL);
+}
+END_TEST
+
 START_TEST(test_dynamic)
 {
 	cfg->statBacklog = 2;
@@ -318,43 +432,6 @@ START_TEST(test_dynamic_sacrifice)
 }
 END_TEST
 
-START_TEST(test_sacrifice_put)
-{
-	cfg->statBacklog = 2;
-	COMP_initAll();
-
-	struct ADSB_Frame * frame = BUF_newFrame();
-	ck_assert_ptr_ne(frame, NULL);
-	frame->siglevel = 0x56;
-	BUF_commitFrame(frame);
-
-	const struct ADSB_Frame * frame2 = BUF_getFrameTimeout(0);
-	ck_assert_ptr_eq(frame2, frame);
-	ck_assert_int_eq(frame2->siglevel, 0x56);
-
-	struct ADSB_Frame * frame3 = BUF_newFrame();
-	ck_assert_ptr_ne(frame3, frame2);
-	ck_assert_ptr_ne(frame3, NULL);
-	frame3->siglevel = 0x57;
-	BUF_commitFrame(frame3);
-
-	BUF_putFrame(frame2);
-	const struct ADSB_Frame * frame4 = BUF_getFrameTimeout(0);
-	ck_assert_ptr_eq(frame4, frame);
-	ck_assert_ptr_eq(frame4, frame2);
-	ck_assert_int_eq(frame4->siglevel, 0x56);
-	BUF_releaseFrame(frame4);
-
-	frame4 = BUF_getFrameTimeout(0);
-	ck_assert_ptr_eq(frame4, frame3);
-	ck_assert_int_eq(frame4->siglevel, 0x57);
-	BUF_releaseFrame(frame4);
-
-	frame4 = BUF_getFrameTimeout(0);
-	ck_assert_ptr_eq(frame4, NULL);
-}
-END_TEST
-
 static Suite * buffer_suite()
 {
 	Suite * s = suite_create("Buffer");
@@ -387,14 +464,20 @@ static Suite * buffer_suite()
 	tcase_add_loop_test(tc, test_queue_n, 1, 10);
 	tcase_add_test(tc, test_put);
 	tcase_add_test(tc, test_queue_put);
-	tcase_add_test(tc, test_sacrifice);
-	tcase_add_loop_test(tc, test_sacrifice_n, 2, 20);
-	tcase_add_test(tc, test_dynamic);
-	tcase_add_test(tc, test_dynamic_sacrifice);
-	tcase_add_test(tc, test_sacrifice_put);
+	tcase_add_test(tc, test_put_new);
 	suite_add_tcase(s, tc);
 
+	tc = tcase_create("Sacrifice");
+	tcase_add_test(tc, test_sacrifice);
+	tcase_add_loop_test(tc, test_sacrifice_n, 2, 20);
+	tcase_add_test(tc, test_sacrifice_get);
+	tcase_add_test(tc, test_sacrifice_put_get);
+	suite_add_tcase(s, tc);
 
+	tc = tcase_create("Dynamic");
+	tcase_add_test(tc, test_dynamic);
+	tcase_add_test(tc, test_dynamic_sacrifice);
+	suite_add_tcase(s, tc);
 
 	return s;
 }
