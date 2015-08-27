@@ -14,6 +14,17 @@ if WANT_WD
 bin_PROGRAMS += wd
 endif
 
+LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
+  $(top_srcdir)/build-aux/tap-driver.sh
+
+TESTS = test_buffer
+check_PROGRAMS = test_buffer
+test_buffer_SOURCES = test_buffer.c buffer.h buffer.c cfgfile.h \
+	statistics.h statistics.c component.h component.c util.h util.c \
+	message.h message.c
+test_buffer_CFLAGS = @CHECK_CFLAGS@
+test_buffer_LDADD = @CHECK_LIBS@
+
 # common sources of openskyd
 SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	adsb.c adsb.h buffer.h buffer.c network.h network.c cfgfile.h cfgfile.c \

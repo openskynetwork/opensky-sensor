@@ -2,12 +2,13 @@ dnl initialize autoconf
 AC_INIT(openskyd, 1.0.1)
 
 dnl put autotools files into config subdirectory
-AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR(m4)
 AC_CONFIG_SRCDIR(src/main.c)
+AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
 dnl initialize automake
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_HEADERS(config.h)
 AM_MAINTAINER_MODE
 
@@ -20,6 +21,37 @@ dnl test for std headers
 AC_HEADER_STDC
 
 AC_SEARCH_LIBS([clock_gettime],[rt posix4])
+AC_CHECK_FUNCS([clock_gettime])
+
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h limits.h netdb.h netinet/in.h])
+AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h])
+AC_CHECK_HEADERS([termios.h unistd.h])
+
+AC_CHECK_HEADER_STDBOOL
+AC_C_INLINE
+AC_TYPE_INT16_T
+AC_TYPE_INT32_T
+AC_TYPE_INT64_T
+AC_TYPE_INT8_T
+AC_TYPE_OFF_T
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+AC_TYPE_UINT16_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT64_T
+AC_TYPE_UINT8_T
+AC_CHECK_TYPES([ptrdiff_t])
+
+AC_FUNC_ERROR_AT_LINE
+AC_FUNC_FORK
+AC_FUNC_MALLOC
+AC_FUNC_MKTIME
+AC_FUNC_MMAP
+AC_CHECK_FUNCS([clock_gettime memchr memmove memset munmap pow setenv socket])
+AC_CHECK_FUNCS([strerror strncasecmp strtoul])
+
+PKG_CHECK_MODULES([CHECK], [check >= 0.9.6])
 
 AX_PTHREAD
 
@@ -129,4 +161,4 @@ AS_IF([test x$talkback = xtrue],
   [AC_DEFINE([TALKBACK], [], [Enable talkback component])])
 
 dnl output directive
-AC_OUTPUT(Makefile src/Makefile)
+AC_OUTPUT([Makefile src/Makefile])

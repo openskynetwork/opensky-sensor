@@ -11,6 +11,13 @@ static struct Component * head = NULL, * tail = NULL;
 
 static void stopUntil(struct Component * end);
 
+static bool silent = false;
+
+void COMP_setSilent(bool s)
+{
+	silent = s;
+}
+
 void COMP_register(struct Component * comp, void * initData)
 {
 	if (!comp->start && comp->main) {
@@ -31,46 +38,57 @@ void COMP_register(struct Component * comp, void * initData)
 void COMP_initAll()
 {
 	const struct Component * c;
-	printf("Initializing components:");
+	if (!silent)
+		printf("Initializing components:");
 	for (c = head; c; c = c->next) {
 		if (c->construct)
 			c->construct(c->data);
-		printf(" %s", c->description);
+		if (!silent)
+			printf(" %s", c->description);
 	}
-	putchar('\n');
+	if (!silent)
+		putchar('\n');
 }
 
 void COMP_destructAll()
 {
 	const struct Component * c;
-	printf("Destructing components");
+	if (!silent)
+		printf("Destructing components");
 	for (c = tail; c; c = c->prev) {
 		if (c->destruct)
 			c->destruct();
-		printf(" %s", c->description);
+		if (!silent)
+			printf(" %s", c->description);
 	}
-	putchar('\n');
+	if (!silent)
+		putchar('\n');
 }
 
 bool COMP_startAll()
 {
 	struct Component * c;
-	printf("Starting components:");
+	if (!silent)
+		printf("Starting components:");
 	for (c = head; c; c = c->next) {
-		printf(" %s", c->description);
+		if (!silent)
+			printf(" %s", c->description);
 		if (c->start && !c->start(c, c->data)) {
-			printf(" [FAIL]\n");
+			if (!silent)
+				printf(" [FAIL]\n");
 			stopUntil(c);
 			return false;
 		}
 	}
-	putchar('\n');
+	if (!silent)
+		putchar('\n');
 	return true;
 }
 
 static void stop(struct Component * c)
 {
-	printf(" %s", c->description);
+	if (!silent)
+		printf(" %s", c->description);
 	if (c->stop)
 		c->stop(c);
 }
@@ -78,10 +96,12 @@ static void stop(struct Component * c)
 void COMP_stopAll()
 {
 	struct Component * c;
-	printf("Stopping components:");
+	if (!silent)
+		printf("Stopping components:");
 	for (c = tail; c; c = c->prev)
 		stop(c);
-	putchar('\n');
+	if (!silent)
+		putchar('\n');
 }
 
 bool COMP_startThreaded(struct Component * c, void * data)
@@ -108,8 +128,10 @@ void COMP_stopThreaded(struct Component * c)
 static void stopUntil(struct Component * end)
 {
 	struct Component * c;
-	printf("Stopping components:");
+	if (!silent)
+		printf("Stopping components:");
 	for (c = end->prev; c; c = c->prev)
 		stop(c);
-	putchar('\n');
+	if (!silent)
+		putchar('\n');
 }

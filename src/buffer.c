@@ -118,6 +118,8 @@ static void construct()
 {
 	dynIncrements = 0;
 
+	assert(CFG_config.buf.statBacklog >= 2);
+
 	dynPools = NULL;
 	clear(&pool);
 	clear(&queue);

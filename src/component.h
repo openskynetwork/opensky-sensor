@@ -24,6 +24,8 @@ struct Component {
 	struct Component * prev;
 };
 
+void COMP_setSilent(bool s);
+
 void COMP_register(struct Component * comp, void * initData);
 
 bool COMP_startThreaded(struct Component * comp, void * data);
