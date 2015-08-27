@@ -167,15 +167,20 @@ static void mainloop()
 		if (queue.size <
 			(dynIncrements * CFG_config.buf.dynBacklog) /
 				CFG_config.buf.gcLevel) {
-			++STAT_stats.BUF_GCRuns;
-#ifdef BUF_DEBUG
-			NOC_puts("BUF: Running Garbage Collector");
-#endif
-			collectPools();
-			destroyUnusedPools();
+			BUF_runGC();
 		}
 		pthread_mutex_unlock(&mutex);
 	}
+}
+
+void BUF_runGC()
+{
+	++STAT_stats.BUF_GCRuns;
+#ifdef BUF_DEBUG
+	NOC_puts("BUF: Running Garbage Collector");
+#endif
+	collectPools();
+	destroyUnusedPools();
 }
 
 /** Flush Buffer queue. This discards all buffered but not processed frames */

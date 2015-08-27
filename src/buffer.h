@@ -10,6 +10,8 @@ extern struct Component BUF_comp;
 
 void BUF_flush();
 
+void BUF_runGC();
+
 void BUF_fillStatistics();
 
 struct ADSB_Frame * BUF_newFrame();

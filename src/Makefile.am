@@ -22,7 +22,7 @@ check_PROGRAMS = test_buffer
 test_buffer_SOURCES = test_buffer.c buffer.h buffer.c cfgfile.h \
 	statistics.h statistics.c component.h component.c util.h util.c \
 	message.h message.c
-test_buffer_CFLAGS = @CHECK_CFLAGS@
+test_buffer_CFLAGS = @CHECK_CFLAGS@ -fprofile-arcs -ftest-coverage
 test_buffer_LDADD = @CHECK_LIBS@
 
 # common sources of openskyd
