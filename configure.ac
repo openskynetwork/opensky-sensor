@@ -16,6 +16,8 @@ dnl required programs
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
+AC_PROG_RANLIB
+AM_PROG_AR
 
 dnl test for std headers
 AC_HEADER_STDC
@@ -63,6 +65,15 @@ AC_ARG_ENABLE([development],
      *)  AC_MSG_ERROR([bad value ${enableval} for --enable-development]) ;;
    esac], [development=false])
 AM_CONDITIONAL([DEVELOPMENT], [test x$development = xtrue])
+
+AC_ARG_ENABLE([test-coverage],
+  [AS_HELP_STRING([--enable-test-coverage], [Enable Test Coverage @<:@no@:>@])],
+  [case "${enableval}" in
+    yes) test_coverage=true ;;
+    no)  test_coverage=false ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-test-coverage]) ;;
+   esac], [test_coveraget=false])
+AM_CONDITIONAL([TEST_COVERAGE], [test x$test_coverage = xtrue])
 
 AC_ARG_ENABLE([network],
   [AS_HELP_STRING([--enable-network], [Build network input layer @<:@no@:>@])],

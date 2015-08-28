@@ -63,4 +63,7 @@ openskyd_netdir = $(sysconfdir)
 openskyd_uartdir = $(sysconfdir)
 openskyd_dummydir = $(sysconfdir)
 
+clean-local:
+	-rm -f *.gcno *.gcda
+
 SUBDIRS = . test
