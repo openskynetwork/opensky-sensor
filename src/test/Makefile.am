@@ -8,7 +8,7 @@ libtest_a_SOURCES = ../buffer.h ../buffer.c ../cfgfile.h \
 	../util.h ../util.c ../message.h ../message.c
 libtest_a_CFLAGS = $(AM_CFLAGS)
 
-AM_CFLAGS = -I.. @PTHREAD_CFLAGS@
+AM_CFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@
 
 check_PROGRAMS = test_buffer
 test_buffer_SOURCES = test_buffer.c
