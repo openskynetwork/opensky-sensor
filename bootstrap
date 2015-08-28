@@ -1,9 +1,6 @@
 #!/bin/sh
 
-AM_VERSION=$(automake --version 2>/dev/null | grep "^automake" | sed 's/.\+\([0-9]\+\.[0-9]\+\)/\1/')
-
 mkdir build-aux m4
-cp /usr/share/automake-$AM_VERSION/tap-driver.sh build-aux
 aclocal
 autoheader
 autoconf
