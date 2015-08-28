@@ -8,7 +8,7 @@ AC_CONFIG_SRCDIR(src/main.c)
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
 dnl initialize automake
-AM_INIT_AUTOMAKE([-Wall -Werror])
+AM_INIT_AUTOMAKE([gnu subdir-objects -Wall -Werror])
 AC_CONFIG_HEADERS(config.h)
 AM_MAINTAINER_MODE
 
@@ -161,4 +161,4 @@ AS_IF([test x$talkback = xtrue],
   [AC_DEFINE([TALKBACK], [], [Enable talkback component])])
 
 dnl output directive
-AC_OUTPUT([Makefile src/Makefile])
+AC_OUTPUT([Makefile src/Makefile src/test/Makefile])
