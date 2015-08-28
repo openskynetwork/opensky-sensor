@@ -16,8 +16,6 @@ struct Component {
 	void (*stop)(struct Component * c);
 
 	pthread_t thread;
-	volatile bool run;
-
 	void * data;
 
 	struct Component * next;

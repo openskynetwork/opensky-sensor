@@ -75,9 +75,9 @@ static void mainloop()
 	bool locked = true;
 	CLEANUP_PUSH(&cleanup, &locked);
 	pthread_mutex_lock(&mutex);
-	while (NET_comp.run) {
+	while (true) {
 		/* connect to the server */
-		while (NET_comp.run && !doConnect()) {
+		while (!doConnect()) {
 			/* retry in case of failure */
 			pthread_mutex_unlock(&mutex);
 			locked = false;
@@ -103,7 +103,7 @@ static void mainloop()
 		++STAT_stats.NET_connectsSuccess;
 
 		/* wait for failure */
-		while (NET_comp.run && !reconnect)
+		while (!reconnect)
 			pthread_cond_wait(&condReconnect, &mutex);
 	}
 	CLEANUP_POP();

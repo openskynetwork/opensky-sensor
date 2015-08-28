@@ -23,7 +23,7 @@ static void cleanup(struct ADSB_Frame * frame)
 
 static void mainloop()
 {
-	while (RELAY_comp.run) {
+	while (true) {
 		/* synchronize with the network (i.e. wait for a connection) */
 		NET_sync_send();
 
@@ -50,7 +50,7 @@ static void mainloop()
 					BUF_putFrame(frame);
 				CLEANUP_POP0();
 			}
-		} while(success && RELAY_comp.run);
+		} while(success);
 		/* if sending failed, synchronize with the network */
 	}
 }

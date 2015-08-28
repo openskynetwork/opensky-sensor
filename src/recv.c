@@ -73,12 +73,12 @@ static void mainloop()
 	struct ADSB_Frame * frame = NULL;
 
 	CLEANUP_PUSH(&cleanup, &frame);
-	while (RECV_comp.run) {
+	while (true) {
 		ADSB_connect();
 		isSynchronized = false;
 
 		frame = BUF_newFrame();
-		while (RECV_comp.run) {
+		while (true) {
 			bool success = ADSB_getFrame(frame);
 			if (success) {
 				++STAT_stats.ADSB_frameType[frame->frameType];

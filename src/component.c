@@ -107,7 +107,6 @@ void COMP_stopAll()
 bool COMP_startThreaded(struct Component * c, void * data)
 {
 	if (c->main) {
-		c->run = true;
 		int rc = pthread_create(&c->thread, NULL, (void*(*)(void*))(c->main),
 			data);
 		if (rc) {
@@ -120,7 +119,6 @@ bool COMP_startThreaded(struct Component * c, void * data)
 
 void COMP_stopThreaded(struct Component * c)
 {
-	c->run = false;
 	pthread_cancel(c->thread);
 	pthread_join(c->thread, NULL);
 }
