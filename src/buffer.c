@@ -104,6 +104,8 @@ static void collectPools();
 static bool uncollectPools();
 static void destroyUnusedPools();
 
+static void gc();
+
 static inline struct FrameLink * shift(struct FrameList * list);
 static inline void unshift(struct FrameList * list,
 	struct FrameLink * frame);
@@ -167,13 +169,20 @@ static void mainloop()
 		if (queue.size <
 			(dynIncrements * CFG_config.buf.dynBacklog) /
 				CFG_config.buf.gcLevel) {
-			BUF_runGC();
+			gc();
 		}
 		pthread_mutex_unlock(&mutex);
 	}
 }
 
 void BUF_runGC()
+{
+	pthread_mutex_lock(&mutex);
+	gc();
+	pthread_mutex_unlock(&mutex);
+}
+
+static void gc()
 {
 	++STAT_stats.BUF_GCRuns;
 #ifdef BUF_DEBUG
