@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <check.h>
 #include <buffer.h>
 #include <statistics.h>
