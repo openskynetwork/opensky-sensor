@@ -132,7 +132,7 @@ static bool configure()
 static inline bool setOption(enum ADSB_OPTION option)
 {
 	uint8_t w[3] = { '\x1a', '1', (uint8_t)option };
-	return INPUT_write(w, sizeof w) > 0;
+	return INPUT_write(w, sizeof w) == sizeof w;
 }
 
 /** ADSB */
