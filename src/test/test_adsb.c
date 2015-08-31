@@ -157,125 +157,171 @@ START_TEST(test_config_fail)
 }
 END_TEST
 
+static inline void append(uint8_t ** buf, uint8_t c)
+{
+	if ((*(*buf)++ = c) == 0x1a)
+		*(*buf)++ = 0x1a;
+}
+
+static inline void encode(uint8_t ** buf, const uint8_t * src, size_t len)
+{
+	while (len--)
+		append(buf, *src++);
+}
+
+static size_t buildFrame(uint8_t * buf, enum ADSB_FRAME_TYPE type,
+	uint64_t mlat, int8_t siglevel, const uint8_t * payload, size_t payloadLen)
+{
+	buf[0] = '\x1a';
+	buf[1] = type + '1';
+
+	uint8_t * ptr = buf + 2;
+	mlat = htobe64(mlat);
+	encode(&ptr, ((uint8_t*)&mlat) + 2, 6);
+
+	append(&ptr, siglevel);
+	encode(&ptr, payload, payloadLen);
+
+	return ptr - buf;
+}
+
 START_TEST(test_decode_modeac)
 {
-	test.frmMlat = 0x123456;
-	test.frmType = ADSB_FRAME_TYPE_MODE_AC;
-	test.frmMsgLen = 2;
-	test.frmMsg = "ab";
-	test.frmRaw = false;
-	test.frmSigLevel = -50;
+	uint8_t buf[46];
+	size_t len = buildFrame(buf, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50, "ab",
+		2);
+	test.frmMsg = buf;
+	test.frmMsgLen = len;
+
 	ADSB_init(&cfg);
 	ADSB_connect();
 
 	struct ADSB_Frame frame;
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
-	ck_assert_uint_eq(frame.frameType, test.frmType);
-	ck_assert_uint_eq(frame.mlat, test.frmMlat);
-	ck_assert_uint_eq(frame.payloadLen, test.frmMsgLen);
-	ck_assert_int_eq(frame.siglevel, test.frmSigLevel);
-	ck_assert(!memcmp(frame.payload, test.frmMsg, test.frmMsgLen));
-	ck_assert_uint_eq(frame.raw_len, test.rawLen);
-	ck_assert(!memcmp(frame.raw, test.raw, test.rawLen));
+	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_AC);
+	ck_assert_uint_eq(frame.mlat, 0x123456);
+	ck_assert_uint_eq(frame.payloadLen, 2);
+	ck_assert_int_eq(frame.siglevel, -50);
+	ck_assert(!memcmp(frame.payload, "ab", 2));
+	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert(!memcmp(frame.raw, buf, len));
 }
 END_TEST
 
 START_TEST(test_decode_modesshort)
 {
-	test.frmMlat = 0x234567;
-	test.frmType = ADSB_FRAME_TYPE_MODE_S_SHORT;
-	test.frmMsgLen = 7;
-	test.frmMsg = "abcdefg";
-	test.frmRaw = false;
-	test.frmSigLevel = 126;
+	uint8_t buf[46];
+	size_t len = buildFrame(buf, ADSB_FRAME_TYPE_MODE_S_SHORT, 0x234567, 127,
+		"abcdefg", 7);
+	test.frmMsg = buf;
+	test.frmMsgLen = len;
+
 	ADSB_init(&cfg);
 	ADSB_connect();
 
 	struct ADSB_Frame frame;
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
-	ck_assert_uint_eq(frame.frameType, test.frmType);
-	ck_assert_uint_eq(frame.mlat, test.frmMlat);
-	ck_assert_uint_eq(frame.payloadLen, test.frmMsgLen);
-	ck_assert_int_eq(frame.siglevel, test.frmSigLevel);
-	ck_assert(!memcmp(frame.payload, test.frmMsg, test.frmMsgLen));
-	ck_assert_uint_eq(frame.raw_len, test.rawLen);
-	ck_assert(!memcmp(frame.raw, test.raw, test.rawLen));
+	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_SHORT);
+	ck_assert_uint_eq(frame.mlat, 0x234567);
+	ck_assert_uint_eq(frame.payloadLen, 7);
+	ck_assert_int_eq(frame.siglevel, 127);
+	ck_assert(!memcmp(frame.payload, "abcdefg", 7));
+	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert(!memcmp(frame.raw, buf, len));
 }
 END_TEST
 
 START_TEST(test_decode_modeslong)
 {
-	test.frmMlat = 0xdeadbee;
-	test.frmType = ADSB_FRAME_TYPE_MODE_S_LONG;
-	test.frmMsgLen = 14;
-	test.frmMsg = "abcdefghijklmn";
-	test.frmRaw = false;
-	test.frmSigLevel = 0;
+	uint8_t buf[46];
+	size_t len = buildFrame(buf, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
+		"abcdefghijklmn", 14);
+	test.frmMsg = buf;
+	test.frmMsgLen = len;
+
 	ADSB_init(&cfg);
 	ADSB_connect();
 
 	struct ADSB_Frame frame;
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
-	ck_assert_uint_eq(frame.frameType, test.frmType);
-	ck_assert_uint_eq(frame.mlat, test.frmMlat);
-	ck_assert_uint_eq(frame.payloadLen, test.frmMsgLen);
-	ck_assert_int_eq(frame.siglevel, test.frmSigLevel);
-	ck_assert(!memcmp(frame.payload, test.frmMsg, test.frmMsgLen));
-	ck_assert_uint_eq(frame.raw_len, test.rawLen);
-	ck_assert(!memcmp(frame.raw, test.raw, test.rawLen));
+	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_LONG);
+	ck_assert_uint_eq(frame.mlat, 0xdeadbe);
+	ck_assert_uint_eq(frame.payloadLen, 14);
+	ck_assert_int_eq(frame.siglevel, 0);
+	ck_assert(!memcmp(frame.payload, "abcdefghijklmn", 14));
+	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert(!memcmp(frame.raw, buf, len));
 }
 END_TEST
 
 START_TEST(test_decode_status)
 {
-	test.frmMlat = 0xdeadbee;
-	test.frmType = ADSB_FRAME_TYPE_STATUS;
-	test.frmMsgLen = 14;
-	test.frmMsg = "abcdefghijklmn";
-	test.frmRaw = false;
-	test.frmSigLevel = 0;
+	uint8_t buf[46];
+	size_t len = buildFrame(buf, ADSB_FRAME_TYPE_STATUS, 0xdeadbe, 0,
+		"abcdefghijklmn", 14);
+	test.frmMsg = buf;
+	test.frmMsgLen = len;
+
 	ADSB_init(&cfg);
 	ADSB_connect();
 
 	struct ADSB_Frame frame;
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
-	ck_assert_uint_eq(frame.frameType, test.frmType);
-	ck_assert_uint_eq(frame.mlat, test.frmMlat);
-	ck_assert_uint_eq(frame.payloadLen, test.frmMsgLen);
-	ck_assert_int_eq(frame.siglevel, test.frmSigLevel);
-	ck_assert(!memcmp(frame.payload, test.frmMsg, test.frmMsgLen));
-	ck_assert_uint_eq(frame.raw_len, test.rawLen);
-	ck_assert(!memcmp(frame.raw, test.raw, test.rawLen));
+	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_STATUS);
+	ck_assert_uint_eq(frame.mlat, 0xdeadbe);
+	ck_assert_uint_eq(frame.payloadLen, 14);
+	ck_assert_int_eq(frame.siglevel, 0);
+	ck_assert(!memcmp(frame.payload, "abcdefghijklmn", 14));
+	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert(!memcmp(frame.raw, buf, len));
 }
 END_TEST
 
-/*START_TEST(test_decode_unknown)
+START_TEST(test_decode_unknown)
 {
-	test.frmMlat = 0xdeadbee;
-	test.frmType = '5';
-	test.frmMsgLen = 14;
-	test.frmMsg = "abcdefghijklmn";
-	test.frmRaw = false;
-	test.frmSigLevel = 0;
+	uint8_t buf[46];
+	size_t len = buildFrame(buf, '5', 0xcafeba, 0, "abcdefghijklmn", 14);
+	test.frmMsg = buf;
+	test.frmMsgLen = len;
+
+	ADSB_init(&cfg);
+	ADSB_connect();
+
+	struct ADSB_Frame frame;
+	bool ret = ADSB_getFrame(&frame);
+	ck_assert(!ret);
+}
+END_TEST
+
+START_TEST(test_decode_escape)
+{
+	uint8_t buf[46];
+	const uint8_t msg[] =
+		"\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a";
+	size_t len = buildFrame(buf, ADSB_FRAME_TYPE_MODE_S_LONG, 0x1a1a1a,
+		0x1a, msg, 14);
+	test.frmMsg = buf;
+	test.frmMsgLen = len;
+
 	ADSB_init(&cfg);
 	ADSB_connect();
 
 	struct ADSB_Frame frame;
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
-	ck_assert_uint_eq(frame.frameType, test.frmType);
-	ck_assert_uint_eq(frame.mlat, test.frmMlat);
-	ck_assert_uint_eq(frame.payloadLen, test.frmMsgLen);
-	ck_assert_int_eq(frame.siglevel, test.frmSigLevel);
-	ck_assert(!memcmp(frame.payload, test.frmMsg, test.frmMsgLen));
-	ck_assert_uint_eq(frame.raw_len, test.rawLen);
-	ck_assert(!memcmp(frame.raw, test.raw, test.rawLen));
+	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_LONG);
+	ck_assert_uint_eq(frame.mlat, 0x1a1a1a);
+	ck_assert_uint_eq(frame.payloadLen, 14);
+	ck_assert_int_eq(frame.siglevel, 0x1a);
+	ck_assert(!memcmp(frame.payload, msg, 14));
+	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert(!memcmp(frame.raw, buf, len));
 }
-END_TEST*/
+END_TEST
 
 static Suite * adsb_suite()
 {
@@ -311,7 +357,8 @@ static Suite * adsb_suite()
 	tcase_add_test(tc, test_decode_modesshort);
 	tcase_add_test(tc, test_decode_modeslong);
 	tcase_add_test(tc, test_decode_status);
-	//tcase_add_test(tc, test_decode_unknown);
+	tcase_add_test(tc, test_decode_unknown);
+	tcase_add_test(tc, test_decode_escape);
 	suite_add_tcase(s, tc);
 
 	return s;

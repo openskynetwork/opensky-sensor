@@ -19,14 +19,8 @@ struct TEST {
 
 	bool hasRead;
 
-	uint64_t frmMlat;
-	enum ADSB_FRAME_TYPE frmType;
-	int8_t frmSigLevel;
 	uint8_t * frmMsg;
 	size_t frmMsgLen;
-	uint8_t raw[23 * 2];
-	size_t rawLen;
-	bool frmRaw;
 };
 
 extern struct TEST test;

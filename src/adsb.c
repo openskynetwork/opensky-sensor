@@ -165,7 +165,8 @@ bool ADSB_getFrame(struct ADSB_Frame * frame)
 			NOC_fprintf(stderr, "ADSB: Out of Sync: got 0x%2d instead of "
 				"0x1a\n", sync);
 			++STAT_stats.ADSB_outOfSync;
-			synchronize();
+			if (!synchronize())
+				return false;
 		}
 
 		/* decode frame */
@@ -193,7 +194,8 @@ decode_frame:
 			NOC_fprintf(stderr, "ADSB: Unknown frame type %c, "
 				"resynchronizing\n", type);
 			++STAT_stats.ADSB_frameTypeUnknown;
-			synchronize();
+			if (!synchronize())
+				return false;
 			continue;
 		}
 		frame->frameType = type - '1';
