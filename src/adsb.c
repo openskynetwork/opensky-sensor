@@ -190,6 +190,11 @@ decode_frame:
 		case '4': /* status frame */
 			payload_len = 14;
 			break;
+		case '\x1a': /* resynchronize */
+			++STAT_stats.ADSB_outOfSync;
+			NOC_puts("ADSB: Out of Sync: got unescaped 0x1a in frame, "
+				"treating as resynchronization");
+			goto decode_frame;
 		default:
 			NOC_fprintf(stderr, "ADSB: Unknown frame type %c, "
 				"resynchronizing\n", type);

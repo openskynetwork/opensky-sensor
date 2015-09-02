@@ -6,6 +6,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+struct TEST_Buffer {
+	uint8_t * payload;
+	size_t length;
+};
+
 struct TEST {
 	bool init;
 	bool destruct;
@@ -17,10 +22,9 @@ struct TEST {
 
 	int32_t testAck;
 
-	bool hasRead;
-
-	uint8_t * frmMsg;
-	size_t frmMsgLen;
+	uint32_t curBuffer;
+	struct TEST_Buffer * buffers;
+	uint32_t nBuffers;
 };
 
 extern struct TEST test;

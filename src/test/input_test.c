@@ -27,12 +27,16 @@ void INPUT_connect()
 
 size_t INPUT_read(uint8_t * buf, size_t bufLen)
 {
-	if (test.hasRead)
+	if (!test.buffers || test.curBuffer == test.nBuffers)
 		return 0;
-	test.hasRead = true;
 
-	size_t l = bufLen < test.frmMsgLen ? bufLen : test.frmMsgLen;
-	memcpy(buf, test.frmMsg, l);
+	struct TEST_Buffer * tbuf = &test.buffers[test.curBuffer];
+
+	size_t l = bufLen < tbuf->length ? bufLen : tbuf->length;
+	memcpy(buf, tbuf->payload, l);
+	tbuf->payload += l;
+	if ((tbuf->length -= l) == 0)
+		test.curBuffer++;
 	return l;
 }
 
