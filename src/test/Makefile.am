@@ -12,7 +12,8 @@ libtest_a_CFLAGS = $(AM_CFLAGS)
 AM_CFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@
 LDADD = @CHECK_LIBS@ @PTHREAD_LIBS@ @PTHREAD_CFLAGS@ libtest.a
 
-check_PROGRAMS = test_buffer test_adsb test_recv
+TESTS = test_buffer test_adsb test_recv
+check_PROGRAMS = $(TESTS) perf_adsb
 
 test_buffer_SOURCES = test_buffer.c
 test_buffer_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
@@ -22,6 +23,12 @@ test_adsb_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
 test_recv_SOURCES = test_recv.c input_test.h input_test.c
 test_recv_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
+
+perf_adsb_SOURCES = perf_adsb.c input_perf.h input_perf.c \
+	../statistics.h ../statistics.c ../adsb.h ../adsb.c \
+	../buffer.h ../buffer.c ../component.h ../component.c
+perf_adsb_CFLAGS = $(AM_CFLAGS)
+perf_adsb_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@
 
 if TEST_COVERAGE
 libtest_a_CFLAGS += -fprofile-arcs -ftest-coverage
@@ -37,6 +44,4 @@ lcov: check
 clean-local:
 	-rm -rf *.gcno *.gcda coverage.info out
 endif
-
-TESTS = $(check_PROGRAMS)
 
