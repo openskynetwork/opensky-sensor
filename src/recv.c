@@ -84,7 +84,8 @@ static void mainloop()
 				++STAT_stats.ADSB_frameType[frame->frameType];
 
 				if (frame->frameType == ADSB_FRAME_TYPE_STATUS) {
-					isSynchronized = frame->mlat != 0;
+					if (!isSynchronized)
+						isSynchronized = frame->mlat != 0;
 					continue;
 				}
 
