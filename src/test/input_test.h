@@ -25,8 +25,12 @@ struct TEST {
 	uint32_t curBuffer;
 	struct TEST_Buffer * buffers;
 	uint32_t nBuffers;
+	bool noRet;
 };
 
 extern struct TEST test;
+
+size_t INPUT_buildFrame(uint8_t * buf, enum ADSB_FRAME_TYPE type,
+	uint64_t mlat, int8_t siglevel, const uint8_t * payload, size_t payloadLen);
 
 #endif
