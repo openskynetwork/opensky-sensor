@@ -10,6 +10,7 @@
 #include <cfgfile.h>
 #include <signal.h>
 #include <ctype.h>
+#include <unistd.h>
 
 struct CFG_Config CFG_config;
 static struct CFG_RECV * const cfg = &CFG_config.recv;

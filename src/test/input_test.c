@@ -9,6 +9,7 @@
 #include <endian.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 struct TEST test;
 
