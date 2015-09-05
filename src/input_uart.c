@@ -93,7 +93,7 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	while (true) {
 		ssize_t rc = read(fd, buf, bufLen);
-		if (rc == -1) {
+		if (unlikely(rc == -1)) {
 			if (errno == EAGAIN) {
 				poll(&fds, 1, -1);
 			} else {
@@ -101,7 +101,7 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 				closeUart();
 				return 0;
 			}
-		} else if (rc == 0) {
+		} else if (unlikely(rc == 0)) {
 			poll(&fds, 1, -1);
 		} else {
 			return rc;
@@ -112,7 +112,7 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 size_t INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = write(fd, buf, bufLen);
-	if (rc <= 0)
+	if (unlikely(rc <= 0))
 		return 0;
 	return rc;
 }

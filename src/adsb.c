@@ -17,6 +17,7 @@
 #include <input.h>
 #include <cfgfile.h>
 #include <threads.h>
+#include <util.h>
 
 /** receive buffer */
 static uint8_t buf[128];
@@ -158,7 +159,7 @@ bool ADSB_getFrame(struct ADSB_Frame * frame)
 		/* synchronize */
 		while (true) {
 			uint8_t sync;
-			if (!next(&sync))
+			if (unlikely(!next(&sync)))
 				return false;
 			if (sync == 0x1a)
 				break;
@@ -174,7 +175,7 @@ bool ADSB_getFrame(struct ADSB_Frame * frame)
 		uint8_t type;
 decode_frame:
 		/* decode type */
-		if (!next(&type))
+		if (unlikely(!next(&type)))
 			return false;
 		size_t payload_len;
 		switch (type) {
@@ -211,9 +212,9 @@ decode_frame:
 		/* read header */
 		uint8_t header[7];
 		enum DECODE_STATUS rs = decode(header, sizeof header, frame);
-		if (rs == DECODE_STATUS_RESYNC)
+		if (unlikely(rs == DECODE_STATUS_RESYNC))
 			goto decode_frame;
-		else if (rs == DECODE_STATUS_CONNFAIL)
+		else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
 		/* decode mlat */
 		uint64_t mlat = 0;
@@ -222,9 +223,9 @@ decode_frame:
 		frame->siglevel = header[6];
 
 		rs = decode(frame->payload, payload_len, frame);
-		if (rs == DECODE_STATUS_RESYNC)
+		if (unlikely(rs == DECODE_STATUS_RESYNC))
 			goto decode_frame;
-		else if (rs == DECODE_STATUS_CONNFAIL)
+		else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
 
 		return true;
@@ -246,15 +247,15 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 	for (i = 0; i < len; ++i) {
 		/* receive one character */
 		uint8_t c;
-		if (!next(&c))
+		if (unlikely(!next(&c)))
 			return DECODE_STATUS_CONNFAIL;
 		/* put into buffer and raw buffer */
 		*rawPtr++ = *dst++ = c;
 		++frame->raw_len;
-		if (c == 0x1a) { /* escaped character */
-			if (!peek(&c))
+		if (unlikely(c == 0x1a)) { /* escaped character */
+			if (unlikely(!peek(&c)))
 				return DECODE_STATUS_CONNFAIL;
-			if (c == 0x1a) {
+			if (unlikely(c == 0x1a)) {
 				/* consume character */
 				consume();
 				/* put into raw buffer */
@@ -275,7 +276,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 static inline bool discardAndFill()
 {
 	size_t rc = INPUT_read(buf, sizeof buf);
-	if (rc == 0) {
+	if (unlikely(rc == 0)) {
 		return false;
 	} else {
 		len = rc;
@@ -286,7 +287,7 @@ static inline bool discardAndFill()
 
 static inline void consume()
 {
-	if (cur >= buf + len)
+	if (unlikely(cur >= buf + len))
 		error(EXIT_FAILURE, 0, "ADSB: assertion cur >= buf + len violated");
 	++cur;
 }
@@ -297,11 +298,11 @@ static inline void consume()
 static inline bool peek(uint8_t * c)
 {
 	do {
-		if (cur < buf + len) {
+		if (likely(cur < buf + len)) {
 			*c = *cur;
 			return true;
 		}
-	} while (discardAndFill());
+	} while (likely(discardAndFill()));
 	return false;
 }
 
@@ -311,7 +312,7 @@ static inline bool peek(uint8_t * c)
 static inline bool next(uint8_t * ch)
 {
 	bool ret = peek(ch);
-	if (ret)
+	if (likely(ret))
 		++cur;
 	return ret;
 }
@@ -323,10 +324,10 @@ static inline bool synchronize()
 {
 	do {
 		uint8_t * esc = memchr(cur, 0x1a, len - (cur - buf));
-		if (esc) {
+		if (likely(esc)) {
 			cur = esc;
 			return true;
 		}
-	} while (discardAndFill());
+	} while (likely(discardAndFill()));
 	return false;
 }

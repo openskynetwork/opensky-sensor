@@ -8,6 +8,7 @@
 #include <network.h>
 #include <cfgfile.h>
 #include <threads.h>
+#include <util.h>
 
 static void mainloop();
 
@@ -44,13 +45,13 @@ static void mainloop()
 				CLEANUP_PUSH(&cleanup, frame);
 				/* got a message */
 				success = NET_sendFrame(frame);
-				if (success)
+				if (likely(success))
 					BUF_releaseFrame(frame);
 				else
 					BUF_putFrame(frame);
 				CLEANUP_POP0();
 			}
-		} while(success);
+		} while(likely(success));
 		/* if sending failed, synchronize with the network */
 	}
 }

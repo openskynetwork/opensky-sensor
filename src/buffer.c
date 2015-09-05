@@ -13,6 +13,7 @@
 #include <statistics.h>
 #include <cfgfile.h>
 #include <threads.h>
+#include <util.h>
 
 /** Define to 1 to enable debugging messages */
 #define BUF_DEBUG 1
@@ -219,7 +220,7 @@ static struct FrameLink * getFrameFromPool()
 {
 	struct FrameLink * ret;
 
-	if (pool.head) {
+	if (likely(pool.head)) {
 		/* pool is not empty -> unlink and return first frame */
 		ret = shift(&pool);
 		overCapacity = 0;
@@ -282,7 +283,7 @@ void BUF_commitFrame(struct ADSB_Frame * frame)
 	pthread_cond_broadcast(&cond);
 	pthread_mutex_unlock(&mutex);
 
-	if (queue.size > STAT_stats.BUF_maxQueue)
+	if (unlikely(queue.size > STAT_stats.BUF_maxQueue))
 		STAT_stats.BUF_maxQueue = queue.size;
 
 	newFrame = NULL;
@@ -410,7 +411,7 @@ static bool deployPool(struct Pool * newPool, size_t size)
 {
 	/* allocate new frames */
 	struct FrameLink * initFrames = malloc(size * sizeof *initFrames);
-	if (!initFrames)
+	if (unlikely(!initFrames))
 		return false;
 
 	/* initialize pool */
@@ -449,7 +450,7 @@ static bool createDynPool()
 		return false;
 
 	/* deployment */
-	if (!deployPool(newPool, CFG_config.buf.dynBacklog)) {
+	if (unlikely(!deployPool(newPool, CFG_config.buf.dynBacklog))) {
 		free(newPool);
 		return false;
 	}
@@ -460,7 +461,7 @@ static bool createDynPool()
 	++dynIncrements;
 
 	++STAT_stats.BUF_poolsCreated;
-	if (dynIncrements > STAT_stats.BUF_maxPools)
+	if (unlikely(dynIncrements > STAT_stats.BUF_maxPools))
 		STAT_stats.BUF_maxPools = dynIncrements;
 
 	return true;
@@ -488,7 +489,7 @@ static void collectPools()
 				frame->prev->next = next;
 			else
 				pool.head = next;
-			if (next)
+			if (likely(next))
 				next->prev = frame->prev;
 			else
 				pool.tail = frame->prev;
@@ -539,7 +540,7 @@ static void destroyUnusedPools()
 	/* iterate over all dynamic pools */
 	for (pool = dynPools; pool; pool = next) {
 		next = pool->next;
-		if (pool->collect.size == pool->size) {
+		if (likely(pool->collect.size == pool->size)) {
 			/* fully collected pool */
 
 			/* unlink from the list of pools */

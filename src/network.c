@@ -16,6 +16,7 @@
 #include <pthread.h>
 #include <threads.h>
 #include <cfgfile.h>
+#include <util.h>
 
 #define DEBUG
 
@@ -199,7 +200,7 @@ static inline bool sendDataUnlocked(const void * data, size_t len)
 		return true;
 
 	ssize_t rc = send(sock, data, len, MSG_NOSIGNAL);
-	if (rc <= 0) {
+	if (unlikely(rc <= 0)) {
 		NOC_fprintf(stderr, "NET: could not send: %s\n",
 			rc == 0 ? "Connection lost" : strerror(errno));
 		++STAT_stats.NET_msgsFailed;
@@ -333,7 +334,7 @@ ssize_t NET_receive(uint8_t * buf, size_t len)
 		locked = true;
 		pthread_mutex_lock(&mutex);
 		inRecv = false;
-		if (ret <= 0) {
+		if (unlikely(ret <= 0)) {
 			NOC_fprintf(stderr, "NET: could not receive: %s\n",
 					ret == 0 ? "Connection lost" : strerror(errno));
 			++STAT_stats.NET_msgsRecvFailed;

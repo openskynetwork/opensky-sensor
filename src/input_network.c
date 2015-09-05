@@ -12,6 +12,7 @@
 #include <sys/socket.h>
 #include <net_common.h>
 #include <cfgfile.h>
+#include <util.h>
 
 /** file descriptor for UART */
 static int sock;
@@ -55,7 +56,7 @@ static bool doConnect()
 size_t INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = recv(sock, buf, bufLen, 0);
-	if (rc < 0) {
+	if (unlikely(rc < 0)) {
 		error(0, errno, "INPUT: recv failed");
 		closeConn();
 		return 0;
@@ -67,7 +68,7 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 size_t INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = send(sock, buf, bufLen, MSG_NOSIGNAL);
-	if (rc <= 0) {
+	if (unlikely(rc <= 0)) {
 		error(0, errno, "INPUT: send failed");
 		return 0;
 	}

@@ -8,6 +8,7 @@
 #include <statistics.h>
 #include <cfgfile.h>
 #include <threads.h>
+#include <util.h>
 
 enum RECV_LONG_FRAME_TYPE {
 	RECV_LONG_FRAME_TYPE_NONE = 0,
@@ -80,17 +81,17 @@ static void mainloop()
 		frame = BUF_newFrame();
 		while (true) {
 			bool success = ADSB_getFrame(frame);
-			if (success) {
+			if (likely(success)) {
 				++STAT_stats.ADSB_frameType[frame->frameType];
 
-				if (frame->frameType == ADSB_FRAME_TYPE_STATUS) {
+				if (unlikely(frame->frameType == ADSB_FRAME_TYPE_STATUS)) {
 					if (!isSynchronized)
 						isSynchronized = frame->mlat != 0;
 					continue;
 				}
 
 				/* filter if unsynchronized and filter is enabled */
-				if (!isSynchronized) {
+				if (unlikely(!isSynchronized)) {
 					++STAT_stats.ADSB_framesUnsynchronized;
 					if (CFG_config.recv.syncFilter) {
 						++STAT_stats.ADSB_framesFiltered;
