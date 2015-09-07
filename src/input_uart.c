@@ -11,6 +11,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <cfgfile.h>
+#include <util.h>
 
 /** file descriptor for UART */
 static int fd;
