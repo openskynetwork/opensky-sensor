@@ -13,7 +13,7 @@ AM_CFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@
 LDADD = @CHECK_LIBS@ @PTHREAD_LIBS@ @PTHREAD_CFLAGS@ libtest.a
 
 TESTS = test_buffer test_adsb test_recv
-check_PROGRAMS = $(TESTS) perf_adsb
+check_PROGRAMS = $(TESTS) perf_adsb perf_buffer
 
 test_buffer_SOURCES = test_buffer.c
 test_buffer_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
@@ -29,6 +29,14 @@ perf_adsb_SOURCES = perf_adsb.c input_perf.h input_perf.c \
 	../buffer.h ../buffer.c ../component.h ../component.c
 perf_adsb_CFLAGS = $(AM_CFLAGS)
 perf_adsb_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@
+
+perf_buffer_SOURCES = perf_buffer.c input_perf.h input_perf.c \
+	../statistics.h ../statistics.c ../adsb.h ../adsb.c \
+	../buffer.h ../buffer.c ../component.h ../component.c \
+	../recv.h ../recv.c
+perf_buffer_CFLAGS = $(AM_CFLAGS)
+perf_buffer_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@
+perf_buffer_LDFLAGS = 
 
 if TEST_COVERAGE
 libtest_a_CFLAGS += -fprofile-arcs -ftest-coverage
