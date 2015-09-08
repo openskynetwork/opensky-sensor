@@ -216,7 +216,7 @@ void BUF_fillStatistics()
  *  pools to get. Discard oldest frame if there is no more dynamic pool
  * \return a frame which is about to be produced
  */
-static struct FrameLink * getFrameFromPool()
+static inline struct FrameLink * getFrameFromPool()
 {
 	struct FrameLink * ret;
 
@@ -572,7 +572,7 @@ static inline struct FrameLink * shift(struct FrameList * list)
 {
 	assert(!!list->head == !!list->tail);
 
-	if (!list->head) /* empty list */
+	if (unlikely(!list->head)) /* empty list */
 		return NULL;
 
 	/* first element */
