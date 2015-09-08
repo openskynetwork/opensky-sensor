@@ -9,24 +9,16 @@
 #include <ctype.h>
 
 struct CFG_Config CFG_config;
-
-static struct ADSB_CONFIG cfg;
+struct CFG_RECV * const cfg = &CFG_config.recv;
 
 static void setup()
 {
-	cfg.frameFilter = false;
-	cfg.crc = false;
-	cfg.timestampGPS = false;
-	cfg.rtscts = false;
-	cfg.fec = false;
-	cfg.modeAC = false;
-
 	test.testAck = -1;
 }
 
 START_TEST(test_init_destruct)
 {
-	ADSB_init(&cfg);
+	ADSB_init();
 	ck_assert(test.init);
 	ADSB_destruct();
 	ck_assert(test.destruct);
@@ -35,10 +27,10 @@ END_TEST
 
 START_TEST(test_connect)
 {
-	ADSB_init(NULL);
+	ADSB_init();
 	ck_assert(test.init);
 	ADSB_connect();
-	ck_assert_uint_eq(test.write, 0);
+	ck_assert_uint_eq(test.write, 8);
 }
 END_TEST
 
@@ -48,7 +40,7 @@ static void configAssert(char testC)
 	bool expect = testC == lower ? false : true;
 
 	test.params[lower - 'c'] = !expect;
-	ADSB_init(&cfg);
+	ADSB_init();
 	ck_assert(test.init);
 	ADSB_connect();
 	ck_assert_uint_eq(test.write, 8);
@@ -61,94 +53,78 @@ START_TEST(test_config_bin)
 }
 END_TEST
 
-START_TEST(test_config_frameFilter_0)
+START_TEST(test_config_frameFilter)
 {
-	cfg.frameFilter = false;
-	configAssert('d');
-}
-END_TEST
-
-START_TEST(test_config_frameFilter_1)
-{
-	cfg.frameFilter = true;
 	configAssert('D');
 }
 END_TEST
 
 START_TEST(test_config_crc_0)
 {
-	cfg.crc = false;
+	cfg->crc = false;
 	configAssert('F');
 }
 END_TEST
 
 START_TEST(test_config_crc_1)
 {
-	cfg.crc = true;
+	cfg->crc = true;
 	configAssert('f');
 }
 END_TEST
 
 START_TEST(test_config_gps_0)
 {
-	cfg.timestampGPS = false;
+	cfg->gps = false;
 	configAssert('g');
 }
 END_TEST
 
 START_TEST(test_config_gps_1)
 {
-	cfg.timestampGPS = true;
+	cfg->gps = true;
 	configAssert('G');
 }
 END_TEST
 
 START_TEST(test_config_rtscts_0)
 {
-	cfg.rtscts = false;
+	CFG_config.input.rtscts = false;
 	configAssert('h');
 }
 END_TEST
 
 START_TEST(test_config_rtscts_1)
 {
-	cfg.rtscts = true;
+	CFG_config.input.rtscts = true;
 	configAssert('H');
 }
 END_TEST
 
 START_TEST(test_config_fec_0)
 {
-	cfg.fec = false;
+	cfg->fec = false;
 	configAssert('I');
 }
 END_TEST
 
 START_TEST(test_config_fec_1)
 {
-	cfg.fec = true;
+	cfg->fec = true;
 	configAssert('i');
 }
 END_TEST
 
-START_TEST(test_config_modeac_0)
+START_TEST(test_config_modeac)
 {
-	cfg.modeAC = false;
 	configAssert('j');
-}
-END_TEST
-
-START_TEST(test_config_modeac_1)
-{
-	cfg.modeAC = true;
-	configAssert('J');
 }
 END_TEST
 
 START_TEST(test_config_fail)
 {
 	test.testAck = 3;
-	ADSB_init(&cfg);
+	ADSB_init();
 	ck_assert(test.init);
 	ADSB_connect();
 	ck_assert_uint_eq(test.write, 8);
@@ -691,8 +667,7 @@ static Suite * adsb_suite()
 	tcase_add_checked_fixture(tc, setup, NULL);
 	tcase_add_test(tc, test_connect);
 	tcase_add_test(tc, test_config_bin);
-	tcase_add_test(tc, test_config_frameFilter_0);
-	tcase_add_test(tc, test_config_frameFilter_1);
+	tcase_add_test(tc, test_config_frameFilter);
 	tcase_add_test(tc, test_config_crc_0);
 	tcase_add_test(tc, test_config_crc_1);
 	tcase_add_test(tc, test_config_gps_0);
@@ -701,8 +676,7 @@ static Suite * adsb_suite()
 	tcase_add_test(tc, test_config_rtscts_1);
 	tcase_add_test(tc, test_config_fec_0);
 	tcase_add_test(tc, test_config_fec_1);
-	tcase_add_test(tc, test_config_modeac_0);
-	tcase_add_test(tc, test_config_modeac_1);
+	tcase_add_test(tc, test_config_modeac);
 	tcase_add_test(tc, test_config_fail);
 	suite_add_tcase(s, tc);
 

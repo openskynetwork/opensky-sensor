@@ -30,16 +30,7 @@ struct ADSB_Header {
 	int8_t siglevel;
 };
 
-struct ADSB_CONFIG {
-	bool frameFilter;
-	bool crc;
-	bool timestampGPS;
-	bool rtscts;
-	bool fec;
-	bool modeAC;
-};
-
-void ADSB_init(const struct ADSB_CONFIG * cfg);
+void ADSB_init();
 void ADSB_destruct();
 
 void ADSB_connect();

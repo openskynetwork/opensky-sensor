@@ -26,11 +26,6 @@ static size_t len;
 /** current pointer into buffer */
 static uint8_t * cur;
 
-static bool doConfig;
-
-/** configuration */
-static struct ADSB_CONFIG config;
-
 /** ADSB Options */
 enum ADSB_OPTION {
 	/** Output Format: AVR */
@@ -90,15 +85,9 @@ static inline bool setOption(enum ADSB_OPTION option);
 static inline enum DECODE_STATUS decode(uint8_t * buf, size_t len,
 	struct ADSB_Frame * frame);
 
-void ADSB_init(const struct ADSB_CONFIG * cfg)
+void ADSB_init()
 {
 	INPUT_init();
-	if (cfg) {
-		doConfig = true;
-		memcpy(&config, cfg, sizeof config);
-	} else {
-		doConfig = false;
-	}
 }
 
 void ADSB_destruct()
@@ -109,22 +98,22 @@ void ADSB_destruct()
 /** Setup ADSB receiver with some options. */
 static bool configure()
 {
+#ifndef NETWORK
+	const struct CFG_RECV * cfg = &CFG_config.recv;
 	/* setup ADSB */
 	return setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN) &&
-		setOption(config.frameFilter ?
-			ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
-			ADSB_OPTION_FRAME_FILTER_ALL) &&
+		setOption(ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY) &&
 		setOption(ADSB_OPTION_AVR_FORMAT_MLAT) &&
-		setOption(config.crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
+		setOption(cfg->crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
 			ADSB_OPTION_DF_11_17_18_CRC_DISABLED) &&
-		setOption(config.timestampGPS ? ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
+		setOption(cfg->gps ? ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
 			ADSB_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ) &&
-		setOption(config.rtscts ? ADSB_OPTION_RTS_HANDSHAKE_ENABLED :
+		setOption(CFG_config.input.rtscts ? ADSB_OPTION_RTS_HANDSHAKE_ENABLED :
 			ADSB_OPTION_RTS_HANDSHAKE_DISABLED) &&
-		setOption(config.fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
+		setOption(cfg->fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
 			ADSB_OPTION_DF_17_18_FEC_DISABLED) &&
-		setOption(config.modeAC ? ADSB_OPTION_MODE_AC_DECODING_ENABLED :
-			ADSB_OPTION_MODE_AC_DECODING_DISABLED);
+		setOption(ADSB_OPTION_MODE_AC_DECODING_DISABLED);
+#endif
 }
 
 /** Set an option for the ADSB decoder.
@@ -144,7 +133,7 @@ void ADSB_connect()
 		INPUT_connect();
 
 		/* configure input */
-		if (!doConfig || configure())
+		if (configure())
 			break;
 	}
 

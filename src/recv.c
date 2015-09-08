@@ -41,18 +41,7 @@ struct Component RECV_comp = {
 
 static void construct()
 {
-#ifndef NETWORK
-	struct ADSB_CONFIG adsb_config;
-	adsb_config.crc = CFG_config.recv.crc;
-	adsb_config.fec = CFG_config.recv.fec;
-	adsb_config.frameFilter = true;
-	adsb_config.modeAC = false;
-	adsb_config.rtscts = CFG_config.input.rtscts;
-	adsb_config.timestampGPS = CFG_config.recv.gps;
-	ADSB_init(&adsb_config);
-#else
-	ADSB_init(NULL);
-#endif
+	ADSB_init();
 
 	frameFilterLong = CFG_config.recv.modeSLongExtSquitter ?
 		RECV_LONG_FRAME_TYPE_EXTENDED_SQUITTER_ALL : RECV_LONG_FRAME_TYPE_ALL;
