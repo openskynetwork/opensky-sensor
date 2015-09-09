@@ -52,10 +52,10 @@ static void destruct()
 	ADSB_destruct();
 }
 
-static void cleanup(struct ADSB_Frame ** msg)
+static void cleanup(struct ADSB_Frame ** frame)
 {
-	if (*msg)
-		BUF_abortFrame(*msg);
+	if (*frame)
+		BUF_abortFrame(*frame);
 }
 
 static void mainloop()
@@ -107,6 +107,7 @@ static void mainloop()
 				frame = BUF_newFrame();
 			} else {
 				BUF_abortFrame(frame);
+				frame = NULL;
 				break;
 			}
 		}
