@@ -136,7 +136,7 @@ START_TEST(test_decode_modeac)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50, "ab",
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
 		2);
 	buf.length = len;
 	test.buffers = &buf;
@@ -149,7 +149,7 @@ START_TEST(test_decode_modeac)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_AC);
-	ck_assert_uint_eq(frame.mlat, 0x123456);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0x1234567890ab));
 	ck_assert_uint_eq(frame.payloadLen, 2);
 	ck_assert_int_eq(frame.siglevel, -50);
 	ck_assert(!memcmp(frame.payload, "ab", 2));
@@ -162,7 +162,7 @@ START_TEST(test_decode_modesshort)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_SHORT, 0x234567, 127,
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_SHORT, UINT64_C(0xcafebabedead), 127,
 		"abcdefg", 7);
 	buf.length = len;
 	test.buffers = &buf;
@@ -175,7 +175,7 @@ START_TEST(test_decode_modesshort)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_SHORT);
-	ck_assert_uint_eq(frame.mlat, 0x234567);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0xcafebabedead));
 	ck_assert_uint_eq(frame.payloadLen, 7);
 	ck_assert_int_eq(frame.siglevel, 127);
 	ck_assert(!memcmp(frame.payload, "abcdefg", 7));
@@ -188,7 +188,7 @@ START_TEST(test_decode_modeslong)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xdeadbeefbabe), 0,
 		"abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
@@ -201,7 +201,7 @@ START_TEST(test_decode_modeslong)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_LONG);
-	ck_assert_uint_eq(frame.mlat, 0xdeadbe);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0xdeadbeefbabe));
 	ck_assert_uint_eq(frame.payloadLen, 14);
 	ck_assert_int_eq(frame.siglevel, 0);
 	ck_assert(!memcmp(frame.payload, "abcdefghijklmn", 14));
@@ -214,7 +214,7 @@ START_TEST(test_decode_status)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_STATUS, 0xdeadbe, 0,
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_STATUS, UINT64_C(0xdeadbeefbabe), 0,
 		"abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
@@ -227,7 +227,7 @@ START_TEST(test_decode_status)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_STATUS);
-	ck_assert_uint_eq(frame.mlat, 0xdeadbe);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0xdeadbeefbabe));
 	ck_assert_uint_eq(frame.payloadLen, 14);
 	ck_assert_int_eq(frame.siglevel, 0);
 	ck_assert(!memcmp(frame.payload, "abcdefghijklmn", 14));
@@ -240,7 +240,7 @@ START_TEST(test_decode_unknown)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, '5', 0xcafeba, 0, "abcdefghijklmn", 14);
+	size_t len = INPUT_buildFrame(frm, '5', UINT64_C(0xcafebabedead), 0, "abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -259,7 +259,7 @@ START_TEST(test_decode_unknown_next)
 	uint8_t frm[46 * 2];
 	struct TEST_Buffer buf = { .payload = frm };
 	size_t len1 = INPUT_buildFrame(frm, '5', 0xcafeba, 0, "abcdefghijklmn", 14);
-	size_t len2 = INPUT_buildFrame(frm + len1, ADSB_FRAME_TYPE_MODE_AC, 0x123456, 0,
+	size_t len2 = INPUT_buildFrame(frm + len1, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), 0,
 		"ab", 2);
 	buf.length = len1 + len2;
 	test.buffers = &buf;
@@ -272,7 +272,7 @@ START_TEST(test_decode_unknown_next)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_AC);
-	ck_assert_uint_eq(frame.mlat, 0x123456);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0x1234567890ab));
 	ck_assert_uint_eq(frame.payloadLen, 2);
 	ck_assert_int_eq(frame.siglevel, 0);
 	ck_assert(!memcmp(frame.payload, "ab", 2));
@@ -287,7 +287,7 @@ START_TEST(test_decode_escape)
 		struct TEST_Buffer buf = { .payload = frm };
 	const uint8_t msg[] =
 		"\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a";
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_LONG, 0x1a1a1a,
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_LONG, UINT64_C(0x1a1a1a1a1a1a),
 		0x1a, msg, 14);
 	buf.length = len;
 	test.buffers = &buf;
@@ -300,7 +300,7 @@ START_TEST(test_decode_escape)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_LONG);
-	ck_assert_uint_eq(frame.mlat, 0x1a1a1a);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0x1a1a1a1a1a1a));
 	ck_assert_uint_eq(frame.payloadLen, 14);
 	ck_assert_int_eq(frame.siglevel, 0x1a);
 	ck_assert(!memcmp(frame.payload, msg, 14));
@@ -313,7 +313,7 @@ START_TEST(test_decode_unsynchronized_start)
 {
 	uint8_t frm[48] = { 'a', 'b' };
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm + 2, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50,
+	size_t len = INPUT_buildFrame(frm + 2, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
 		"ab", 2);
 	buf.length = len + 2;
 	test.buffers = &buf;
@@ -326,7 +326,7 @@ START_TEST(test_decode_unsynchronized_start)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_AC);
-	ck_assert_uint_eq(frame.mlat, 0x123456);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0x1234567890ab));
 	ck_assert_uint_eq(frame.payloadLen, 2);
 	ck_assert_int_eq(frame.siglevel, -50);
 	ck_assert(!memcmp(frame.payload, "ab", 2));
@@ -340,9 +340,9 @@ START_TEST(test_decode_unsynchronized_type)
 {
 	uint8_t frm[46 + 1];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50,
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
 		"ab", 2);
-	len = INPUT_buildFrame(frm + 1, ADSB_FRAME_TYPE_MODE_S_LONG, 0xabcdef, -128,
+	len = INPUT_buildFrame(frm + 1, ADSB_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
 		"abcdefghijklmn", 14);
 	buf.length = len + 1;
 	test.buffers = &buf;
@@ -355,7 +355,7 @@ START_TEST(test_decode_unsynchronized_type)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_LONG);
-	ck_assert_uint_eq(frame.mlat, 0xabcdef);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0xcafebabedead));
 	ck_assert_uint_eq(frame.payloadLen, 14);
 	ck_assert_int_eq(frame.siglevel, -128);
 	ck_assert(!memcmp(frame.payload, "abcdefghijklmn", 14));
@@ -369,9 +369,9 @@ START_TEST(test_decode_unsynchronized_header)
 {
 	uint8_t frm[46 + 4];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50,
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
 		"ab", 2);
-	len = INPUT_buildFrame(frm + 4, ADSB_FRAME_TYPE_MODE_S_LONG, 0xabcdef, -128,
+	len = INPUT_buildFrame(frm + 4, ADSB_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
 		"abcdefghijklmn", 14);
 	buf.length = len + 4;
 	test.buffers = &buf;
@@ -384,7 +384,7 @@ START_TEST(test_decode_unsynchronized_header)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_LONG);
-	ck_assert_uint_eq(frame.mlat, 0xabcdef);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0xcafebabedead));
 	ck_assert_uint_eq(frame.payloadLen, 14);
 	ck_assert_int_eq(frame.siglevel, -128);
 	ck_assert(!memcmp(frame.payload, "abcdefghijklmn", 14));
@@ -398,9 +398,9 @@ START_TEST(test_decode_unsynchronized_payload)
 {
 	uint8_t frm[46 + 8];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50,
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
 		"ab", 2);
-	len = INPUT_buildFrame(frm + 8, ADSB_FRAME_TYPE_MODE_S_LONG, 0xabcdef, -128,
+	len = INPUT_buildFrame(frm + 8, ADSB_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
 		"abcdefghijklmn", 14);
 	buf.length = len + 8;
 	test.buffers = &buf;
@@ -413,7 +413,7 @@ START_TEST(test_decode_unsynchronized_payload)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_LONG);
-	ck_assert_uint_eq(frame.mlat, 0xabcdef);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0xcafebabedead));
 	ck_assert_uint_eq(frame.payloadLen, 14);
 	ck_assert_int_eq(frame.siglevel, -128);
 	ck_assert(!memcmp(frame.payload, "abcdefghijklmn", 14));
@@ -427,9 +427,9 @@ START_TEST(test_buffer_two_frames)
 {
 	uint8_t frm[46 * 2];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len1 = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50,
+	size_t len1 = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
 		"ab", 2);
-	size_t len2 = INPUT_buildFrame(frm + len1, ADSB_FRAME_TYPE_MODE_S_LONG, 0xabcdef,
+	size_t len2 = INPUT_buildFrame(frm + len1, ADSB_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead),
 		127, "abcdefghijklmn", 14);
 	buf.length = len1 + len2;
 	test.buffers = &buf;
@@ -442,7 +442,7 @@ START_TEST(test_buffer_two_frames)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_AC);
-	ck_assert_uint_eq(frame.mlat, 0x123456);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0x1234567890ab));
 	ck_assert_uint_eq(frame.payloadLen, 2);
 	ck_assert_int_eq(frame.siglevel, -50);
 	ck_assert(!memcmp(frame.payload, "ab", 2));
@@ -452,7 +452,7 @@ START_TEST(test_buffer_two_frames)
 	ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_LONG);
-	ck_assert_uint_eq(frame.mlat, 0xabcdef);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0xcafebabedead));
 	ck_assert_uint_eq(frame.payloadLen, 14);
 	ck_assert_int_eq(frame.siglevel, 127);
 	ck_assert(!memcmp(frame.payload, "abcdefghijklmn", 14));
@@ -465,7 +465,7 @@ START_TEST(test_buffer_fail_start)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50, "ab",
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
 		2);
 	buf.length = 0;
 	test.buffers = &buf;
@@ -484,7 +484,7 @@ START_TEST(test_buffer_fail_type)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50, "ab",
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
 		2);
 	buf.length = 1;
 	test.buffers = &buf;
@@ -503,7 +503,7 @@ START_TEST(test_buffer_fail_header)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50, "ab",
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
 		2);
 	buf.length = 4;
 	test.buffers = &buf;
@@ -522,7 +522,7 @@ START_TEST(test_buffer_fail_payload)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50, "ab",
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
 		2);
 	buf.length = 10;
 	test.buffers = &buf;
@@ -541,7 +541,7 @@ START_TEST(test_buffer_fail_escape)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50,
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
 		"\x1a" "b", 2);
 	buf.length = 9;
 	test.buffers = &buf;
@@ -561,9 +561,9 @@ START_TEST(test_buffer_end_start)
 	uint8_t frm[46];
 	uint8_t frm2[46];
 	struct TEST_Buffer buf[2] = { { .payload = frm }, { .payload = frm2 } };
-	size_t len1 = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50, "ab",
+	size_t len1 = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
 		2);
-	size_t len2 = INPUT_buildFrame(frm2, ADSB_FRAME_TYPE_MODE_S_LONG, 0xabcdef, 26,
+	size_t len2 = INPUT_buildFrame(frm2, ADSB_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), 26,
 		"abcdefghijklmn", 14);
 	buf[0].length = len1;
 	buf[1].length = len2;
@@ -577,7 +577,7 @@ START_TEST(test_buffer_end_start)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_AC);
-	ck_assert_uint_eq(frame.mlat, 0x123456);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0x1234567890ab));
 	ck_assert_uint_eq(frame.payloadLen, 2);
 	ck_assert_int_eq(frame.siglevel, -50);
 	ck_assert(!memcmp(frame.payload, "ab", 2));
@@ -587,7 +587,7 @@ START_TEST(test_buffer_end_start)
 	ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_S_LONG);
-	ck_assert_uint_eq(frame.mlat, 0xabcdef);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0xcafebabedead));
 	ck_assert_uint_eq(frame.payloadLen, 14);
 	ck_assert_int_eq(frame.siglevel, 26);
 	ck_assert(!memcmp(frame.payload, "abcdefghijklmn", 14));
@@ -600,7 +600,7 @@ START_TEST(test_buffer_end)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf[2];
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50, "ab",
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
 		2);
 	buf[0].payload = frm;
 	buf[0].length = _i;
@@ -616,7 +616,7 @@ START_TEST(test_buffer_end)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_AC);
-	ck_assert_uint_eq(frame.mlat, 0x123456);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0x1234567890ab));
 	ck_assert_uint_eq(frame.payloadLen, 2);
 	ck_assert_int_eq(frame.siglevel, -50);
 	ck_assert(!memcmp(frame.payload, "ab", 2));
@@ -629,7 +629,7 @@ START_TEST(test_buffer_end_escape)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf[2];
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0x123456, -50,
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
 		"\x1a" "b", 2);
 	buf[0].payload = frm;
 	buf[0].length = 9;
@@ -645,7 +645,7 @@ START_TEST(test_buffer_end_escape)
 	bool ret = ADSB_getFrame(&frame);
 	ck_assert(ret);
 	ck_assert_uint_eq(frame.frameType, ADSB_FRAME_TYPE_MODE_AC);
-	ck_assert_uint_eq(frame.mlat, 0x123456);
+	ck_assert_uint_eq(frame.mlat, UINT64_C(0x1234567890ab));
 	ck_assert_uint_eq(frame.payloadLen, 2);
 	ck_assert_int_eq(frame.siglevel, -50);
 	ck_assert(!memcmp(frame.payload, "\x1a" "b", 2));
