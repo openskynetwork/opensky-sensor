@@ -29,6 +29,7 @@ perf_adsb_SOURCES = perf_adsb.c input_perf.h input_perf.c \
 	../buffer.h ../buffer.c ../component.h ../component.c
 perf_adsb_CFLAGS = $(AM_CFLAGS)
 perf_adsb_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@
+perf_adsb_LDFLAGS =
 
 perf_buffer_SOURCES = perf_buffer.c input_perf.h input_perf.c \
 	../statistics.h ../statistics.c ../adsb.h ../adsb.c \

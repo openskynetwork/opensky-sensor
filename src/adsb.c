@@ -238,20 +238,20 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 
 	do {
 		size_t rbuf = bufLen - (bufCur - buf);
-		if (!rbuf) {
-			if (!discardAndFill())
+		if (unlikely(!rbuf)) {
+			if (unlikely(!discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
 			rbuf = bufLen;
 		}
 		bool bufend = rbuf <= len;
 		size_t mlen = bufend ? rbuf : len;
 		uint8_t * esc = memchr(bufCur, '\x1a', mlen);
-		if (esc) {
+		if (unlikely(esc)) {
 			memcpy(rawPtr, bufCur, esc + 1 - bufCur);
 			rawPtr += esc + 1 - bufCur;
 			frame->raw_len += esc + 1 - bufCur;
 
-			if (esc != bufCur) {
+			if (likely(esc != bufCur)) {
 				memcpy(dst, bufCur, esc - bufCur);
 				dst += esc - bufCur;
 				len -= esc - bufCur;
@@ -259,9 +259,9 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 
 			bufCur = esc + 1;
 
-			if (bufCur == buf + bufLen && !discardAndFill())
+			if (unlikely(bufCur == buf + bufLen && !discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
-			if (*bufCur == '\x1a') {
+			if (likely(*bufCur == '\x1a')) {
 				*dst++ = '\x1a';
 				*rawPtr++ = '\x1a';
 				++frame->raw_len;
@@ -275,12 +275,12 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 			memcpy(dst, bufCur, mlen);
 			memcpy(rawPtr, bufCur, mlen);
 			rawPtr += mlen;
-			dst += mlen;
 			frame->raw_len += mlen;
+			dst += mlen;
 			bufCur += mlen;
 			len -= mlen;
 		}
-	} while (len);
+	} while (unlikely(len));
 	return DECODE_STATUS_OK;
 }
 
