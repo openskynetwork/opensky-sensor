@@ -199,17 +199,15 @@ decode_frame:
 		frame->raw_len = 2;
 
 		/* read header */
-		uint8_t header[7];
-		enum DECODE_STATUS rs = decode(header, sizeof header, frame);
+		__attribute__((aligned(8))) uint8_t header[8];
+		enum DECODE_STATUS rs = decode(header, 7, frame);
 		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
 			++STAT_stats.ADSB_outOfSync;
 			goto decode_frame;
 		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
 		/* decode mlat */
-		uint64_t mlat = 0;
-		memcpy(((uint8_t*)&mlat) + 2, header, 6);
-		frame->mlat = be64toh(mlat);
+		frame->mlat = be64toh(*(uint64_t*)header) >> 16;
 		frame->siglevel = header[6];
 
 		rs = decode(frame->payload, payload_len, frame);
