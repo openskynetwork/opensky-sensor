@@ -21,10 +21,10 @@
 
 /** receive buffer */
 static uint8_t buf[128];
-/** current buffer length (max sizeof buf) */
-static size_t bufLen;
 /** current pointer into buffer */
 static uint8_t * bufCur;
+/** buffer end */
+static uint8_t * bufEnd;
 
 /** ADSB Options */
 enum ADSB_OPTION {
@@ -137,7 +137,7 @@ void ADSB_connect()
 
 	/* reset buffer */
 	bufCur = buf;
-	bufLen = 0;
+	bufEnd = bufCur;
 }
 
 bool ADSB_getFrame(struct ADSB_Frame * frame)
@@ -234,17 +234,14 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 	uint8_t * rawPtr = frame->raw + frame->raw_len;
 
 	do {
-		/* size of current buffer */
-		size_t rbuf = bufLen - (bufCur - buf);
-		if (unlikely(!rbuf)) {
+		if (unlikely(bufCur == bufEnd)) {
 			/* current buffer is empty: fill it again */
 			if (unlikely(!discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
-			/* now the current buffer size is the overall buffer size */
-			rbuf = bufLen;
 		}
 		/* search escape in the current buffer end up to the expected frame
 		 * length */
+		size_t rbuf = bufEnd - bufCur;
 		size_t mlen = rbuf <= len ? rbuf : len;
 		uint8_t * esc = memchr(bufCur, '\x1a', mlen);
 		if (unlikely(esc)) {
@@ -263,7 +260,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 			bufCur = esc + 1;
 
 			/* Peek the next symbol. */
-			if (unlikely(bufCur == buf + bufLen && !discardAndFill()))
+			if (unlikely(bufCur == bufEnd && !discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
 			if (likely(*bufCur == '\x1a')) {
 				/* it's another escape -> append escape */
@@ -298,8 +295,8 @@ static inline bool discardAndFill()
 	if (unlikely(rc == 0)) {
 		return false;
 	} else {
-		bufLen = rc;
 		bufCur = buf;
+		bufEnd = buf + rc;
 		return true;
 	}
 }
@@ -310,7 +307,7 @@ static inline bool discardAndFill()
 static inline bool next(uint8_t * ch)
 {
 	do {
-		if (likely(bufCur < buf + bufLen)) {
+		if (likely(bufCur < bufEnd)) {
 			*ch = *bufCur++;
 			return true;
 		}
@@ -324,7 +321,7 @@ static inline bool next(uint8_t * ch)
 static inline bool synchronize()
 {
 	do {
-		uint8_t * esc = memchr(bufCur, 0x1a, bufLen - (bufCur - buf));
+		uint8_t * esc = memchr(bufCur, 0x1a, bufEnd - bufCur);
 		if (likely(esc)) {
 			bufCur = esc;
 			return true;
