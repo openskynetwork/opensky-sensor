@@ -77,7 +77,6 @@ enum DECODE_STATUS {
 
 static bool configure();
 static inline bool discardAndFill();
-static inline void consume();
 static inline bool peek(uint8_t * ch);
 static inline bool next(uint8_t * ch);
 static inline bool synchronize();
@@ -294,38 +293,19 @@ static inline bool discardAndFill()
 		return true;
 	}
 }
-#if 0
-static inline void consume()
-{
-	if (unlikely(bufCur >= buf + bufLen))
-		error(EXIT_FAILURE, 0, "ADSB: assertion cur >= buf + len violated");
-	++bufCur;
-}
-#endif
-
-/** Get next character from buffer but keep it there.
- * \return next character in buffer
- */
-static inline bool peek(uint8_t * c)
-{
-	do {
-		if (likely(bufCur < buf + bufLen)) {
-			*c = *bufCur;
-			return true;
-		}
-	} while (likely(discardAndFill()));
-	return false;
-}
 
 /** Consume next character from buffer.
  * \return next character in buffer
  */
 static inline bool next(uint8_t * ch)
 {
-	bool ret = peek(ch);
-	if (likely(ret))
-		++bufCur;
-	return ret;
+	do {
+		if (likely(bufCur < buf + bufLen)) {
+			*ch = *bufCur++;
+			return true;
+		}
+	} while (likely(discardAndFill()));
+	return false;
 }
 
 /** Synchronize buffer.
