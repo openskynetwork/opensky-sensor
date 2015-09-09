@@ -22,9 +22,9 @@
 /** receive buffer */
 static uint8_t buf[128];
 /** current buffer length (max sizeof buf) */
-static size_t len;
+static size_t bufLen;
 /** current pointer into buffer */
-static uint8_t * cur;
+static uint8_t * bufCur;
 
 /** ADSB Options */
 enum ADSB_OPTION {
@@ -138,8 +138,8 @@ void ADSB_connect()
 	}
 
 	/* reset buffer */
-	cur = buf;
-	len = 0;
+	bufCur = buf;
+	bufLen = 0;
 }
 
 bool ADSB_getFrame(struct ADSB_Frame * frame)
@@ -201,9 +201,10 @@ decode_frame:
 		/* read header */
 		uint8_t header[7];
 		enum DECODE_STATUS rs = decode(header, sizeof header, frame);
-		if (unlikely(rs == DECODE_STATUS_RESYNC))
+		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
+			++STAT_stats.ADSB_outOfSync;
 			goto decode_frame;
-		else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
+		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
 		/* decode mlat */
 		uint64_t mlat = 0;
@@ -212,9 +213,10 @@ decode_frame:
 		frame->siglevel = header[6];
 
 		rs = decode(frame->payload, payload_len, frame);
-		if (unlikely(rs == DECODE_STATUS_RESYNC))
+		if(unlikely(rs == DECODE_STATUS_RESYNC)) {
+			++STAT_stats.ADSB_outOfSync;
 			goto decode_frame;
-		else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
+		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
 
 		return true;
@@ -233,31 +235,52 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 {
 	size_t i;
 	uint8_t * rawPtr = frame->raw + frame->raw_len;
-	for (i = 0; i < len; ++i) {
-		/* receive one character */
-		uint8_t c;
-		if (unlikely(!next(&c)))
-			return DECODE_STATUS_CONNFAIL;
-		/* put into buffer and raw buffer */
-		*rawPtr++ = *dst++ = c;
-		++frame->raw_len;
-		if (unlikely(c == 0x1a)) { /* escaped character */
-			if (unlikely(!peek(&c)))
+
+	do {
+		size_t rbuf = bufLen - (bufCur - buf);
+		if (!rbuf) {
+			if (!discardAndFill())
 				return DECODE_STATUS_CONNFAIL;
-			if (unlikely(c == 0x1a)) {
-				/* consume character */
-				consume();
-				/* put into raw buffer */
-				*rawPtr++ = c;
+			rbuf = bufLen;
+		}
+		bool bufend = rbuf <= len;
+		size_t mlen = bufend ? rbuf : len;
+		uint8_t * esc = memchr(bufCur, '\x1a', mlen);
+		if (esc) {
+			memcpy(rawPtr, bufCur, esc + 1 - bufCur);
+			rawPtr += esc + 1 - bufCur;
+			frame->raw_len += esc + 1 - bufCur;
+
+			if (esc != bufCur) {
+				memcpy(dst, bufCur, esc - bufCur);
+				dst += esc - bufCur;
+				len -= esc - bufCur;
+			}
+
+			bufCur = esc + 1;
+
+			if (bufCur == buf + bufLen && !discardAndFill())
+				return DECODE_STATUS_CONNFAIL;
+			if (*bufCur == '\x1a') {
+				*dst++ = '\x1a';
+				*rawPtr++ = '\x1a';
 				++frame->raw_len;
+				--len;
+				++bufCur;
 			} else {
-				NOC_puts("ADSB: Out of Sync: got unescaped 0x1a in frame, "
-					"treating as resynchronization");
-				++STAT_stats.ADSB_outOfSync;
+				bufCur = esc + 1;
 				return DECODE_STATUS_RESYNC;
 			}
+		} else {
+			memcpy(dst, bufCur, mlen);
+			memcpy(rawPtr, bufCur, mlen);
+			rawPtr += mlen;
+			dst += mlen;
+			frame->raw_len += mlen;
+			bufCur += mlen;
+			len -= mlen;
 		}
-	}
+	} while (len);
 	return DECODE_STATUS_OK;
 }
 
@@ -268,18 +291,19 @@ static inline bool discardAndFill()
 	if (unlikely(rc == 0)) {
 		return false;
 	} else {
-		len = rc;
-		cur = buf;
+		bufLen = rc;
+		bufCur = buf;
 		return true;
 	}
 }
-
+#if 0
 static inline void consume()
 {
-	if (unlikely(cur >= buf + len))
+	if (unlikely(bufCur >= buf + bufLen))
 		error(EXIT_FAILURE, 0, "ADSB: assertion cur >= buf + len violated");
-	++cur;
+	++bufCur;
 }
+#endif
 
 /** Get next character from buffer but keep it there.
  * \return next character in buffer
@@ -287,8 +311,8 @@ static inline void consume()
 static inline bool peek(uint8_t * c)
 {
 	do {
-		if (likely(cur < buf + len)) {
-			*c = *cur;
+		if (likely(bufCur < buf + bufLen)) {
+			*c = *bufCur;
 			return true;
 		}
 	} while (likely(discardAndFill()));
@@ -302,7 +326,7 @@ static inline bool next(uint8_t * ch)
 {
 	bool ret = peek(ch);
 	if (likely(ret))
-		++cur;
+		++bufCur;
 	return ret;
 }
 
@@ -312,9 +336,9 @@ static inline bool next(uint8_t * ch)
 static inline bool synchronize()
 {
 	do {
-		uint8_t * esc = memchr(cur, 0x1a, len - (cur - buf));
+		uint8_t * esc = memchr(bufCur, 0x1a, bufLen - (bufCur - buf));
 		if (likely(esc)) {
-			cur = esc;
+			bufCur = esc;
 			return true;
 		}
 	} while (likely(discardAndFill()));
