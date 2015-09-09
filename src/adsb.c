@@ -77,7 +77,6 @@ enum DECODE_STATUS {
 
 static bool configure();
 static inline bool discardAndFill();
-static inline bool peek(uint8_t * ch);
 static inline bool next(uint8_t * ch);
 static inline bool synchronize();
 static inline bool setOption(enum ADSB_OPTION option);
@@ -205,10 +204,11 @@ decode_frame:
 			goto decode_frame;
 		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
-		/* decode mlat */
+		/* decode mlat and signal level */
 		frame->mlat = be64toh(*(uint64_t*)header) >> 16;
 		frame->siglevel = header[6];
 
+		/* read payload */
 		rs = decode(frame->payload, payload_len, frame);
 		if(unlikely(rs == DECODE_STATUS_RESYNC)) {
 			++STAT_stats.ADSB_outOfSync;
@@ -224,26 +224,31 @@ decode_frame:
  * \param dst destination buffer
  * \param len length of frame content to be decoded.
  *  Must not exceed the buffers size
- * \param rawPtrPtr pointer to pointer of raw buffer
- * \param lenRawPtr pointer to raw buffer length
+ * \param frame frame to be decoded, used for raw decoding
  */
 static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 	struct ADSB_Frame * frame)
 {
 	size_t i;
+	/* get current raw ptr */
 	uint8_t * rawPtr = frame->raw + frame->raw_len;
 
 	do {
+		/* size of current buffer */
 		size_t rbuf = bufLen - (bufCur - buf);
 		if (unlikely(!rbuf)) {
+			/* current buffer is empty: fill it again */
 			if (unlikely(!discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
+			/* now the current buffer size is the overall buffer size */
 			rbuf = bufLen;
 		}
-		bool bufend = rbuf <= len;
-		size_t mlen = bufend ? rbuf : len;
+		/* search escape in the current buffer end up to the expected frame
+		 * length */
+		size_t mlen = rbuf <= len ? rbuf : len;
 		uint8_t * esc = memchr(bufCur, '\x1a', mlen);
 		if (unlikely(esc)) {
+			/* escape found: copy buffer up to escape, if applicable */
 			memcpy(rawPtr, bufCur, esc + 1 - bufCur);
 			rawPtr += esc + 1 - bufCur;
 			frame->raw_len += esc + 1 - bufCur;
@@ -254,21 +259,25 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 				len -= esc - bufCur;
 			}
 
+			/* discard escape */
 			bufCur = esc + 1;
 
+			/* Peek the next symbol. */
 			if (unlikely(bufCur == buf + bufLen && !discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
 			if (likely(*bufCur == '\x1a')) {
+				/* it's another escape -> append escape */
 				*dst++ = '\x1a';
 				*rawPtr++ = '\x1a';
 				++frame->raw_len;
 				--len;
 				++bufCur;
 			} else {
-				bufCur = esc + 1;
+				/* synchronization failure */
 				return DECODE_STATUS_RESYNC;
 			}
 		} else {
+			/* no escape found: copy up to buffer length */
 			memcpy(dst, bufCur, mlen);
 			memcpy(rawPtr, bufCur, mlen);
 			rawPtr += mlen;
@@ -277,6 +286,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 			bufCur += mlen;
 			len -= mlen;
 		}
+		/* loop as there are symbols left */
 	} while (unlikely(len));
 	return DECODE_STATUS_OK;
 }
