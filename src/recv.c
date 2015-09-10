@@ -8,6 +8,7 @@
 #include <statistics.h>
 #include <cfgfile.h>
 #include <threads.h>
+#include <util.h>
 
 enum RECV_LONG_FRAME_TYPE {
 	RECV_LONG_FRAME_TYPE_NONE = 0,
@@ -40,18 +41,7 @@ struct Component RECV_comp = {
 
 static void construct()
 {
-#ifndef NETWORK
-	struct ADSB_CONFIG adsb_config;
-	adsb_config.crc = CFG_config.recv.crc;
-	adsb_config.fec = CFG_config.recv.fec;
-	adsb_config.frameFilter = true;
-	adsb_config.modeAC = false;
-	adsb_config.rtscts = CFG_config.input.rtscts;
-	adsb_config.timestampGPS = CFG_config.recv.gps;
-	ADSB_init(&adsb_config);
-#else
-	ADSB_init(NULL);
-#endif
+	ADSB_init();
 
 	frameFilterLong = CFG_config.recv.modeSLongExtSquitter ?
 		RECV_LONG_FRAME_TYPE_EXTENDED_SQUITTER_ALL : RECV_LONG_FRAME_TYPE_ALL;
@@ -62,10 +52,10 @@ static void destruct()
 	ADSB_destruct();
 }
 
-static void cleanup(struct ADSB_Frame ** msg)
+static void cleanup(struct ADSB_Frame ** frame)
 {
-	if (*msg)
-		BUF_abortFrame(*msg);
+	if (*frame)
+		BUF_abortFrame(*frame);
 }
 
 static void mainloop()
@@ -80,16 +70,17 @@ static void mainloop()
 		frame = BUF_newFrame();
 		while (true) {
 			bool success = ADSB_getFrame(frame);
-			if (success) {
+			if (likely(success)) {
 				++STAT_stats.ADSB_frameType[frame->frameType];
 
-				if (frame->frameType == ADSB_FRAME_TYPE_STATUS) {
-					isSynchronized = frame->mlat != 0;
+				if (unlikely(frame->frameType == ADSB_FRAME_TYPE_STATUS)) {
+					if (!isSynchronized)
+						isSynchronized = frame->mlat != 0;
 					continue;
 				}
 
 				/* filter if unsynchronized and filter is enabled */
-				if (!isSynchronized) {
+				if (unlikely(!isSynchronized)) {
 					++STAT_stats.ADSB_framesUnsynchronized;
 					if (CFG_config.recv.syncFilter) {
 						++STAT_stats.ADSB_framesFiltered;
@@ -116,6 +107,7 @@ static void mainloop()
 				frame = BUF_newFrame();
 			} else {
 				BUF_abortFrame(frame);
+				frame = NULL;
 				break;
 			}
 		}

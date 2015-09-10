@@ -13,6 +13,7 @@
 #include <statistics.h>
 #include <cfgfile.h>
 #include <threads.h>
+#include <util.h>
 
 /** Define to 1 to enable debugging messages */
 #define BUF_DEBUG 1
@@ -107,10 +108,8 @@ static void destroyUnusedPools();
 static void gc();
 
 static inline struct FrameLink * shift(struct FrameList * list);
-static inline void unshift(struct FrameList * list,
-	struct FrameLink * frame);
-static inline void push(struct FrameList * list,
-	struct FrameLink * frame);
+static inline void unshift(struct FrameList * list, struct FrameLink * frame);
+static inline void push(struct FrameList * list, struct FrameLink * frame);
 static inline void append(struct FrameList * dstList,
 	const struct FrameList * srcList);
 static inline void clear(struct FrameList * list);
@@ -128,8 +127,7 @@ static void construct()
 
 	newFrame = currentFrame = NULL;
 
-	dynMaxIncrements = CFG_config.buf.history ?
-		CFG_config.buf.dynIncrement : 0;
+	dynMaxIncrements = CFG_config.buf.history ? CFG_config.buf.dynIncrement : 0;
 
 	if (!deployPool(&staticPool, CFG_config.buf.statBacklog))
 		error(-1, errno, "malloc failed");
@@ -215,11 +213,11 @@ void BUF_fillStatistics()
  *  pools to get. Discard oldest frame if there is no more dynamic pool
  * \return a frame which is about to be produced
  */
-static struct FrameLink * getFrameFromPool()
+static inline struct FrameLink * getFrameFromPool()
 {
 	struct FrameLink * ret;
 
-	if (pool.head) {
+	if (likely(pool.head)) {
 		/* pool is not empty -> unlink and return first frame */
 		ret = shift(&pool);
 		overCapacity = 0;
@@ -252,7 +250,7 @@ static struct FrameLink * getFrameFromPool()
 		ret = shift(&queue);
 	}
 
-	assert (ret);
+	assert(ret);
 	return ret;
 }
 
@@ -261,11 +259,11 @@ static struct FrameLink * getFrameFromPool()
  */
 struct ADSB_Frame * BUF_newFrame()
 {
-	assert (!newFrame);
+	assert(!newFrame);
 	pthread_mutex_lock(&mutex);
 	newFrame = getFrameFromPool();
 	pthread_mutex_unlock(&mutex);
-	assert (newFrame);
+	assert(newFrame);
 	return &newFrame->frame;
 }
 
@@ -274,15 +272,15 @@ struct ADSB_Frame * BUF_newFrame()
  */
 void BUF_commitFrame(struct ADSB_Frame * frame)
 {
-	assert (frame);
-	assert (&newFrame->frame == frame);
+	assert(frame);
+	assert(&newFrame->frame == frame);
 
 	pthread_mutex_lock(&mutex);
 	push(&queue, newFrame);
 	pthread_cond_broadcast(&cond);
 	pthread_mutex_unlock(&mutex);
 
-	if (queue.size > STAT_stats.BUF_maxQueue)
+	if (unlikely(queue.size > STAT_stats.BUF_maxQueue))
 		STAT_stats.BUF_maxQueue = queue.size;
 
 	newFrame = NULL;
@@ -293,8 +291,8 @@ void BUF_commitFrame(struct ADSB_Frame * frame)
  */
 void BUF_abortFrame(struct ADSB_Frame * frame)
 {
-	assert (frame);
-	assert (&newFrame->frame == frame);
+	assert(frame);
+	assert(&newFrame->frame == frame);
 
 	pthread_mutex_lock(&mutex);
 	unshift(&pool, newFrame);
@@ -313,7 +311,7 @@ static void cleanup(void * dummy)
  */
 const struct ADSB_Frame * BUF_getFrame()
 {
-	assert (!currentFrame);
+	assert(!currentFrame);
 	CLEANUP_PUSH(&cleanup, NULL);
 	pthread_mutex_lock(&mutex);
 	while (!queue.head) {
@@ -343,7 +341,7 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 		ts.tv_nsec -= 1000000000;
 	}
 
-	assert (!currentFrame);
+	assert(!currentFrame);
 
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&cleanup, NULL);
@@ -360,7 +358,6 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 		currentFrame = shift(&queue);
 		ret = &currentFrame->frame;
 	}
-
 	CLEANUP_POP();
 
 	return ret;
@@ -374,8 +371,8 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
  */
 void BUF_releaseFrame(const struct ADSB_Frame * frame)
 {
-	assert (frame);
-	assert (frame == &currentFrame->frame);
+	assert(frame);
+	assert(frame == &currentFrame->frame);
 
 	pthread_mutex_lock(&mutex);
 	unshift(&pool, currentFrame);
@@ -392,8 +389,8 @@ void BUF_releaseFrame(const struct ADSB_Frame * frame)
  */
 void BUF_putFrame(const struct ADSB_Frame * frame)
 {
-	assert (frame);
-	assert (frame == &currentFrame->frame);
+	assert(frame);
+	assert(frame == &currentFrame->frame);
 
 	pthread_mutex_lock(&mutex);
 	unshift(&queue, currentFrame);
@@ -410,7 +407,7 @@ static bool deployPool(struct Pool * newPool, size_t size)
 {
 	/* allocate new frames */
 	struct FrameLink * initFrames = malloc(size * sizeof *initFrames);
-	if (!initFrames)
+	if (unlikely(!initFrames))
 		return false;
 
 	/* initialize pool */
@@ -449,7 +446,7 @@ static bool createDynPool()
 		return false;
 
 	/* deployment */
-	if (!deployPool(newPool, CFG_config.buf.dynBacklog)) {
+	if (unlikely(!deployPool(newPool, CFG_config.buf.dynBacklog))) {
 		free(newPool);
 		return false;
 	}
@@ -460,7 +457,7 @@ static bool createDynPool()
 	++dynIncrements;
 
 	++STAT_stats.BUF_poolsCreated;
-	if (dynIncrements > STAT_stats.BUF_maxPools)
+	if (unlikely(dynIncrements > STAT_stats.BUF_maxPools))
 		STAT_stats.BUF_maxPools = dynIncrements;
 
 	return true;
@@ -488,7 +485,7 @@ static void collectPools()
 				frame->prev->next = next;
 			else
 				pool.head = next;
-			if (next)
+			if (likely(next))
 				next->prev = frame->prev;
 			else
 				pool.tail = frame->prev;
@@ -539,7 +536,7 @@ static void destroyUnusedPools()
 	/* iterate over all dynamic pools */
 	for (pool = dynPools; pool; pool = next) {
 		next = pool->next;
-		if (pool->collect.size == pool->size) {
+		if (likely(pool->collect.size == pool->size)) {
 			/* fully collected pool */
 
 			/* unlink from the list of pools */
@@ -571,7 +568,7 @@ static inline struct FrameLink * shift(struct FrameList * list)
 {
 	assert(!!list->head == !!list->tail);
 
-	if (!list->head) /* empty list */
+	if (unlikely(!list->head)) /* empty list */
 		return NULL;
 
 	/* first element */

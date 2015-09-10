@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <error.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -112,20 +113,23 @@ void CFG_read(const char * file)
 	/* open input file */
 	int fd = open(file, O_RDONLY | O_CLOEXEC);
 	if (fd < 0)
-		error(-1, errno, "Configuration error: could not open '%s'", file);
+		error(EXIT_FAILURE, errno, "Configuration error: could not open '%s'",
+			file);
 
 	/* stat input file for its size */
 	struct stat st;
 	if (fstat(fd, &st) < 0) {
 		close(fd);
-		error(-1, errno, "Configuration error: could not stat '%s'", file);
+		error(EXIT_FAILURE, errno, "Configuration error: could not stat '%s'",
+			file);
 	}
 
 	/* mmap input file */
 	char * cfgStr = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 	if (cfgStr == MAP_FAILED) {
 		close(fd);
-		error(-1, errno, "Configuration error: could not mmap '%s'", file);
+		error(EXIT_FAILURE, errno, "Configuration error: could not mmap '%s'",
+			file);
 	}
 
 	/* actually read configuration */
@@ -169,10 +173,10 @@ static enum SECTION scanSection()
 
 	/* sanity checks */
 	if (!c || n < c)
-		error(-1, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 			": ] expected, but newline found", bufferLine);
 	if (c != n - 1)
-		error(-1, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 			": newline after ] expected", bufferLine);
 
 	/* calculate length */
@@ -193,7 +197,7 @@ static enum SECTION scanSection()
 	}
 
 	/* section not found */
-	error(-1, 0, "Configuration error: Line %" PRIu32
+	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 		": Section %.*s is unknown", bufferLine, (int)len, buf);
 
 	/* keep gcc happy */
@@ -221,7 +225,7 @@ static inline uint32_t parseInt(const struct Option * opt)
 {
 	char buf[20];
 	if (opt->valLen + 1 > sizeof buf || opt->valLen == 0)
-		error(-1, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 			": Not a number", bufferLine);
 	strncpy(buf, opt->val, opt->valLen);
 	buf[opt->valLen] = '\0';
@@ -229,7 +233,7 @@ static inline uint32_t parseInt(const struct Option * opt)
 	char * end;
 	unsigned long int n = strtoul(buf, &end, 0);
 	if (*end != '\0')
-		error(-1, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 			": Garbage trailing line", bufferLine);
 
 	return n;
@@ -241,16 +245,16 @@ static inline uint32_t parseInt(const struct Option * opt)
  */
 static inline bool parseBool(const struct Option * opt)
 {
-	if (isSame("true", opt->val, opt->valLen) ||
-		isSame("1", opt->val, opt->valLen))
+	if (isSame("true", opt->val, opt->valLen)
+		|| isSame("1", opt->val, opt->valLen))
 		return true;
-	if (isSame("false", opt->val, opt->valLen) ||
-		isSame("0", opt->val, opt->valLen))
+	if (isSame("false", opt->val, opt->valLen)
+		|| isSame("0", opt->val, opt->valLen))
 		return false;
 
-	error(-1, 0, "Configuration error: Line %" PRIu32
-		": boolean option has unexpected value '%.*s'",
-		bufferLine, (int)opt->valLen, opt->val);
+	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+		": boolean option has unexpected value '%.*s'", bufferLine,
+		(int)opt->valLen, opt->val);
 	return false;
 }
 
@@ -262,7 +266,7 @@ static inline bool parseBool(const struct Option * opt)
 static inline void parseString(const struct Option * opt, char * str, size_t sz)
 {
 	if (opt->valLen > sz - 1)
-		error(-1, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 			": Value to long (max %zu expected)", bufferLine, sz - 1);
 	memcpy(str, opt->val, opt->valLen);
 	str[opt->valLen] = '\0';
@@ -283,7 +287,7 @@ static inline bool isOption(const struct Option * opt, const char * name)
  */
 static inline void unknownKey(const struct Option * opt)
 {
-	error(-1, 0, "Configuration error: Line %" PRIu32
+	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 		": unknown key '%.*s'", bufferLine, (int)opt->keyLen, opt->key);
 }
 
@@ -327,16 +331,16 @@ static void scanOptionINPUT(const struct Option * opt, struct CFG_Config * cfg)
 #ifndef NETWORK
 		parseString(opt, cfg->input.uart, sizeof cfg->input.uart);
 #endif
-	} else if(isOption(opt, "host")) {
+	} else if (isOption(opt, "host")) {
 #ifdef NETWORK
 		parseString(opt, cfg->input.host, sizeof cfg->input.host);
 #endif
-	} else if(isOption(opt, "port")) {
+	} else if (isOption(opt, "port")) {
 #ifdef NETWORK
 		uint32_t n = parseInt(opt);
 		if (n > 0xffff)
-			error(-1, 0, "Configuration error: Line %" PRIu32
-				": port must be < 65535", bufferLine);
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+			": port must be < 65535", bufferLine);
 		cfg->input.port = n;
 #endif
 	} else if (isOption(opt, "rtscts")) {
@@ -380,7 +384,7 @@ static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg)
 	else if (isOption(opt, "port")) {
 		uint32_t n = parseInt(opt);
 		if (n > 0xffff)
-			error(-1, 0, "Configuration error: Line %" PRIu32
+			error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 				": port must be < 65535", bufferLine);
 		cfg->net.port = n;
 	} else if (isOption(opt, "timeout"))
@@ -411,7 +415,8 @@ static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg)
 		cfg->buf.gcInterval = parseInt(opt);
 	else if (isOption(opt, "gcLevel"))
 		cfg->buf.gcLevel = parseInt(opt);
-	else unknownKey(opt);
+	else
+		unknownKey(opt);
 }
 
 /** Scan Device Section.
@@ -454,20 +459,22 @@ static void scanOption(enum SECTION sect, struct CFG_Config * cfg)
 		n = bufferInput + bufferSize - 1;
 	/* sanity check */
 	if (n < e)
-		error(-1, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 			": = expected, but newline found", bufferLine);
 
 	struct Option opt;
 
 	/* eliminate whitespaces at the end of the key */
 	const char * l = e - 1;
-	while (l > bufferInput && isspace(*l)) --l;
+	while (l > bufferInput && isspace(*l))
+		--l;
 	opt.key = bufferInput;
 	opt.keyLen = l + 1 - opt.key;
 
 	/* eliminate whitespaces at the beginning of the value */
 	const char * r = e + 1;
-	while (r < n && isspace(*r)) ++r;
+	while (r < n && isspace(*r))
+		++r;
 	opt.val = r;
 	opt.valLen = n - r;
 
@@ -498,19 +505,19 @@ static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg)
 		switch (bufferInput[0]) {
 		case '[':
 			sect = scanSection();
-			break;
+		break;
 		case '\n':
 			++bufferInput;
 			--bufferSize;
 			++bufferLine;
-			break;
+		break;
 		case ';':
 		case '#':
 			scanComment();
-			break;
+		break;
 		default:
 			if (sect == SECTION_NONE)
-				error(-1, 0, "Configuration error: Line %" PRIu32
+				error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 					": Unexpected '%c' outside any section", bufferLine,
 					bufferInput[0]);
 			scanOption(sect, cfg);
@@ -612,31 +619,31 @@ static void fix(struct CFG_Config * cfg)
 static void check(const struct CFG_Config * cfg)
 {
 	if (cfg->fpga.configure && cfg->fpga.file[0] == '\0')
-		error(-1, 0, "Configuration error: FPGA.file is empty");
+		error(EXIT_FAILURE, 0, "Configuration error: FPGA.file is empty");
 
 	if (cfg->buf.statBacklog <= 2)
-		error(-1, 0, "Configuration error: BUFFER.staticBacklog must be >= 2");
+		error(EXIT_FAILURE, 0,
+			"Configuration error: BUFFER.staticBacklog must be >= 2");
 
 	if (cfg->net.host[0] == '\0')
-		error(-1, 0, "Configuration error: NET.host is empty");
+		error(EXIT_FAILURE, 0, "Configuration error: NET.host is empty");
 	if (cfg->net.port == 0)
-		error(-1, 0, "Configuration error: NET.port = 0");
+		error(EXIT_FAILURE, 0, "Configuration error: NET.port = 0");
 
 #ifdef NETWORK
 	if (cfg->input.host[0] == '\0')
-		error(-1, 0, "Configuration error: ADSB.host is empty");
+		error(EXIT_FAILURE, 0, "Configuration error: ADSB.host is empty");
 	if (cfg->input.port == 0)
-		error(-1, 0, "Configuration error: ADSB.port = 0");
+		error(EXIT_FAILURE, 0, "Configuration error: ADSB.port = 0");
 #else
 	if (cfg->input.uart[0] == '\0')
-		error(-1, 0, "Configuration error: ADSB.uart is empty");
+		error(EXIT_FAILURE, 0, "Configuration error: ADSB.uart is empty");
 #endif
 
 	if (!cfg->dev.serialSet)
-		error(-1, 0, "Configuration error: DEVICE.serial is missing");
+		error(EXIT_FAILURE, 0, "Configuration error: DEVICE.serial is missing");
 
 	if (cfg->stats.interval == 0)
-		error(-1, 0, "Configuration error: STATISTICS.interval is 0");
+		error(EXIT_FAILURE, 0, "Configuration error: STATISTICS.interval is 0");
 }
-
 

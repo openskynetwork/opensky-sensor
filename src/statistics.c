@@ -104,13 +104,13 @@ static inline void printSubFrames(uint32_t type,
 {
 	uint64_t n = snapshot->stats.ADSB_longType[type];
 	if (n) {
-		printf("   - %27" PRIu64 " [%3.0f%%] type %" PRIu32 " (%.02f /s",
-			n, 100. * n / snapshot->stats.ADSB_frameType[2], type,
+		printf("   - %27" PRIu64 " [%3.0f%%] type %" PRIu32 " (%.02f /s", n,
+			100. * n / snapshot->stats.ADSB_frameType[2], type,
 			(double)n / snapshot->secs);
 		if (lastSnapshot && snapshot->delta) {
 			printf(", %.02f /s)\n",
-				(double)(n - lastSnapshot->stats.ADSB_longType[type]) /
-					snapshot->delta);
+				(double)(n - lastSnapshot->stats.ADSB_longType[type])
+					/ snapshot->delta);
 		} else {
 			puts(")");
 		}
@@ -124,8 +124,8 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 
 	snapshot.timestamp = time(NULL);
 
-	snapshot.delta = lastSnapshot ?
-		snapshot.timestamp - lastSnapshot->timestamp : 0;
+	snapshot.delta =
+		lastSnapshot ? snapshot.timestamp - lastSnapshot->timestamp : 0;
 
 	BUF_fillStatistics();
 	memcpy(&snapshot.stats, (void*)&STAT_stats, sizeof snapshot.stats);
@@ -148,10 +148,10 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 
 	puts(" ADSB");
 	printf(" - %27" PRIu64 " times out of sync\n", stats->ADSB_outOfSync);
-	snapshot.frames = stats->ADSB_frameType[0] + stats->ADSB_frameType[1] +
-		stats->ADSB_frameType[2] + stats->ADSB_frameTypeUnknown;
-	printf(" - %27" PRIu64 " frames received (%.02f /s",
-		snapshot.frames, (double)snapshot.frames / snapshot.secs);
+	snapshot.frames = stats->ADSB_frameType[0] + stats->ADSB_frameType[1]
+		+ stats->ADSB_frameType[2] + stats->ADSB_frameTypeUnknown;
+	printf(" - %27" PRIu64 " frames received (%.02f /s", snapshot.frames,
+		(double)snapshot.frames / snapshot.secs);
 	if (lastSnapshot) {
 		printf(", %.02f /s)\n",
 			(double)(snapshot.frames - lastSnapshot->frames) / snapshot.delta);
@@ -174,29 +174,25 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 	puts("");
 
 	puts(" Buffer");
-	printf(" - %27" PRIu64 " queued messages (current)\n",
-		stats->BUF_queue);
-	printf(" - %27" PRIu64 " queued messages (max)\n",
-		stats->BUF_maxQueue);
+	printf(" - %27" PRIu64 " queued messages (current)\n", stats->BUF_queue);
+	printf(" - %27" PRIu64 " queued messages (max)\n", stats->BUF_maxQueue);
 	if (stats->BUF_overload)
 		puts(" -                             currently in overload");
 	printf(" - %27" PRIu64 " discarded messages\n", stats->BUF_sacrifices);
 	printf(" - %27" PRIu64 " discarded messages (in one overflow "
 		"situation)\n", stats->BUF_sacrificeMax);
 	printf(" - %27" PRIu64 " messages in pool (Usage %.2f%%)\n",
-		stats->BUF_pool, (100. * stats->BUF_queue) /
-		(double)(stats->BUF_queue + stats->BUF_pool));
-	printf(" - %27" PRIu64 " dynamic pools (current)\n",
-		stats->BUF_pools);
+		stats->BUF_pool,
+		(100. * stats->BUF_queue)
+			/ (double)(stats->BUF_queue + stats->BUF_pool));
+	printf(" - %27" PRIu64 " dynamic pools (current)\n", stats->BUF_pools);
 	printf(" - %27" PRIu64 " dynamic pools (overall)\n",
 		stats->BUF_poolsCreated);
-	printf(" - %27" PRIu64 " dynamic pools (max)\n",
-		stats->BUF_maxPools);
+	printf(" - %27" PRIu64 " dynamic pools (max)\n", stats->BUF_maxPools);
 	printf(" - %27" PRIu64 " flushes\n", stats->BUF_flushes);
 	printf(" - %27" PRIu64 " uncollected dynamic pools\n",
 		stats->BUF_uncollects);
-	printf(" - %27" PRIu64 " Garbage Collector runs\n",
-		stats->BUF_GCRuns);
+	printf(" - %27" PRIu64 " Garbage Collector runs\n", stats->BUF_GCRuns);
 	puts("");
 
 	puts(" Network");
@@ -210,8 +206,7 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 		stats->NET_msgsFailed);
 	printf(" - %27" PRIu64 " messages received unsuccessfully\n",
 		stats->NET_msgsRecvFailed);
-	printf(" - %27" PRIu64 " keep alive messages\n",
-		stats->NET_keepAlives);
+	printf(" - %27" PRIu64 " keep alive messages\n", stats->NET_keepAlives);
 
 	if (lastSnapshot)
 		memcpy(lastSnapshot, &snapshot, sizeof snapshot);

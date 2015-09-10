@@ -44,17 +44,14 @@ static const struct FPGApins pins[2] = {
 		.dclk = 39,
 		.nstat = 34,
 		.data0 = 44,
-		.nconf = 37
-	},
+		.nconf = 37 },
 	[BB_TYPE_BLACK] = {
 		.name = "black",
 		.confd = 45,
 		.dclk = 47,
 		.nstat = 46,
 		.data0 = 44,
-		.nconf = 61
-	}
-};
+		.nconf = 61 } };
 
 static const struct FPGApins * fpga;
 
@@ -87,15 +84,15 @@ static void construct(const bool * bbwhite)
 }
 
 /** (Re-)Program the FPGA.
-* \param cfg pointer to buffer configuration, see cfgfile.h
+ * \param cfg pointer to buffer configuration, see cfgfile.h
  */
 static bool program()
 {
 	char file[PATH_MAX];
 
 	struct stat st;
-	if (CFG_config.fpga.file[0] == '/' &&
-		stat(CFG_config.fpga.file, &st) == 0) {
+	if (CFG_config.fpga.file[0] == '/'
+		&& stat(CFG_config.fpga.file, &st) == 0) {
 		strncpy(file, CFG_config.fpga.file, sizeof file);
 	} else {
 		strncpy(file, FWDIR, PATH_MAX);

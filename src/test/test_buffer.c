@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <check.h>
 #include <buffer.h>
 #include <statistics.h>
@@ -730,8 +733,7 @@ static Suite * buffer_suite()
 
 int main()
 {
-	Suite * s = buffer_suite();
-	SRunner * sr = srunner_create(s);
+	SRunner * sr = srunner_create(buffer_suite());
 	srunner_set_tap(sr, "-");
 	srunner_run_all(sr, CK_NORMAL);
 	srunner_free(sr);
