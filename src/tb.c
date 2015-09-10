@@ -154,8 +154,8 @@ static void mainloop()
  */
 static void processPacket(const struct TB_Packet * packet)
 {
-	static const uint32_t n_processors =
-		sizeof(processors) / sizeof(*processors);
+	static const uint32_t n_processors = sizeof(processors)
+		/ sizeof(*processors);
 
 	if (packet->type > n_processors || !processors[packet->type]) {
 		/* packet type unknown */

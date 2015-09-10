@@ -19,7 +19,6 @@ struct TEST {
 	uint32_t write_bytes;
 	bool params[8];
 
-
 	int32_t testAck;
 
 	uint32_t curBuffer;
@@ -30,7 +29,7 @@ struct TEST {
 
 extern struct TEST test;
 
-size_t INPUT_buildFrame(uint8_t * buf, enum ADSB_FRAME_TYPE type,
-	uint64_t mlat, int8_t siglevel, const uint8_t * payload, size_t payloadLen);
+size_t INPUT_buildFrame(uint8_t * buf, enum ADSB_FRAME_TYPE type, uint64_t mlat,
+	int8_t siglevel, const uint8_t * payload, size_t payloadLen);
 
 #endif

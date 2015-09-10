@@ -188,7 +188,6 @@ static inline void emitDisconnect()
 	connected = false;
 }
 
-
 /** Send some data through the socket without locks or checks.
  * \param data data to be sent
  * \param len length of data

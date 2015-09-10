@@ -41,7 +41,7 @@ static void closeUart()
 
 void INPUT_connect()
 {
-	while(!doConnect())
+	while (!doConnect())
 		sleep(CFG_config.input.reconnectInterval);
 }
 

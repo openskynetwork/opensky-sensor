@@ -44,9 +44,9 @@ enum ADSB_OPTION {
 	ADSB_OPTION_AVR_FORMAT_NO_MLAT = 'e',
 
 	/** CRC: check DF-11/17/18 frames */
-	ADSB_OPTION_DF_11_17_18_CRC_ENABLED ='f',
+	ADSB_OPTION_DF_11_17_18_CRC_ENABLED = 'f',
 	/** CRC: don't check DF-11/17/18 frames */
-	ADSB_OPTION_DF_11_17_18_CRC_DISABLED ='F',
+	ADSB_OPTION_DF_11_17_18_CRC_DISABLED = 'F',
 
 	/** Timestamp Source: GPS */
 	ADSB_OPTION_TIMESTAMP_SOURCE_GPS = 'G',
@@ -168,16 +168,16 @@ decode_frame:
 		switch (type) {
 		case '1': /* mode-ac */
 			payload_len = 2;
-			break;
+		break;
 		case '2': /* mode-s short */
 			payload_len = 7;
-			break;
+		break;
 		case '3': /* mode-s long */
 			payload_len = 14;
-			break;
+		break;
 		case '4': /* status frame */
 			payload_len = 14;
-			break;
+		break;
 		case '\x1a': /* resynchronize */
 			++STAT_stats.ADSB_outOfSync;
 			NOC_puts("ADSB: Out of Sync: got unescaped 0x1a in frame, "
@@ -210,7 +210,7 @@ decode_frame:
 
 		/* read payload */
 		rs = decode(frame->payload, payload_len, frame);
-		if(unlikely(rs == DECODE_STATUS_RESYNC)) {
+		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
 			++STAT_stats.ADSB_outOfSync;
 			goto decode_frame;
 		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))

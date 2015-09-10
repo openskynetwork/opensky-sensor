@@ -43,10 +43,10 @@ int NETC_connect(const char * component, const char * hostName, uint16_t port)
 		switch (host->ai_family) {
 		case AF_INET:
 			((struct sockaddr_in*)addr)->sin_port = port_be;
-			break;
+		break;
 		case AF_INET6:
 			((struct sockaddr_in6*)addr)->sin6_port = port_be;
-			break;
+		break;
 		default:
 			NOC_printf("%s: ignoring unknown family %d for address '%s'",
 				component, host->ai_family, hostName);
@@ -68,7 +68,6 @@ int NETC_connect(const char * component, const char * hostName, uint16_t port)
 			break;
 		}
 	}
-
 	CLEANUP_POP();
 
 	if (!host) {

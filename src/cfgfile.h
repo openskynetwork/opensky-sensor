@@ -82,5 +82,4 @@ extern struct CFG_Config CFG_config;
 
 void CFG_read(const char * file);
 
-
 #endif

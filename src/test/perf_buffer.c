@@ -49,6 +49,5 @@ int main()
 	double d = s + ns / 1e9;
 	printf("Took %.2fs -> %.2fns per message\n", d, d / 1000000 * 1e9);
 
-
 	return EXIT_SUCCESS;
 }

@@ -41,7 +41,7 @@ static void closeConn()
 
 void INPUT_connect()
 {
-	while(!doConnect())
+	while (!doConnect())
 		sleep(CFG_config.input.reconnectInterval);
 }
 

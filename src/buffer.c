@@ -108,10 +108,8 @@ static void destroyUnusedPools();
 static void gc();
 
 static inline struct FrameLink * shift(struct FrameList * list);
-static inline void unshift(struct FrameList * list,
-	struct FrameLink * frame);
-static inline void push(struct FrameList * list,
-	struct FrameLink * frame);
+static inline void unshift(struct FrameList * list, struct FrameLink * frame);
+static inline void push(struct FrameList * list, struct FrameLink * frame);
 static inline void append(struct FrameList * dstList,
 	const struct FrameList * srcList);
 static inline void clear(struct FrameList * list);
@@ -129,8 +127,7 @@ static void construct()
 
 	newFrame = currentFrame = NULL;
 
-	dynMaxIncrements = CFG_config.buf.history ?
-		CFG_config.buf.dynIncrement : 0;
+	dynMaxIncrements = CFG_config.buf.history ? CFG_config.buf.dynIncrement : 0;
 
 	if (!deployPool(&staticPool, CFG_config.buf.statBacklog))
 		error(-1, errno, "malloc failed");
@@ -253,7 +250,7 @@ static inline struct FrameLink * getFrameFromPool()
 		ret = shift(&queue);
 	}
 
-	assert (ret);
+	assert(ret);
 	return ret;
 }
 
@@ -262,11 +259,11 @@ static inline struct FrameLink * getFrameFromPool()
  */
 struct ADSB_Frame * BUF_newFrame()
 {
-	assert (!newFrame);
+	assert(!newFrame);
 	pthread_mutex_lock(&mutex);
 	newFrame = getFrameFromPool();
 	pthread_mutex_unlock(&mutex);
-	assert (newFrame);
+	assert(newFrame);
 	return &newFrame->frame;
 }
 
@@ -275,8 +272,8 @@ struct ADSB_Frame * BUF_newFrame()
  */
 void BUF_commitFrame(struct ADSB_Frame * frame)
 {
-	assert (frame);
-	assert (&newFrame->frame == frame);
+	assert(frame);
+	assert(&newFrame->frame == frame);
 
 	pthread_mutex_lock(&mutex);
 	push(&queue, newFrame);
@@ -294,8 +291,8 @@ void BUF_commitFrame(struct ADSB_Frame * frame)
  */
 void BUF_abortFrame(struct ADSB_Frame * frame)
 {
-	assert (frame);
-	assert (&newFrame->frame == frame);
+	assert(frame);
+	assert(&newFrame->frame == frame);
 
 	pthread_mutex_lock(&mutex);
 	unshift(&pool, newFrame);
@@ -314,7 +311,7 @@ static void cleanup(void * dummy)
  */
 const struct ADSB_Frame * BUF_getFrame()
 {
-	assert (!currentFrame);
+	assert(!currentFrame);
 	CLEANUP_PUSH(&cleanup, NULL);
 	pthread_mutex_lock(&mutex);
 	while (!queue.head) {
@@ -344,7 +341,7 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 		ts.tv_nsec -= 1000000000;
 	}
 
-	assert (!currentFrame);
+	assert(!currentFrame);
 
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&cleanup, NULL);
@@ -361,7 +358,6 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
 		currentFrame = shift(&queue);
 		ret = &currentFrame->frame;
 	}
-
 	CLEANUP_POP();
 
 	return ret;
@@ -375,8 +371,8 @@ const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
  */
 void BUF_releaseFrame(const struct ADSB_Frame * frame)
 {
-	assert (frame);
-	assert (frame == &currentFrame->frame);
+	assert(frame);
+	assert(frame == &currentFrame->frame);
 
 	pthread_mutex_lock(&mutex);
 	unshift(&pool, currentFrame);
@@ -393,8 +389,8 @@ void BUF_releaseFrame(const struct ADSB_Frame * frame)
  */
 void BUF_putFrame(const struct ADSB_Frame * frame)
 {
-	assert (frame);
-	assert (frame == &currentFrame->frame);
+	assert(frame);
+	assert(frame == &currentFrame->frame);
 
 	pthread_mutex_lock(&mutex);
 	unshift(&queue, currentFrame);
