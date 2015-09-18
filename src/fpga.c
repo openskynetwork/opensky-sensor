@@ -146,6 +146,10 @@ static bool program()
 		puts("FPGA: done");
 		break;
 	}
+	if (try == retries) {
+		error(-1, 0, "FPGA: could not program fpga after %" PRIu32 " attempts",
+			retries);
+	}
 	return true;
 }
 
