@@ -84,7 +84,7 @@ static void destruct()
 
 static void mainloop()
 {
-	while (GPS_comp.run) {
+	while (true) {
 		uint8_t buf[1024];
 		size_t len = readFrame(buf, sizeof buf);
 		if (!len)
@@ -200,12 +200,12 @@ static void UART_open(const char * uart)
 {
 	fd = open(uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
 	if (fd < 0)
-		error(EXIT_FAILURE, errno, "INPUT: Could not open UART at '%s'", uart);
+		error(EXIT_FAILURE, errno, "GPS: Could not open UART at '%s'", uart);
 
 	/* set uart options */
 	struct termios t;
 	if (tcgetattr(fd, &t) == -1)
-		error(EXIT_FAILURE, errno, "INPUT: tcgetattr failed");
+		error(EXIT_FAILURE, errno, "GPS: tcgetattr failed");
 
 	t.c_iflag = IGNPAR | PARMRK;
 	t.c_oflag = ONLCR;
@@ -215,7 +215,7 @@ static void UART_open(const char * uart)
 	t.c_ospeed = B9600;
 
 	if (tcsetattr(fd, TCSANOW, &t))
-		error(EXIT_FAILURE, errno, "INPUT: tcsetattr failed");
+		error(EXIT_FAILURE, errno, "GPS: tcsetattr failed");
 
 	tcflush(fd, TCIOFLUSH);
 
@@ -224,7 +224,7 @@ static void UART_open(const char * uart)
 	fds.fd = fd;
 }
 
-size_t UART_read(uint8_t * buf, size_t bufLen)
+static size_t UART_read(uint8_t * buf, size_t bufLen)
 {
 	while (true) {
 		ssize_t rc = read(fd, buf, bufLen);
