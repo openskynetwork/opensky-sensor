@@ -53,7 +53,8 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([clock_gettime memchr memmove memset munmap pow setenv socket])
 AC_CHECK_FUNCS([strerror strncasecmp strtoul])
 
-PKG_CHECK_MODULES([CHECK], [check >= 0.9.6])
+PKG_CHECK_MODULES([CHECK], [check >= 0.9.6], [with_check=yes], [with_check=no])
+AM_CONDITIONAL([WITH_CHECK], [test x$with_check = xyes])
 
 AX_PTHREAD
 
