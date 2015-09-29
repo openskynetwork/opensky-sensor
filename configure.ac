@@ -53,10 +53,18 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([clock_gettime memchr memmove memset munmap pow setenv socket])
 AC_CHECK_FUNCS([strerror strncasecmp strtoul])
 
-PKG_CHECK_MODULES([CHECK], [check >= 0.9.6], [with_check=yes], [with_check=no])
-AM_CONDITIONAL([WITH_CHECK], [test x$with_check = xyes])
-
 AX_PTHREAD
+
+AC_ARG_WITH([check],
+  [AS_HELP_STRING([--with-check], [Add test cases using libcheck @<:@check@:>@])],
+  [:],[with_check=check])
+AS_IF([test x"$with_check" != x"no"],
+  [PKG_CHECK_MODULES([CHECK], [check >= 0.9.6],
+    [with_check=yes],
+    [AS_IF([test x"$with_check" = x"yes"],
+      [AC_MSG_ERROR([check required, but not found.])],
+      [with_check=no])])])
+AM_CONDITIONAL([WITH_CHECK], [test x$with_check = xyes])
 
 AC_ARG_ENABLE([development],
   [AS_HELP_STRING([--enable-development], [Use local files @<:@no@:>@])],
