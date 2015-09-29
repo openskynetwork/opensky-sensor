@@ -7,7 +7,7 @@ url="http://www.opensky-network.org"
 arch=('armv7h')
 license=('custom')
 depends=(gcc-libs bash)
-makedepends=(gcc binutils make dtc-overlay pkg-config)
+makedepends=(gcc binutils make pkg-config)
 optdepends=(rcc)
 checkdepends=(check)
 backup=(etc/openskyd.conf)
@@ -26,7 +26,8 @@ build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd \
     --enable-silent-rules \
-    --disable-network --enable-talkback --with-systemd --with-pacman
+    --disable-network --enable-talkback --with-systemd --with-pacman \
+    --with-check
   make
 }
 
