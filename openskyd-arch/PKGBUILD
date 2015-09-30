@@ -17,7 +17,7 @@ source=("${pkgname}-${pkgver}.tar.gz" "${pkgname}.service"
 	"BB-W-Radarcape-00A0.dtbo" "BB-B-Radarcape-00A0.dtbo");
 md5sums=('SKIP'
          'e196ebef4681cd476987b127f21b346b'
-         'dea5d32266b12f9064092616379f44a4'
+         '8cb520bcf13ed0da3c6fa47042274df7'
          '8650715547a464898802302a9580cac8'
          'fd78b4222eaf1e4f46621ddc17d554e3'
          '50ae4e63bf2e1b79bf372e77c1c6d614')

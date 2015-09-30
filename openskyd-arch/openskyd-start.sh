@@ -7,11 +7,11 @@ if [ ${KMAJOR} -eq 4 ]; then
   COMPAT=/sys/firmware/devicetree/base/compatible
   if grep "bone-black" ${COMPAT} >/dev/null 2>&1; then
     PARAM="--black"
-  elif grep -v "bone" ${COMPAT} >/dev/null 2>&1; then
+  elif grep "bone" ${COMPAT} >/dev/null 2>&1; then
+    PARAM=""
+  else
     echo "Unkown base board"
     exit 1
-  else
-    PARAM=""
   fi
 else
   BOARD=$(dmesg | grep compatible-baseboard | cut -d',' -f2)
