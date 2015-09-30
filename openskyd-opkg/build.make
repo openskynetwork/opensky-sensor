@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=1.0.1
+VERSION=1.0.2
 DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 help:
@@ -20,7 +20,7 @@ build:
 		--enable-silent-rules \
 		--disable-uart --enable-network --disable-talkback --without-systemd \
 		--without-pacman \
-		CFLAGS="-O2 -g -Wall"
+		CFLAGS="-O3 -g -Wall -mtune=native"
 	make -C openskyd-$(VERSION)
 
 prepare:
