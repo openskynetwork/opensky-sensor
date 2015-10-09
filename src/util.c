@@ -12,6 +12,10 @@
 #include <string.h>
 #include <endian.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
+#include <stdlib.h>
 
 /** whether the serial number has already been resolved */
 static bool cachedSerial;
@@ -59,3 +63,38 @@ bool UTIL_getSerial(uint32_t * serial)
 	return true;
 }
 
+/** Drop privileges by switching uid and gid to nobody */
+void UTIL_dropPrivileges()
+{
+	if (getuid() != 0)
+		return;
+
+	uid_t u_nobody = 65534;
+	gid_t g_nobody = 65534;
+
+	long bufsz = sysconf(_SC_GETGR_R_SIZE_MAX);
+	if (bufsz == -1)
+		bufsz = 16384;
+	char * buffer = malloc(bufsz);
+	if (buffer) {
+		struct passwd pwd, * pwd_res;
+		struct group grp, * grp_res;
+
+		int pwd_err = getpwnam_r("nobody", &pwd, buffer, bufsz, &pwd_res);
+		if (!pwd_err && pwd_res == &pwd)
+			u_nobody = pwd.pw_uid;
+
+		int grp_err = getgrnam_r("nobody", &grp, buffer, bufsz, &grp_res);
+		if (!grp_err && grp_res == &grp)
+			g_nobody = grp.gr_gid;
+		else if (!pwd_err && pwd_res == &pwd)
+			g_nobody = pwd.pw_gid;
+
+		free(buffer);
+	}
+
+	chdir("/tmp");
+	setgroups(0, NULL);
+	setgid(g_nobody);
+	setuid(u_nobody);
+}

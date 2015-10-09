@@ -9,6 +9,8 @@
 
 bool UTIL_getSerial(uint32_t * serial);
 
+void UTIL_dropPrivileges();
+
 #ifndef container_of
 #define container_of(ptr, type, member) ({ \
 	const typeof( ((type *)0)->member ) *__mptr = (ptr); \

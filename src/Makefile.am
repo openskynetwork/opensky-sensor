@@ -21,7 +21,8 @@ SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	input.h net_common.h net_common.c util.h util.c \
 	component.h component.c threads.h relay.h relay.c message.h message.c
 
-wd_SOURCES = gpio.h gpio.c watchdog.h watchdog.c wd-main.c
+wd_SOURCES = gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
+	cfgfile.h cfgfile.c util.h util.c wd-main.c
 
 # sources for talkback
 if TALKBACK
