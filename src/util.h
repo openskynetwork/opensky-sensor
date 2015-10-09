@@ -15,6 +15,8 @@ bool UTIL_getSerial(uint32_t * serial);
 	(type *)( (char *)__mptr - offsetof(type,member) );})
 #endif
 
+#define ARRAY_SIZE(a) (sizeof ((a)) / sizeof (*(a)))
+
 #define likely(x) __builtin_expect(!!(x),1)
 #define unlikely(x) __builtin_expect(!!(x),0)
 

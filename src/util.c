@@ -11,26 +11,50 @@
 #include <linux/if_arp.h>
 #include <string.h>
 #include <endian.h>
+#include <unistd.h>
 
+/** whether the serial number has already been resolved */
+static bool cachedSerial;
+/** the serial number, if cachedSerial is true */
+static uint32_t serialNo;
+
+/** Get a unique identification of the device by taking parts of its mac
+ *   address. The serial number is the least 31 bits of the mac address of
+ *   eth0. This way, it will fit into Javas 32 bit signed integer.
+ * \param serial the serial number will be written to this address, if the
+ *  return value is true.
+ * \return true if operation succeeded, false otherwise
+ */
 bool UTIL_getSerial(uint32_t * serial)
 {
-	int sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if (cachedSerial) {
+		*serial = serialNo;
+		return true;
+	}
+
+	/* get serial number from mac of eth0 */
+	int sock = socket(PF_INET, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_IP);
 	if (sock < 0)
 		return false;
 
 	struct ifreq ifr;
 	strncpy(ifr.ifr_name, "eth0", IFNAMSIZ);
 
-	if (ioctl(sock, SIOCGIFHWADDR, &ifr) < 0)
+	if (ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) /* no such eth0 */
 		return false;
 
-	if (ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER)
+	close(sock);
+
+	if (ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER) /* eth0 is not ethernet? */
 		return false;
 
 	uint32_t serial_be;
 	memcpy(&serial_be, ((uint8_t*)ifr.ifr_hwaddr.sa_data) + 2,
 		sizeof serial_be);
-	*serial = be32toh(serial_be) & 0x7fffffff;
+	/* get the lower 31 bit */
+	*serial = serialNo = be32toh(serial_be) & 0x7fffffff;
+
+	cachedSerial = true;
 
 	return true;
 }
