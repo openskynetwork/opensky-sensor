@@ -66,7 +66,7 @@ struct Component FPGA_comp = {
 	.start = &program
 };
 
-static void reset(uint32_t timeout);
+static bool reset(uint32_t timeout);
 static bool transfer(const uint8_t * rfd, off_t size);
 
 /** Initialize FPGA configuration.
@@ -104,20 +104,24 @@ static bool program()
 
 	/* open input file */
 	int fd = open(file, O_RDONLY | O_CLOEXEC);
-	if (fd < 0)
-		error(-1, errno, "FPGA: could not open '%s'", file);
+	if (fd < 0) {
+		error(0, errno, "FPGA: could not open '%s'", file);
+		return false;
+	}
 
 	/* stat input file for its size */
 	if (fstat(fd, &st) < 0) {
 		close(fd);
-		error(-1, errno, "FPGA: could not stat '%s'", file);
+		error(0, errno, "FPGA: could not stat '%s'", file);
+		return 0;
 	}
 
 	/* mmap input file */
 	uint8_t * rfd = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+	close(fd);
 	if (rfd == MAP_FAILED) {
-		close(fd);
-		error(-1, errno, "FPGA: could not mmap '%s'", file);
+		error(0, errno, "FPGA: could not mmap '%s'", file);
+		return false;
 	}
 
 	uint32_t try;
@@ -127,7 +131,8 @@ static bool program()
 			retries);
 
 		/* reset FPGA */
-		reset(CFG_config.fpga.timeout);
+		if (!reset(CFG_config.fpga.timeout))
+			continue;
 
 		printf("FPGA: Transferring RBF for beagle bone %s\n", fpga->name);
 		if (!transfer(rfd, st.st_size))
@@ -143,14 +148,14 @@ static bool program()
 		}
 
 		munmap(rfd, st.st_size);
-		close(fd);
 
 		puts("FPGA: done");
 		break;
 	}
 	if (try == retries) {
-		error(-1, 0, "FPGA: could not program fpga after %" PRIu32 " attempts",
+		error(0, 0, "FPGA: could not program fpga after %" PRIu32 " attempts",
 			retries);
+		return false;
 	}
 	return true;
 }
@@ -158,7 +163,7 @@ static bool program()
 /** Reset the FPGA configuration.
  * \param timeout waiting time for the reset to happen in units of 50 us
  */
-static void reset(uint32_t timeout)
+static bool reset(uint32_t timeout)
 {
 	puts("FPGA: Reset");
 	GPIO_clear(fpga->nconf);
@@ -169,10 +174,11 @@ static void reset(uint32_t timeout)
 	puts("FPGA: Synchronizing");
 	while (timeout--) {
 		if (GPIO_read(fpga->nstat))
-			return;
+			return true;
 		usleep(50);
 	}
-	error(-1, 0, "FPGA: could not synchronize with the FPGA");
+	error(0, 0, "FPGA: could not synchronize with the FPGA");
+	return false;
 }
 
 /** Transfer data to the FPGA's configuration interface
