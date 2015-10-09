@@ -128,18 +128,16 @@ void CFG_read(const char * file)
 
 	/* mmap input file */
 	char * cfgStr = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	if (cfgStr == MAP_FAILED) {
-		close(fd);
+	close(fd);
+	if (cfgStr == MAP_FAILED)
 		error(EXIT_FAILURE, errno, "Configuration error: could not mmap '%s'",
 			file);
-	}
 
 	/* actually read configuration */
 	readCfg(cfgStr, st.st_size, &CFG_config);
 
 	/* unmap and close file */
 	munmap(cfgStr, st.st_size);
-	close(fd);
 
 	/* fix configuration */
 	fix(&CFG_config);
