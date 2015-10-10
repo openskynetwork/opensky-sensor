@@ -1,0 +1,10 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: openskyd
+Source: http://www.sero-systems.de
+
+Files: *
+Copyright: 2015 Markus Engel <engel@sero-systems.de>
+License: No License
+ No redistribution or modification allowed.
+ .
+

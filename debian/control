@@ -1,0 +1,12 @@
+Source: openskyd
+Section: custom
+Priority: optional
+Maintainer: Markus Engel <engel@sero-systems.de>
+Build-Depends: debhelper (>= 9), autotools-dev, pkg-config
+Standards-Version: 3.9.5
+Homepage: http://opensky-network.org
+
+Package: openskyd
+Architecture: armhf
+Depends: ${shlibs:Depends}, ${misc:Depends}, radarcaped
+Description: OpenSky Daemon for client mode

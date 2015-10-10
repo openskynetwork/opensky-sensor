@@ -1,3 +1,5 @@
+/* Copyright (c) 2015 Sero Systems <contact at sero-systems dot de> */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

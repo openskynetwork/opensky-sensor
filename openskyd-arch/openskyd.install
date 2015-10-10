@@ -3,3 +3,15 @@ post_install() {
 	systemctl enable openskyd
 }
 
+post_upgrade() {
+	systemctl daemon-reload
+	systemctl restart openskyd
+}
+
+pre_remove() {
+	systemctl stop openskyd
+	systemctl disable openskyd
+}
+
+
+

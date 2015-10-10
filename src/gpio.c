@@ -1,3 +1,5 @@
+/* Copyright (c) 2015 Sero Systems <contact at sero-systems dot de> */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -10,6 +12,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <stdlib.h>
+#include <util.h>
 
 /** Represents a GPIO controller */
 struct Controller {
@@ -45,9 +49,7 @@ struct Component GPIO_comp = {
 	.destruct = &destruct
 };
 
-static int devmem;
-
-static void controllerInit(struct Controller * ctrl);
+static void controllerInit(int devfd, struct Controller * ctrl);
 static void controllerDestruct(struct Controller * ctrl);
 static inline struct Controller * getController(uint32_t gpio);
 static inline uint32_t getBit(uint32_t gpio);
@@ -57,24 +59,24 @@ static inline uint32_t getBit(uint32_t gpio);
 static void construct()
 {
 	/* open /dev/mem */
-	devmem = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
-	if (devmem < 0)
-		error(-1, errno, "GPIO: Could not open /dev/mem");
+	int devfd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
+	if (devfd < 0)
+		error(EXIT_FAILURE, errno, "GPIO: Could not open /dev/mem");
 
 	/* initialize all 4 controllers */
-	int i;
-	for (i = 0; i < 4; ++i)
-		controllerInit(&controllers[i]);
+	size_t i;
+	for (i = 0; i < ARRAY_SIZE(controllers); ++i)
+		controllerInit(devfd, &controllers[i]);
+
+	close(devfd);
 }
 
 static void destruct()
 {
 	/* terminate all 4 controllers */
-	int i;
-	for (i = 0; i < 4; ++i)
+	size_t i;
+	for (i = 0; i < ARRAY_SIZE(controllers); ++i)
 		controllerDestruct(&controllers[i]);
-
-	close(devmem);
 }
 
 /** Set Direction of a GPIO.
@@ -122,17 +124,17 @@ uint32_t GPIO_read(uint32_t gpio)
 }
 
 /** Initialize a GPIO controller.
- * \param devmem file handle to /dev/mem
+ * \param devfd file handle to /dev/mem
  * \param ctrl controller to be initialized
  */
-static void controllerInit(struct Controller * ctrl)
+static void controllerInit(int devfd, struct Controller * ctrl)
 {
-	ctrl->map = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, devmem,
+	ctrl->map = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, devfd,
 		ctrl->base);
 
 	if (ctrl->map == (char*)-1) {
-		close(devmem);
-		error(-1, errno, "GPIO: Could not mmap /dev/mem for base 0x%08" PRIxPTR,
+		error(EXIT_FAILURE, errno,
+			"GPIO: Could not mmap /dev/mem for base 0x%08" PRIxPTR,
 			ctrl->base);
 	}
 

@@ -1,3 +1,5 @@
+/* Copyright (c) 2015 Sero Systems <contact at sero-systems dot de> */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -111,6 +113,8 @@ static bool configure()
 		setOption(cfg->fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
 			ADSB_OPTION_DF_17_18_FEC_DISABLED) &&
 		setOption(ADSB_OPTION_MODE_AC_DECODING_DISABLED);
+#else
+	return true;
 #endif
 }
 
@@ -197,16 +201,16 @@ decode_frame:
 		frame->raw_len = 2;
 
 		/* read header */
-		__attribute__((aligned(8))) uint8_t header[8];
-		enum DECODE_STATUS rs = decode(header, 7, frame);
+		__attribute__((aligned(8))) union { uint8_t u8[7]; uint64_t u64; } hdr;
+		enum DECODE_STATUS rs = decode(hdr.u8, sizeof hdr.u8, frame);
 		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
 			++STAT_stats.ADSB_outOfSync;
 			goto decode_frame;
 		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
 		/* decode mlat and signal level */
-		frame->mlat = be64toh(*(uint64_t*)header) >> 16;
-		frame->siglevel = header[6];
+		frame->mlat = be64toh(hdr.u64) >> 16;
+		frame->siglevel = hdr.u8[6];
 
 		/* read payload */
 		rs = decode(frame->payload, payload_len, frame);
@@ -229,7 +233,6 @@ decode_frame:
 static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 	struct ADSB_Frame * frame)
 {
-	size_t i;
 	/* get current raw ptr */
 	uint8_t * rawPtr = frame->raw + frame->raw_len;
 

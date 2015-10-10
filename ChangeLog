@@ -1,0 +1,9 @@
+2015-09-20 Markus Engel <engel@sero-systems.de>
+	* reverted multi buffer system as there seems to be no need for it
+	* added a test infrastructure
+	* added a lot of test fixtures
+	* added compiler optimizations to critical path
+	* changed ADS-B decoder buffering using memstr/memcpy/etc for speed
+	* minor fixes
+	* new start script for arch, supporting kernel 4.x
+	* Set official license
