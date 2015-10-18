@@ -16,6 +16,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 /** whether the serial number has already been resolved */
 static bool cachedSerial;
@@ -94,6 +95,8 @@ void UTIL_dropPrivileges()
 	}
 
 	chdir("/tmp");
+	printf("Dropping privileges to uid %u and gid %u\n", (unsigned)u_nobody,
+		(unsigned)g_nobody);
 	setgroups(0, NULL);
 	setgid(g_nobody);
 	setuid(u_nobody);
