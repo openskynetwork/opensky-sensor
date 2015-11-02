@@ -27,11 +27,6 @@ struct ADSB_Frame {
 	uint8_t raw[23 * 2];
 };
 
-struct ADSB_Header {
-	uint64_t mlat;
-	int8_t siglevel;
-};
-
 void ADSB_init();
 void ADSB_destruct();
 

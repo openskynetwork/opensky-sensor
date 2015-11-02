@@ -13,7 +13,7 @@
 #include <inttypes.h>
 
 static bool first;
-static uint32_t x, x2;
+static uint_fast32_t x, x2;
 
 void INPUT_init()
 {
@@ -69,18 +69,18 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 		mbuf[1] = '3';
 		append(&ptr, (random() & 0xff) - 0x7f);
 		append(&ptr, 0x8a);
-		uint32_t i;
+		uint_fast32_t i;
 		for (i = 10; i < 23; ++i)
 			append(&ptr, random() & 0xff);
 	}
 	size_t len = ptr - mbuf;
 	size_t l = bufLen < len ? bufLen : len;
 	memcpy(buf, mbuf, l);
-	uint32_t k = s2(pow(x / 52., 2.)) * 200000;
+	uint_fast32_t k = s2(pow(x / 52., 2.)) * 200000;
 	x = (x + 1) % 53;
-	uint32_t k2 = s2(pow(x2 / 400., 2.)) * 20000;
+	uint_fast32_t k2 = s2(pow(x2 / 400., 2.)) * 20000;
 	x2 = (x2 + 1) % 401;
-	uint32_t s = 5000ul + random() % 100000ul + k + k2;
+	uint_fast32_t s = 5000ul + random() % 100000ul + k + k2;
 	//printf("k: %6" PRIu32 ", s: %7" PRIu32 "\n", k, s);
 	usleep(s);
 	return l;

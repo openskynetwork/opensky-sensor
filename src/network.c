@@ -278,7 +278,7 @@ static bool sendSerial()
 
 	char * cur = buf + 2;
 
-	uint32_t n;
+	uint_fast32_t n;
 	for (n = 0; n < 4; ++n)
 		if ((*cur++ = serial.ca[n]) == '\x1a')
 			*cur++ = '\x1a';

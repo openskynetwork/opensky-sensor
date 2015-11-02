@@ -68,8 +68,8 @@ static size_t dynIncrements;
 static struct Pool * dynPools;
 
 /** Number of frames discarded in an overflow situation */
-static uint64_t overCapacity;
-static uint64_t overCapacityMax;
+static uint_fast64_t overCapacity;
+static uint_fast64_t overCapacityMax;
 
 /** Overall Pool */
 static struct FrameList pool;
@@ -330,7 +330,7 @@ const struct ADSB_Frame * BUF_getFrame()
  * \param timeout_ms timeout in milliseconds
  * \return frame or NULL on timeout
  */
-const struct ADSB_Frame * BUF_getFrameTimeout(uint32_t timeout_ms)
+const struct ADSB_Frame * BUF_getFrameTimeout(uint_fast32_t timeout_ms)
 {
 	struct timespec ts;
 	struct ADSB_Frame * ret;

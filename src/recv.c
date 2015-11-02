@@ -96,7 +96,7 @@ static void mainloop()
 					continue;
 				}
 
-				uint32_t ftype = (frame->payload[0] >> 3) & 0x1f;
+				uint_fast32_t ftype = (frame->payload[0] >> 3) & 0x1f;
 				++STAT_stats.ADSB_longType[ftype];
 				/* apply filter */
 				if (!((1 << ftype) & frameFilterLong)) {

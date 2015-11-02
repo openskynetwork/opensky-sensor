@@ -66,7 +66,7 @@ static const char * bufferInput;
 /** Remaining size of the file to be parsed */
 static off_t bufferSize;
 /** Current line number */
-static uint32_t bufferLine;
+static uint_fast32_t bufferLine;
 
 /** Description of a section */
 struct Section {
@@ -173,10 +173,10 @@ static enum SECTION scanSection()
 
 	/* sanity checks */
 	if (!c || n < c)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 			": ] expected, but newline found", bufferLine);
 	if (c != n - 1)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 			": newline after ] expected", bufferLine);
 
 	/* calculate length */
@@ -197,7 +197,7 @@ static enum SECTION scanSection()
 	}
 
 	/* section not found */
-	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 		": Section %.*s is unknown", bufferLine, (int)len, buf);
 
 	/* keep gcc happy */
@@ -221,11 +221,11 @@ static void scanComment()
  * \param opt option to be parsed
  * \return parsed integer
  */
-static inline uint32_t parseInt(const struct Option * opt)
+static inline uint_fast32_t parseInt(const struct Option * opt)
 {
 	char buf[20];
 	if (opt->valLen + 1 > sizeof buf || opt->valLen == 0)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 			": Not a number", bufferLine);
 	strncpy(buf, opt->val, opt->valLen);
 	buf[opt->valLen] = '\0';
@@ -233,7 +233,7 @@ static inline uint32_t parseInt(const struct Option * opt)
 	char * end;
 	unsigned long int n = strtoul(buf, &end, 0);
 	if (*end != '\0')
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 			": Garbage trailing line", bufferLine);
 
 	return n;
@@ -252,7 +252,7 @@ static inline bool parseBool(const struct Option * opt)
 		|| isSame("0", opt->val, opt->valLen))
 		return false;
 
-	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 		": boolean option has unexpected value '%.*s'", bufferLine,
 		(int)opt->valLen, opt->val);
 	return false;
@@ -266,7 +266,7 @@ static inline bool parseBool(const struct Option * opt)
 static inline void parseString(const struct Option * opt, char * str, size_t sz)
 {
 	if (opt->valLen > sz - 1)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 			": Value to long (max %zu expected)", bufferLine, sz - 1);
 	memcpy(str, opt->val, opt->valLen);
 	str[opt->valLen] = '\0';
@@ -287,7 +287,7 @@ static inline bool isOption(const struct Option * opt, const char * name)
  */
 static inline void unknownKey(const struct Option * opt)
 {
-	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 		": unknown key '%.*s'", bufferLine, (int)opt->keyLen, opt->key);
 }
 
@@ -337,7 +337,7 @@ static void scanOptionINPUT(const struct Option * opt, struct CFG_Config * cfg)
 #endif
 	} else if (isOption(opt, "port")) {
 #ifdef NETWORK
-		uint32_t n = parseInt(opt);
+		uint_fast32_t n = parseInt(opt);
 		if (n > 0xffff)
 		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
 			": port must be < 65535", bufferLine);
@@ -382,9 +382,9 @@ static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg)
 	if (isOption(opt, "host"))
 		parseString(opt, cfg->net.host, sizeof cfg->net.host);
 	else if (isOption(opt, "port")) {
-		uint32_t n = parseInt(opt);
+		uint_fast32_t n = parseInt(opt);
 		if (n > 0xffff)
-			error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+			error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 				": port must be < 65535", bufferLine);
 		cfg->net.port = n;
 	} else if (isOption(opt, "timeout"))
@@ -459,7 +459,7 @@ static void scanOption(enum SECTION sect, struct CFG_Config * cfg)
 		n = bufferInput + bufferSize - 1;
 	/* sanity check */
 	if (n < e)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 			": = expected, but newline found", bufferLine);
 
 	struct Option opt;
@@ -517,7 +517,7 @@ static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg)
 		break;
 		default:
 			if (sect == SECTION_NONE)
-				error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+				error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 					": Unexpected '%c' outside any section", bufferLine,
 					bufferInput[0]);
 			scanOption(sect, cfg);

@@ -13,9 +13,9 @@ enum GPIO_DIRECTION {
 
 extern struct Component GPIO_comp;
 
-void GPIO_setDirection(uint32_t gpio, enum GPIO_DIRECTION dir);
-void GPIO_set(uint32_t gpio);
-void GPIO_clear(uint32_t gpio);
-uint32_t GPIO_read(uint32_t gpio);
+void GPIO_setDirection(uint_fast32_t gpio, enum GPIO_DIRECTION dir);
+void GPIO_set(uint_fast32_t gpio);
+void GPIO_clear(uint_fast32_t gpio);
+uint_fast32_t GPIO_read(uint_fast32_t gpio);
 
 #endif
