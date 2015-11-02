@@ -51,8 +51,8 @@ struct Component GPIO_comp = {
 
 static void controllerInit(int devfd, struct Controller * ctrl);
 static void controllerDestruct(struct Controller * ctrl);
-static inline struct Controller * getController(uint32_t gpio);
-static inline uint32_t getBit(uint32_t gpio);
+static inline struct Controller * getController(uint_fast32_t gpio);
+static inline uint_fast32_t getBit(uint_fast32_t gpio);
 
 /** Initialize the GPIO subsystem.
  * \note Must be called exactly once before any GPIO functions are used! */
@@ -83,7 +83,7 @@ static void destruct()
  * \param gpio gpio number
  * \param dir direction (either in or out)
  */
-void GPIO_setDirection(uint32_t gpio, enum GPIO_DIRECTION dir)
+void GPIO_setDirection(uint_fast32_t gpio, enum GPIO_DIRECTION dir)
 {
 	struct Controller * ctrl = getController(gpio);
 	if (dir == GPIO_DIRECTION_OUT)
@@ -96,7 +96,7 @@ void GPIO_setDirection(uint32_t gpio, enum GPIO_DIRECTION dir)
 /** Set an output GPIO.
  * \param gpio gpio number
  */
-void GPIO_set(uint32_t gpio)
+void GPIO_set(uint_fast32_t gpio)
 {
 	struct Controller * ctrl = getController(gpio);
 	*ctrl->set = getBit(gpio);
@@ -106,7 +106,7 @@ void GPIO_set(uint32_t gpio)
 /** Clear an output GPIO.
  * \param gpio gpio number
  */
-void GPIO_clear(uint32_t gpio)
+void GPIO_clear(uint_fast32_t gpio)
 {
 	struct Controller * ctrl = getController(gpio);
 	*ctrl->clear = getBit(gpio);
@@ -117,7 +117,7 @@ void GPIO_clear(uint32_t gpio)
  * \param gpio gpio number
  * \return 1 if gpio is set, 0 otherwise
  */
-uint32_t GPIO_read(uint32_t gpio)
+uint_fast32_t GPIO_read(uint_fast32_t gpio)
 {
 	struct Controller * ctrl = getController(gpio);
 	return !!(*ctrl->in & getBit(gpio));
@@ -153,7 +153,7 @@ static void controllerDestruct(struct Controller * ctrl)
  * \param gpio gpio number
  * \return GPIO controller
  */
-static inline struct Controller * getController(uint32_t gpio)
+static inline struct Controller * getController(uint_fast32_t gpio)
 {
 	return &controllers[gpio >> 5];
 }
@@ -162,7 +162,7 @@ static inline struct Controller * getController(uint32_t gpio)
  * \param gpio gpio number
  * \return gpio data bit
  */
-static inline uint32_t getBit(uint32_t gpio)
+static inline uint_fast32_t getBit(uint_fast32_t gpio)
 {
 	return 1 << (gpio & 31);
 }

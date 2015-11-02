@@ -19,10 +19,10 @@ volatile struct STAT_Statistics STAT_stats;
 
 struct Snapshot {
 	time_t timestamp;
-	uint32_t secs;
-	uint32_t delta;
+	uint_fast32_t secs;
+	uint_fast32_t delta;
 	struct STAT_Statistics stats;
-	uint64_t frames;
+	uint_fast64_t frames;
 };
 
 static time_t start;
@@ -83,8 +83,8 @@ static void sigStats(int sig)
 }
 
 static inline void printFrames2(const char * name,
-	const struct Snapshot * snapshot, uint64_t frames,
-	bool hasLastFrames, uint64_t lastFrames)
+	const struct Snapshot * snapshot, uint_fast64_t frames,
+	bool hasLastFrames, uint_fast64_t lastFrames)
 {
 	printf(" - %27" PRIu64 " [%3.0f%%] %s (%.02f /s", frames,
 		100. * frames / snapshot->frames, name,
@@ -101,12 +101,13 @@ static inline void printFrames2(const char * name,
 	printFrames2((name), (snapshot), (snapshot)->stats.member, \
 		!!(lastSnapshot), (lastSnapshot) ? (lastSnapshot)->stats.member : 0)
 
-static inline void printSubFrames(uint32_t type,
+static inline void printSubFrames(uint_fast32_t type,
 	const struct Snapshot * snapshot, const struct Snapshot * lastSnapshot)
 {
-	uint64_t n = snapshot->stats.ADSB_longType[type];
+	uint_fast64_t n = snapshot->stats.ADSB_longType[type];
 	if (n) {
-		printf("   - %27" PRIu64 " [%3.0f%%] type %" PRIu32 " (%.02f /s", n,
+		printf("   - %27" PRIuFAST64 " [%3.0f%%] type %"
+			PRIuFAST32 " (%.02f /s", n,
 			100. * n / snapshot->stats.ADSB_frameType[2], type,
 			(double)n / snapshot->secs);
 		if (lastSnapshot && snapshot->delta) {
@@ -133,15 +134,15 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 	memcpy(&snapshot.stats, (void*)&STAT_stats, sizeof snapshot.stats);
 
 	snapshot.secs = snapshot.timestamp - start;
-	uint32_t d = snapshot.secs / (24 * 3600);
-	uint32_t h = (snapshot.secs / 3600) % 24;
-	uint32_t m = (snapshot.secs / 60) % 60;
-	uint32_t s = snapshot.secs % 60;
+	uint_fast32_t d = snapshot.secs / (24 * 3600);
+	uint_fast32_t h = (snapshot.secs / 3600) % 24;
+	uint_fast32_t m = (snapshot.secs / 60) % 60;
+	uint_fast32_t s = snapshot.secs % 60;
 
 	puts("Statistics");
 	printf(" - started on %s", startstr);
-	printf(" - running since %3" PRIu32 "d, %02" PRIu32 "h:%02" PRIu32
-		"m:%02" PRIu32 "s\n", d, h, m, s);
+	printf(" - running since %3" PRIuFAST32 "d, %02" PRIuFAST32
+		"h:%02" PRIuFAST32 "m:%02" PRIuFAST32 "s\n", d, h, m, s);
 	puts("");
 
 	puts(" Watchdog");
@@ -163,7 +164,7 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 	printFrames("Mode-A/C", &snapshot, lastSnapshot, ADSB_frameType[0]);
 	printFrames("Mode-S Short", &snapshot, lastSnapshot, ADSB_frameType[1]);
 	printFrames("Mode-S Long", &snapshot, lastSnapshot, ADSB_frameType[2]);
-	uint32_t i;
+	uint_fast32_t i;
 	for (i = 0; i < 32; ++i)
 		printSubFrames(i, &snapshot, lastSnapshot);
 	printFrames("status", &snapshot, lastSnapshot, ADSB_frameType[3]);
