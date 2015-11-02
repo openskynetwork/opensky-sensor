@@ -1,3 +1,5 @@
+/* Copyright (c) 2015 Sero Systems <contact at sero-systems dot de> */
+
 #include <gps.h>
 #include <fcntl.h>
 #include <error.h>
@@ -28,9 +30,6 @@ static double todouble(const uint8_t * buf);
 
 static void timeFrame(const uint8_t * buf);
 static void posFrame(const uint8_t * buf);
-static void statFrame(const uint8_t * buf);
-static void ioFrame(const uint8_t * buf);
-static void ioFrame2(const uint8_t * buf);
 
 static void construct();
 static void destruct();
@@ -43,38 +42,16 @@ struct Component GPS_comp = {
 	.main = &mainloop
 };
 
-static time_t gps0;
+static const time_t gpsEpoch = 315964800;
 
-struct GPS GPS_gps;
+_Atomic enum GPS_TIME_FLAGS GPS_timeFlags = ATOMIC_VAR_INIT(GPS_TIME_FLAG_NONE);
 
 static void construct()
 {
-	setenv("TZ", "UTC", 1);
-
-	struct tm gps0t = {
-		.tm_sec = 0,
-		.tm_min = 0,
-		.tm_hour = 0,
-		.tm_mday = 6,
-		.tm_mon = 0,
-		.tm_year = 80,
-		.tm_isdst = 0
-	};
-	gps0 = mktime(&gps0t);
-
-	memset(&GPS_gps, 0, sizeof GPS_gps);
-	pthread_mutex_init(&GPS_gps.mutex, NULL);
-
 	UART_open("/dev/ttyO2");
-	const uint8_t rst[] = { 0x10, 0x1e, 0x4b, 0x10, 0x03 };
-	(void)write(fd, rst, sizeof rst);
 
-	sleep(5);
-
-	const uint8_t setio[] = { 0x10, 0x35, 0x0e, 0x02, 0x01, 0x08, 0x10, 0x03 };
-	(void)write(fd, setio, sizeof setio);
-	const uint8_t setio2[] = { 0x10, 0x8e, 0xa2, 0x03, 0x10, 0x03 };
-	(void)write(fd, setio2, sizeof setio2);
+	const uint8_t setutc[] = { 0x10, 0x35, 0x04, 0x00, 0x01, 0x08, 0x10, 0x03 };
+	(void)write(fd, setutc, sizeof setutc);
 }
 
 static void destruct()
@@ -119,15 +96,23 @@ static void mainloop()
 
 static void timeFrame(const uint8_t * buf)
 {
-	uint64_t secondsOfWeek = tou32(buf + 1);
-	uint64_t week = tou16(buf + 5);
-	int64_t offset = toi16(buf + 7);
+	uint_fast32_t secondsOfWeek = tou32(buf + 1);
+	uint_fast16_t week = tou16(buf + 5);
+	int_fast16_t offset = toi16(buf + 7);
 	bool testMode = !!(buf[9] & 0x10);
 	bool hasOffset = !(buf[9] & 0x08);
 	bool hasGpsTime = !(buf[9] & 0x04);
-	bool preGpsTime = !hasGpsTime && secondsOfWeek > 10000 && week == 1024;
 	bool isUTCTime = !!(buf[9] & 0x01);
+	bool hasWeek = week != 1024;
 
+	enum GPS_TIME_FLAGS flags;
+	flags = (testMode ? 0 : GPS_TIME_FLAG_NON_TEST_MODE) |
+		(hasGpsTime ? GPS_TIME_FLAG_HAS_GPS_TIME : 0) |
+		(hasWeek ? GPS_TIME_FLAG_HAS_WEEK : 0) |
+		(hasOffset ? GPS_TIME_FLAG_HAS_OFFSET : 0) |
+		(isUTCTime ? GPS_TIME_FLAG_IS_UTC : 0);
+	atomic_store(&GPS_timeFlags, flags);
+#if 0
 	enum GPS_TIME_STATUS stat = preGpsTime ? GPS_TIME_PRE : hasGpsTime ? GPS_TIME_FULL : GPS_TIME_NONE;
 
 	if (!testMode) {
@@ -154,6 +139,7 @@ static void timeFrame(const uint8_t * buf)
 		const uint8_t setio3[] = { 0x10, 0x8e, 0xa2, 0x10, 0x03 };
 		(void)write(fd, setio3, sizeof setio3);
 	}*/
+#endif
 }
 
 #define R2D 57.2957795130823208767981548141051703
@@ -167,6 +153,7 @@ static void posFrame(const uint8_t * buf)
 	bool antError = !!(alarms & 3);
 	bool fixes = buf[12] == 0;
 
+#if 0
 	pthread_mutex_lock(&GPS_gps.mutex);
 	if (antError != GPS_gps.antennaError)
 		printf("GPS: antennaError changed from %d to %d\n", GPS_gps.antennaError, antError);
@@ -178,22 +165,7 @@ static void posFrame(const uint8_t * buf)
 	GPS_gps.latitude = latitude;
 	GPS_gps.longitude = longitude;
 	pthread_mutex_unlock(&GPS_gps.mutex);
-}
-
-static void statFrame(const uint8_t * buf)
-{
-
-}
-
-static void ioFrame(const uint8_t * buf)
-{
-	printf("GPS: I/O %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "\n",
-		buf[1], buf[2], buf[3], buf[4]);
-}
-
-static void ioFrame2(const uint8_t * buf)
-{
-	printf("GPS: I/O2 %02" PRIx8 "\n", buf[1]);
+#endif
 }
 
 static void UART_open(const char * uart)

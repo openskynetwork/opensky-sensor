@@ -19,7 +19,8 @@ SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	adsb.c adsb.h buffer.h buffer.c network.h network.c cfgfile.h cfgfile.c \
 	statistics.h statistics.c tb.h tb.c recv.h recv.c \
 	input.h net_common.h net_common.c util.h util.c \
-	component.h component.c threads.h relay.h relay.c message.h message.c
+	component.h component.c threads.h relay.h relay.c message.h message.c \
+	gps.h gps.c
 
 wd_SOURCES = gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	cfgfile.h cfgfile.c util.h util.c wd-main.c
