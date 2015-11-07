@@ -79,16 +79,16 @@ static void mainloop()
 				if (len == 69)
 					posFrame(buf + 1);
 				break;
-			case 0xa2:
+			/*case 0xa2:
 				if (len == 3)
-					ioFrame2(buf + 1);
+					ioFrame2(buf + 1);*/
 			}
 			break;
 		case 0x46:
-			statFrame(buf);
+			//statFrame(buf);
 			break;
 		case 0x55:
-			ioFrame(buf);
+			//ioFrame(buf);
 			break;
 		}
 	}
@@ -111,7 +111,7 @@ static void timeFrame(const uint8_t * buf)
 		(hasWeek ? GPS_TIME_FLAG_HAS_WEEK : 0) |
 		(hasOffset ? GPS_TIME_FLAG_HAS_OFFSET : 0) |
 		(isUTCTime ? GPS_TIME_FLAG_IS_UTC : 0);
-	atomic_store(&GPS_timeFlags, flags);
+	atomic_store_explicit(&GPS_timeFlags, flags, memory_order_relaxed);
 #if 0
 	enum GPS_TIME_STATUS stat = preGpsTime ? GPS_TIME_PRE : hasGpsTime ? GPS_TIME_FULL : GPS_TIME_NONE;
 

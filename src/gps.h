@@ -25,7 +25,7 @@ enum GPS_TIME_FLAGS {
 inline enum GPS_TIME_FLAGS GPS_getTimeFlags()
 {
 	extern _Atomic enum GPS_TIME_FLAGS GPS_timeFlags;
-	return atomic_load_explicit(&GPS_timeFlags, memory_order_consume);
+	return atomic_load_explicit(&GPS_timeFlags, memory_order_relaxed);
 }
 
 #endif
