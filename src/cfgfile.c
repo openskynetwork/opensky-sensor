@@ -56,6 +56,8 @@ enum SECTION {
 	SECTION_DEVICE,
 	/** Section Statistics */
 	SECTION_STAT,
+	/** Section GPS */
+	SECTION_GPS,
 
 	/** Number of sections */
 	SECTIONS
@@ -89,6 +91,7 @@ static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionSTAT(const struct Option * opt, struct CFG_Config * cfg);
+static void scanOptionGPS(const struct Option * opt, struct CFG_Config * cfg);
 
 /** Description of all sections */
 static const struct Section sections[] = {
@@ -101,6 +104,7 @@ static const struct Section sections[] = {
 	[SECTION_BUF] = { "BUFFER", &scanOptionBUF },
 	[SECTION_DEVICE] = { "DEVICE", &scanOptionDEV },
 	[SECTION_STAT] = { "STATISTICS", &scanOptionSTAT },
+	[SECTION_GPS] = { "GPS", &scanOptionGPS },
 };
 
 /** Read and check a configuration file.
@@ -446,6 +450,35 @@ static void scanOptionSTAT(const struct Option * opt, struct CFG_Config * cfg)
 		unknownKey(opt);
 }
 
+/** Scan GPS Section.
+ * \param opt option to be parsed
+ * \param cfg configuration to be filled
+ */
+static void scanOptionGPS(const struct Option * opt, struct CFG_Config * cfg)
+{
+	/* TODO: use gps specific compilation flags? */
+	if (isOption(opt, "uart")) {
+#ifndef NETWORK
+		parseString(opt, cfg->gps.uart, sizeof cfg->gps.uart);
+#endif
+	} else if (isOption(opt, "host")) {
+#ifdef NETWORK
+		parseString(opt, cfg->gps.host, sizeof cfg->gps.host);
+#endif
+	} else if (isOption(opt, "port")) {
+#ifdef NETWORK
+		uint_fast32_t n = parseInt(opt);
+		if (n > 0xffff)
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+			": port must be < 65535", bufferLine);
+		cfg->gps.port = n;
+#endif
+	} else if (isOption(opt, "reconnectInterval"))
+		cfg->gps.reconnectInterval = parseInt(opt);
+	else
+		unknownKey(opt);
+}
+
 /** Scan an option line.
  * \param sect index to current section
  * \param cfg configuration to be filled
@@ -569,6 +602,14 @@ static void loadDefaults(struct CFG_Config * cfg)
 
 	cfg->stats.enabled = true;
 	cfg->stats.interval = 600;
+
+#ifdef NETWORK
+	strncpy(cfg->gps.host, "localhost", sizeof cfg->gps.host);
+	cfg->gps.port = 30003; /* TODO */
+#else
+	strncpy(cfg->gps.uart, "/dev/ttyO2", sizeof cfg->gps.uart);
+#endif
+	cfg->gps.reconnectInterval = 10;
 }
 
 static void fix(struct CFG_Config * cfg)
@@ -585,7 +626,6 @@ static void fix(struct CFG_Config * cfg)
 		fprintf(stderr, "Configuration warning: WATCHDOG.enabled is ignored in "
 			"network mode\n");
 	}
-
 #endif
 
 	if (cfg->buf.statBacklog < 2) {
@@ -632,12 +672,12 @@ static void check(const struct CFG_Config * cfg)
 
 #ifdef NETWORK
 	if (cfg->input.host[0] == '\0')
-		error(EXIT_FAILURE, 0, "Configuration error: ADSB.host is empty");
+		error(EXIT_FAILURE, 0, "Configuration error: INPUT.host is empty");
 	if (cfg->input.port == 0)
-		error(EXIT_FAILURE, 0, "Configuration error: ADSB.port = 0");
+		error(EXIT_FAILURE, 0, "Configuration error: INPUT.port = 0");
 #else
 	if (cfg->input.uart[0] == '\0')
-		error(EXIT_FAILURE, 0, "Configuration error: ADSB.uart is empty");
+		error(EXIT_FAILURE, 0, "Configuration error: INPUT.uart is empty");
 #endif
 
 	if (!cfg->dev.serialSet)
@@ -645,5 +685,15 @@ static void check(const struct CFG_Config * cfg)
 
 	if (cfg->stats.interval == 0)
 		error(EXIT_FAILURE, 0, "Configuration error: STATISTICS.interval is 0");
+
+#ifdef NETWORK
+	if (cfg->gps.host[0] == '\0')
+		error(EXIT_FAILURE, 0, "Configuration error: GPS.host is empty");
+	if (cfg->gps.port == 0)
+		error(EXIT_FAILURE, 0, "Configuration error: GPS.port = 0");
+#else
+	if (cfg->gps.uart[0] == '\0')
+		error(EXIT_FAILURE, 0, "Configuration error: GPS.uart is empty");
+#endif
 }
 

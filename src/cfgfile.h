@@ -69,6 +69,18 @@ struct CFG_STATS {
 	uint32_t interval;
 };
 
+struct CFG_GPS {
+	union {
+		char uart[PATH_MAX];
+		struct {
+			char host[NI_MAXHOST];
+			uint16_t port;
+		};
+	};
+
+	uint32_t reconnectInterval;
+};
+
 struct CFG_Config {
 	struct CFG_WD wd;
 	struct CFG_FPGA fpga;
@@ -78,6 +90,7 @@ struct CFG_Config {
 	struct CFG_BUF buf;
 	struct CFG_DEV dev;
 	struct CFG_STATS stats;
+	struct CFG_GPS gps;
 };
 
 extern struct CFG_Config CFG_config;
