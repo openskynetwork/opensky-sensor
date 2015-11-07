@@ -20,7 +20,7 @@ SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	statistics.h statistics.c tb.h tb.c recv.h recv.c \
 	input.h net_common.h net_common.c util.h util.c \
 	component.h component.c threads.h relay.h relay.c message.h message.c \
-	gps.h gps.c
+	gps.h gps.c gps_input.h gps_input_uart.c gps_parser.h gps_parser.c
 
 wd_SOURCES = gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	cfgfile.h cfgfile.c util.h util.c wd-main.c
