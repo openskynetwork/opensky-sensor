@@ -304,8 +304,9 @@ static inline bool discardAndFill()
 	}
 }
 
-/** Consume next character from buffer.
- * \return next character in buffer
+/** Consume next symbol from buffer.
+ * \param ch pointer to returned next symbol
+ * \return false if reading new data failed, true otherwise
  */
 static inline bool next(uint8_t * ch)
 {
@@ -319,7 +320,8 @@ static inline bool next(uint8_t * ch)
 }
 
 /** Synchronize buffer.
- * \note After calling that, the next call to next() or peek() will return 0x1a.
+ * \return false if reading new data failed, true otherwise
+ * \note After calling that, *bufCur == 0x1a will hold.
  */
 static inline bool synchronize()
 {

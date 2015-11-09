@@ -81,7 +81,7 @@ size_t GPS_PARSER_getFrame(uint8_t * buf, size_t bufLen)
 			NOC_fprintf(stderr, "GPS: Out of Sync: got 0x%2d instead of "
 				"0x10\n", sync);
 			//++STAT_stats.ADSB_outOfSync; TODO
-			if (!synchronize())
+			if (unlikely(!synchronize()))
 				return false;
 		}
 
@@ -91,7 +91,8 @@ decode_frame:
 		if (unlikely(!next(buf)))
 			return false;
 		if (unlikely(*buf == 0x03)) {
-			/* TODO: resync */
+			if (unlikely(!synchronize()))
+				return false;
 			continue;
 		}
 		size_t len = bufLen;
@@ -103,6 +104,8 @@ decode_frame:
 			return 0;
 		} else if (unlikely(rs == DECODE_STATUS_BUFFER_FULL)) {
 			/* TODO */
+			if (unlikely(!synchronize()))
+				return false;
 			continue;
 		}
 		return len;
@@ -111,41 +114,47 @@ decode_frame:
 
 static inline enum DECODE_STATUS decode(uint8_t * dst, size_t * len)
 {
+	/* destination buffer length */
 	size_t dstLen = *len;
+	/* start of destination buffer */
 	uint8_t * const dstStart = dst;
 
 	do {
 		if (unlikely(bufCur == bufEnd)) {
-			/* current buffer is empty: fill it again */
+			/* buffer is empty: fill it again */
 			if (unlikely(!discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
 		}
-		/* search escape in the current buffer end up to the expected frame
-		 * length */
+		/* search sync in the current buffer end up to remaining destination
+		 * buffer length */
 		size_t rbuf = bufEnd - bufCur;
 		size_t mlen = rbuf <= dstLen ? rbuf : dstLen;
-		uint8_t * esc = memchr(bufCur, '\x10', mlen);
-		if (likely(esc)) {
-			/* escape found: copy buffer up to escape, if applicable */
-			if (likely(esc != bufCur)) {
-				memcpy(dst, bufCur, esc - bufCur);
-				dst += esc - bufCur;
-				dstLen -= esc - bufCur;
+		uint8_t * sync = memchr(bufCur, '\x10', mlen);
+		if (likely(sync)) {
+			/* sync found: copy buffer up to escape, if applicable */
+			size_t syncLen = sync - bufCur;
+			if (likely(syncLen)) {
+				memcpy(dst, bufCur, syncLen);
+				dst += syncLen;
+				dstLen -= syncLen;
 			}
 
-			/* discard escape */
-			bufCur = esc + 1;
+			/* consume symbols, discard sync */
+			bufCur = sync + 1;
 
-			/* Peek the next symbol. */
+			/* peek next symbol */
 			if (unlikely(bufCur == bufEnd && !discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
 			if (likely(*bufCur == '\x03')) {
-				/* frame end: return */
+				/* frame end: discard symbol and return */
+				++bufCur;
 				*len = dst - dstStart;
 				return DECODE_STATUS_OK;
 			}
 			if (likely(*bufCur == '\x10')) {
-				/* it's another escape -> append escape */
+				/* it's another sync -> append escape */
+				if (unlikely(!dstLen))
+					break;
 				*dst++ = '\x10';
 				--dstLen;
 				++bufCur;
@@ -160,8 +169,9 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t * len)
 			bufCur += mlen;
 			dstLen -= mlen;
 		}
-		/* loop as there are symbols left */
+		/* loop as there is still some space in the destination buffer */
 	} while (likely(dstLen));
+	/* destination buffer is full */
 	return DECODE_STATUS_BUFFER_FULL;
 }
 
@@ -178,8 +188,9 @@ static inline bool discardAndFill()
 	}
 }
 
-/** Consume next character from buffer.
- * \return next character in buffer
+/** Consume next symbol from buffer.
+ * \param ch pointer to returned next symbol
+ * \return false if reading new data failed, true otherwise
  */
 static inline bool next(uint8_t * ch)
 {
@@ -193,14 +204,15 @@ static inline bool next(uint8_t * ch)
 }
 
 /** Synchronize buffer.
- * \note After calling that, the next call to next() or peek() will return 0x10.
+ * \return false if reading new data failed, true otherwise
+ * \note After calling that, *bufCur == 0x10 will hold.
  */
 static inline bool synchronize()
 {
 	do {
-		uint8_t * esc = memchr(bufCur, 0x10, bufEnd - bufCur);
-		if (likely(esc)) {
-			bufCur = esc;
+		uint8_t * sync = memchr(bufCur, 0x10, bufEnd - bufCur);
+		if (likely(sync)) {
+			bufCur = sync;
 			return true;
 		}
 	} while (likely(discardAndFill()));
