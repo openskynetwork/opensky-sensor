@@ -301,8 +301,9 @@ static inline bool discardAndFill()
 	}
 }
 
-/** Consume next character from buffer.
- * \return next character in buffer
+/** Consume next symbol from buffer.
+ * \param ch pointer to returned next symbol
+ * \return false if reading new data failed, true otherwise
  */
 static inline bool next(uint8_t * ch)
 {
@@ -316,7 +317,10 @@ static inline bool next(uint8_t * ch)
 }
 
 /** Synchronize buffer.
- * \note After calling that, the next call to next() or peek() will return 0x1a.
+ * \return false if reading new data failed, true otherwise
+ * \note After calling that, *bufCur will be the first byte of the frame
+ * \note It is also guaranteed, that bufCur != bufEnd
+ * \note Furthermore, *bufCur != 0x1a, because a frame cannot start with \x1a
  */
 static inline bool synchronize()
 {
