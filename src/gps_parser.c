@@ -90,25 +90,27 @@ decode_frame:
 		/* decode type */
 		if (unlikely(!next(buf)))
 			return false;
-		if (unlikely(*buf == 0x03)) {
-			if (unlikely(!synchronize()))
-				return false;
-			continue;
-		}
+		assert(*buf != 0x03);
 		size_t len = bufLen;
 		enum DECODE_STATUS rs = decode(buf, &len);
-		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
-			//++STAT_stats.ADSB_outOfSync; TODO
-			goto decode_frame;
-		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL)) {
-			return 0;
-		} else if (unlikely(rs == DECODE_STATUS_BUFFER_FULL)) {
-			/* TODO */
-			if (unlikely(!synchronize()))
-				return false;
-			continue;
+		if (likely(rs == DECODE_STATUS_OK)) {
+			return len;
+		} else {
+			switch (rs) {
+			case DECODE_STATUS_RESYNC:
+				//++STAT_stats.ADSB_outOfSync; TODO
+				goto decode_frame;
+			case DECODE_STATUS_CONNFAIL:
+				return 0;
+			case DECODE_STATUS_BUFFER_FULL:
+				/* TODO */
+				if (unlikely(!synchronize()))
+					return false;
+				break;
+			default:
+				assert(false);
+			}
 		}
-		return len;
 	}
 }
 
@@ -188,6 +190,19 @@ static inline bool discardAndFill()
 	}
 }
 
+/** Discard buffer content and fill it again. */
+static inline bool discardAndFillAt(off_t offset)
+{
+	size_t rc = GPS_INPUT_read(buf + offset, sizeof buf - offset);
+	if (unlikely(rc == 0)) {
+		return false;
+	} else {
+		bufCur = buf;
+		bufEnd = buf + rc + offset;
+		return true;
+	}
+}
+
 /** Consume next symbol from buffer.
  * \param ch pointer to returned next symbol
  * \return false if reading new data failed, true otherwise
@@ -205,15 +220,36 @@ static inline bool next(uint8_t * ch)
 
 /** Synchronize buffer.
  * \return false if reading new data failed, true otherwise
- * \note After calling that, *bufCur == 0x10 will hold.
+ * \note After calling that, *bufCur == 0x10 will hold. Also, bufCur[1] won't
+ *  be 0x10 or 0x03.
  */
 static inline bool synchronize()
 {
 	do {
-		uint8_t * sync = memchr(bufCur, 0x10, bufEnd - bufCur);
+		uint8_t * sync;
+redo:
+		sync = memchr(bufCur, 0x10, bufEnd - bufCur);
 		if (likely(sync)) {
+			/* found sync symbol, discard everything before it */
 			bufCur = sync;
-			return true;
+
+			/* peek next */
+			if (unlikely(bufCur + 1 == bufEnd)) {
+				/* we have to receive more data to peek */
+				if (unlikely(!discardAndFillAt(1)))
+					return false;
+				*bufCur = 0x10;
+			}
+
+			if (unlikely(bufCur[1] == 0x10 || bufCur[1] == 0x03)) {
+				/* next symbol is an escaped sync or an end-of-frame symbol
+				 * -> discard both and try again */
+				bufCur += 2;
+				if (bufCur != bufEnd)
+					goto redo;
+			} else {
+				return true;
+			}
 		}
 	} while (likely(discardAndFill()));
 	return false;
