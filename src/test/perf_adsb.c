@@ -16,7 +16,7 @@ struct CFG_Config CFG_config;
 int main()
 {
 	struct ADSB_Frame frame;
-	char buf[46];
+	uint8_t buf[46];
 	size_t len = INPUT_buildFrame(buf, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
 		-10, "abcdefghijklmn", 14);
 	INPUT_setBuffer(buf, len);
