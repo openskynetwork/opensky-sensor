@@ -8,7 +8,9 @@
 #include <util.h>
 #include <assert.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <threads.h>
+
 
 enum DECODE_STATUS {
 	DECODE_STATUS_OK,
@@ -72,15 +74,14 @@ size_t GPS_PARSER_getFrame(uint8_t * buf, size_t bufLen)
 	assert (bufLen > 0);
 	while (true) {
 		/* synchronize */
-		while (true) {
-			uint8_t sync;
-			if (unlikely(!next(&sync)))
-				return false;
-			if (sync == 0x10)
-				break;
-			NOC_fprintf(stderr, "GPS: Out of Sync: got 0x%2d instead of "
-				"0x10\n", sync);
-			//++STAT_stats.ADSB_outOfSync; TODO
+		uint8_t sync;
+		if (unlikely(!next(&sync)))
+			return false;
+		if (unlikely(sync != 0x10)) {
+			NOC_fprintf(stderr, "GPS: Out of Sync: got 0x%2" PRIx8
+				" instead of 0x10\n", sync);
+			//++STAT_stats.ADSB_outOfSync;
+synchronize:
 			if (unlikely(!synchronize()))
 				return false;
 		}
@@ -90,7 +91,12 @@ decode_frame:
 		/* decode type */
 		if (unlikely(!next(buf)))
 			return false;
-		assert(*buf != 0x03);
+		if (unlikely(*buf == 0x03)) {
+			NOC_puts("GPS: Out of Sync: got unescaped 0x03 in frame, "
+				"resynchronizing");
+			//++STAT_stats.ADSB_outOfSync;
+			goto synchronize;
+		}
 		size_t len = bufLen;
 		enum DECODE_STATUS rs = decode(buf, &len);
 		if (likely(rs == DECODE_STATUS_OK)) {
@@ -103,10 +109,8 @@ decode_frame:
 			case DECODE_STATUS_CONNFAIL:
 				return 0;
 			case DECODE_STATUS_BUFFER_FULL:
-				/* TODO */
-				if (unlikely(!synchronize()))
-					return false;
-				break;
+				/* TODO: stats */
+				goto synchronize;
 			default:
 				assert(false);
 			}
@@ -190,19 +194,6 @@ static inline bool discardAndFill()
 	}
 }
 
-/** Discard buffer content and fill it again. */
-static inline bool discardAndFillAt(off_t offset)
-{
-	size_t rc = GPS_INPUT_read(buf + offset, sizeof buf - offset);
-	if (unlikely(rc == 0)) {
-		return false;
-	} else {
-		bufCur = buf;
-		bufEnd = buf + rc + offset;
-		return true;
-	}
-}
-
 /** Consume next symbol from buffer.
  * \param ch pointer to returned next symbol
  * \return false if reading new data failed, true otherwise
@@ -220,8 +211,10 @@ static inline bool next(uint8_t * ch)
 
 /** Synchronize buffer.
  * \return false if reading new data failed, true otherwise
- * \note After calling that, *bufCur == 0x10 will hold. Also, bufCur[1] won't
- *  be 0x10 or 0x03.
+ * \note After calling that, *bufCur will be the first byte of the frame
+ * \note It is also guaranteed, that bufCur != bufEnd
+ * \note Furthermore, *bufCur != 0x1a and *bufCur != 0x03, because a frame
+ *  cannot start with \x1a or \x03
  */
 static inline bool synchronize()
 {
@@ -230,21 +223,20 @@ static inline bool synchronize()
 redo:
 		sync = memchr(bufCur, 0x10, bufEnd - bufCur);
 		if (likely(sync)) {
-			/* found sync symbol, discard everything before it */
-			bufCur = sync;
+			/* found sync symbol, discard everything including the sync */
+			bufCur = sync + 1;
 
 			/* peek next */
-			if (unlikely(bufCur + 1 == bufEnd)) {
+			if (unlikely(bufCur == bufEnd)) {
 				/* we have to receive more data to peek */
-				if (unlikely(!discardAndFillAt(1)))
+				if (unlikely(!discardAndFill()))
 					return false;
-				*bufCur = 0x10;
 			}
 
-			if (unlikely(bufCur[1] == 0x10 || bufCur[1] == 0x03)) {
+			if (unlikely(*bufCur == 0x10 || *bufCur == 0x03)) {
 				/* next symbol is an escaped sync or an end-of-frame symbol
 				 * -> discard both and try again */
-				bufCur += 2;
+				++bufCur;
 				if (bufCur != bufEnd)
 					goto redo;
 			} else {
