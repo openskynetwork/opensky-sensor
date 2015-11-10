@@ -146,26 +146,25 @@ void ADSB_connect()
 
 bool ADSB_getFrame(struct ADSB_Frame * frame)
 {
+	frame->raw[0] = 0x1a;
+
 	while (true) {
 		/* synchronize */
-		while (true) {
-			uint8_t sync;
-			if (unlikely(!next(&sync)))
-				return false;
-			if (sync == 0x1a)
-				break;
-			NOC_fprintf(stderr, "ADSB: Out of Sync: got 0x%2d instead of "
-				"0x1a\n", sync);
+		uint8_t sync;
+		if (unlikely(!next(&sync)))
+			return false;
+		if (unlikely(sync != 0x1a)) {
+			NOC_fprintf(stderr, "ADSB: Out of Sync: got 0x%2" PRIx8
+				" instead of 0x1a\n", sync);
 			++STAT_stats.ADSB_outOfSync;
-			if (!synchronize())
+synchronize:
+			if (unlikely(!synchronize()))
 				return false;
 		}
 
-		/* decode frame */
-		frame->raw[0] = 0x1a;
+		/* decode type */
 		uint8_t type;
 decode_frame:
-		/* decode type */
 		if (unlikely(!next(&type)))
 			return false;
 		size_t payload_len;
@@ -183,24 +182,22 @@ decode_frame:
 			payload_len = 14;
 		break;
 		case '\x1a': /* resynchronize */
-			++STAT_stats.ADSB_outOfSync;
 			NOC_puts("ADSB: Out of Sync: got unescaped 0x1a in frame, "
-				"treating as resynchronization");
-			goto decode_frame;
+				"resynchronizing");
+			++STAT_stats.ADSB_outOfSync;
+			goto synchronize;
 		default:
 			NOC_fprintf(stderr, "ADSB: Unknown frame type %c, "
 				"resynchronizing\n", type);
 			++STAT_stats.ADSB_frameTypeUnknown;
-			if (!synchronize())
-				return false;
-			continue;
+			goto synchronize;
 		}
 		frame->frameType = type - '1';
 		frame->payloadLen = payload_len;
 		frame->raw[1] = type;
 		frame->raw_len = 2;
 
-		/* read header */
+		/* decode header */
 		__attribute__((aligned(8))) union { uint8_t u8[7]; uint64_t u64; } hdr;
 		enum DECODE_STATUS rs = decode(hdr.u8, sizeof hdr.u8, frame);
 		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
@@ -324,10 +321,29 @@ static inline bool next(uint8_t * ch)
 static inline bool synchronize()
 {
 	do {
-		uint8_t * esc = memchr(bufCur, 0x1a, bufEnd - bufCur);
-		if (likely(esc)) {
-			bufCur = esc;
-			return true;
+		uint8_t * sync;
+redo:
+		sync = memchr(bufCur, 0x1a, bufEnd - bufCur);
+		if (likely(sync)) {
+			/* found sync symbol, discard everything including the sync */
+			bufCur = sync + 1;
+
+			/* peek next */
+			if (unlikely(bufCur == bufEnd)) {
+				/* we have to receive more data to peek */
+				if (unlikely(!discardAndFill()))
+					return false;
+			}
+
+			if (unlikely(*bufCur == 0x1a)) {
+				/* next symbol is an escaped sync
+				 * -> discard it and try again */
+				++bufCur;
+				if (bufCur != bufEnd)
+					goto redo;
+			} else {
+				return true;
+			}
 		}
 	} while (likely(discardAndFill()));
 	return false;
