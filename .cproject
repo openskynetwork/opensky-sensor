@@ -83,9 +83,6 @@
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="serocape.null.1234237767" name="serocape"/>
 	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Test">
@@ -94,5 +91,11 @@
 		<configuration configurationName="Default">
 			<resource resourceType="PROJECT" workspacePath="/serocape"/>
 		</configuration>
+	</storageModule>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.672002806;cdt.managedbuild.toolchain.gnu.base.672002806.72070667;cdt.managedbuild.tool.gnu.c.compiler.base.1632423604;cdt.managedbuild.tool.gnu.c.compiler.input.1218871380">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 	</storageModule>
 </cproject>

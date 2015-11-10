@@ -287,7 +287,7 @@ START_TEST(test_decode_escape)
 {
 	uint8_t frm[46];
 		struct TEST_Buffer buf = { .payload = frm };
-	const uint8_t msg[] =
+	const char msg[] =
 		"\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a";
 	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_LONG, UINT64_C(0x1a1a1a1a1a1a),
 		0x1a, msg, 14);
@@ -467,8 +467,7 @@ START_TEST(test_buffer_fail_start)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
-		2);
+	INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf.length = 0;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -486,8 +485,7 @@ START_TEST(test_buffer_fail_type)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
-		2);
+	INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf.length = 1;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -505,8 +503,7 @@ START_TEST(test_buffer_fail_header)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
-		2);
+	INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf.length = 4;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -524,8 +521,7 @@ START_TEST(test_buffer_fail_payload)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
-		2);
+	INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf.length = 10;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -543,8 +539,7 @@ START_TEST(test_buffer_fail_escape)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
-		"\x1a" "b", 2);
+	INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "\x1a" "b", 2);
 	buf.length = 9;
 	test.buffers = &buf;
 	test.nBuffers = 1;

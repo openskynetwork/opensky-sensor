@@ -32,6 +32,6 @@ struct TEST {
 extern struct TEST test;
 
 size_t INPUT_buildFrame(uint8_t * buf, enum ADSB_FRAME_TYPE type, uint64_t mlat,
-	int8_t siglevel, const uint8_t * payload, size_t payloadLen);
+	int8_t siglevel, const char * payload, size_t payloadLen);
 
 #endif
