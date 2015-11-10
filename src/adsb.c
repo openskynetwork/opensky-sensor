@@ -318,7 +318,9 @@ static inline bool next(uint8_t * ch)
 
 /** Synchronize buffer.
  * \return false if reading new data failed, true otherwise
- * \note After calling that, *bufCur == 0x1a will hold.
+ * \note After calling that, *bufCur will be the first byte of the frame
+ * \note It is also guaranteed, that bufCur != bufEnd
+ * \note Furthermore, *bufCur != 0x1a, because a frame cannot start with \x1a
  */
 static inline bool synchronize()
 {
