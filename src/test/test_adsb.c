@@ -629,9 +629,9 @@ START_TEST(test_buffer_end_escape)
 	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
 		"\x1a" "b", 2);
 	buf[0].payload = frm;
-	buf[0].length = 9;
-	buf[1].payload = frm + 9;
-	buf[1].length = len - 9;
+	buf[0].length = 10;
+	buf[1].payload = frm + 10;
+	buf[1].length = len - 10;
 	test.buffers = buf;
 	test.nBuffers = 2;
 
@@ -648,6 +648,26 @@ START_TEST(test_buffer_end_escape)
 	ck_assert(!memcmp(frame.payload, "\x1a" "b", 2));
 	ck_assert_uint_eq(frame.raw_len, len);
 	ck_assert(!memcmp(frame.raw, frm, len));
+}
+END_TEST
+
+START_TEST(test_buffer_end_escape_fail)
+{
+	uint8_t frm[46];
+	struct TEST_Buffer buf;
+	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
+		"\x1a" "b", 2);
+	buf.payload = frm;
+	buf.length = 10;
+	test.buffers = &buf;
+	test.nBuffers = 1;
+
+	ADSB_init(&cfg);
+	ADSB_connect();
+
+	struct ADSB_Frame frame;
+	bool ret = ADSB_getFrame(&frame);
+	ck_assert(!ret);
 }
 END_TEST
 
@@ -745,6 +765,22 @@ START_TEST(test_synchronize_peek_sync_at_end)
 }
 END_TEST
 
+START_TEST(test_synchronize_fail)
+{
+	char * frm = "a\x1a";
+	struct TEST_Buffer buf = { .payload = (uint8_t*)frm, .length = 2 };
+	test.buffers = &buf;
+	test.nBuffers = 1;
+
+	ADSB_init(&cfg);
+	ADSB_connect();
+
+	struct ADSB_Frame frame;
+	bool ret = ADSB_getFrame(&frame);
+	ck_assert(!ret);
+}
+END_TEST
+
 static Suite * adsb_suite()
 {
 	Suite * s = suite_create("ADSB");
@@ -804,6 +840,8 @@ static Suite * adsb_suite()
 	tcase_add_test(tc, test_buffer_end_start);
 	tcase_add_loop_test(tc, test_buffer_end, 1, 46);
 	tcase_add_test(tc, test_buffer_end_escape);
+	tcase_add_test(tc, test_buffer_end_escape_fail);
+	tcase_add_test(tc, test_synchronize_fail);
 	suite_add_tcase(s, tc);
 	return s;
 }
@@ -811,6 +849,7 @@ static Suite * adsb_suite()
 int main()
 {
 	SRunner * sr = srunner_create(adsb_suite());
+	//srunner_set_fork_status(sr, CK_NOFORK);
 	srunner_set_tap(sr, "-");
 	srunner_run_all(sr, CK_NORMAL);
 	srunner_free(sr);
