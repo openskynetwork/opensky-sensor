@@ -1,6 +1,7 @@
 #!/bin/sh
 
 mkdir build-aux m4
+libtoolize --copy
 aclocal
 autoheader
 autoconf

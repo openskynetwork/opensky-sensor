@@ -14,6 +14,15 @@ if WANT_WD
 bin_PROGRAMS += wd
 endif
 
+lib_LTLIBRARIES=libopensky.la
+
+libopensky_la_SOURCES=buffer.c buffer.h \
+	relay.h relay.c network.h network.c net_common.h net_common.c \
+	statistics.h statistics.c threads.h component.h component.c util.h util.c
+# version info: CURRENT (=iface version) : REVISION (internal changes only) : AGE (delta to last iface supported)
+libopensky_la_LDFLAGS=-version-info 0:0:0
+libopensky_la_CFLAGS=-fvisibility=hidden
+
 # common sources of openskyd
 SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	adsb.c adsb.h buffer.h buffer.c network.h network.c cfgfile.h cfgfile.c \

@@ -16,8 +16,8 @@ dnl required programs
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
-AC_PROG_RANLIB
 AM_PROG_AR
+AC_PROG_LIBTOOL
 
 dnl test for std headers
 AC_HEADER_STDC
