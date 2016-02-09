@@ -18,7 +18,8 @@ lib_LTLIBRARIES=libopensky.la
 
 libopensky_la_SOURCES=buffer.c buffer.h \
 	relay.h relay.c network.h network.c net_common.h net_common.c \
-	statistics.h statistics.c threads.h component.h component.c util.h util.c
+	statistics.h statistics.c threads.h component.h component.c util.h util.c \
+	opensky.h opensky.c
 # version info: CURRENT (=iface version) : REVISION (internal changes only) : AGE (delta to last iface supported)
 libopensky_la_LDFLAGS=-version-info 0:0:0
 libopensky_la_CFLAGS=-fvisibility=hidden
