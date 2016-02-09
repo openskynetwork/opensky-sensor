@@ -8,15 +8,17 @@
 #include <component.h>
 #include <network.h>
 #include <relay.h>
-
+#include <filter.h>
 #include <assert.h>
 #include <string.h>
 
+__attribute__((visibility("default")))
 void OPENSKY_configure()
 {
 
 }
 
+__attribute__((visibility("default")))
 void OPENSKY_start()
 {
 	COMP_register(&BUF_comp, NULL);
@@ -27,6 +29,7 @@ void OPENSKY_start()
 	COMP_startAll();
 }
 
+__attribute__((visibility("default")))
 void OPENSKY_stop()
 {
 	COMP_stopAll();
@@ -45,8 +48,12 @@ static inline void encode(uint8_t ** buf, const uint8_t * src, size_t len)
 		append(buf, *src++);
 }
 
+__attribute__((visibility("default")))
 void OPENSKY_frame(const struct OPENSKY_Frame * frame)
 {
+	if (FILTER_filter((const struct ADSB_Frame*)frame))
+		return;
+
 	struct ADSB_Frame * out = BUF_newFrame();
 	assert(out);
 	memcpy(out, frame, sizeof * frame);

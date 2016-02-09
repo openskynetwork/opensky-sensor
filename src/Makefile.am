@@ -19,10 +19,11 @@ lib_LTLIBRARIES=libopensky.la
 libopensky_la_SOURCES=buffer.c buffer.h \
 	relay.h relay.c network.h network.c net_common.h net_common.c \
 	statistics.h statistics.c threads.h component.h component.c util.h util.c \
-	opensky.h opensky.c
+	opensky.h opensky.c filter.h filter.c
 # version info: CURRENT (=iface version) : REVISION (internal changes only) : AGE (delta to last iface supported)
 libopensky_la_LDFLAGS=-version-info 0:0:0
 libopensky_la_CFLAGS=-fvisibility=hidden
+include_HEADERS=opensky.h
 
 # common sources of openskyd
 SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
@@ -30,8 +31,9 @@ SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	statistics.h statistics.c tb.h tb.c recv.h recv.c \
 	input.h net_common.h net_common.c util.h util.c \
 	component.h component.c threads.h relay.h relay.c message.h message.c \
-	gps.h gps.c gps_input.h gps_input_uart.c gps_parser.h gps_parser.c
-
+	gps.h gps.c gps_input.h gps_input_uart.c gps_parser.h gps_parser.c \
+	filter.h filter.c
+	
 wd_SOURCES = gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	cfgfile.h cfgfile.c util.h util.c wd-main.c
 
