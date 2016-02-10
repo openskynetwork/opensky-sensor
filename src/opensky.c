@@ -13,10 +13,12 @@
 #include <string.h>
 #include <util.h>
 #include <cfgfile.h>
+#include <error.h>
+#include <stdlib.h>
 
 struct CFG_Config CFG_config;
 
-static bool configured;
+static bool configured = false;
 static bool running = false;
 
 __attribute__((visibility("default")))
@@ -51,21 +53,21 @@ void OPENSKY_configure()
 __attribute__((visibility("default")))
 void OPENSKY_start()
 {
-	if (!configured)
-		OPENSKY_configure();
+	if (unlikely(!configured))
+		error(EXIT_FAILURE, 0, "OpenSky: call OPENSKY_configure first");
 
 	FILTER_reset();
 
-	if (configured) {
-		COMP_register(&BUF_comp, NULL);
-		COMP_register(&NET_comp, NULL);
-		COMP_register(&RELAY_comp, NULL);
+	COMP_register(&BUF_comp, NULL);
+	COMP_register(&NET_comp, NULL);
+	COMP_register(&RELAY_comp, NULL);
 
-		COMP_initAll();
-		COMP_startAll();
+	COMP_setSilent(true);
 
-		running = true;
-	}
+	COMP_initAll();
+	COMP_startAll();
+
+	running = true;
 }
 
 __attribute__((visibility("default")))
@@ -145,7 +147,7 @@ void OPENSKY_frame(const struct OPENSKY_Frame * frame)
 	encode(&ptr, ((uint8_t*)&mlat) + 2, 6);
 
 	append(&ptr, frame->siglevel);
-	encode(&ptr, (const uint8_t*)frame->payload, frame->payloadLen);
+	encode(&ptr, frame->payload, frame->payloadLen);
 
 	out->raw_len = ptr - raw;
 

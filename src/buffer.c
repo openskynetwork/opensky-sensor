@@ -18,7 +18,7 @@
 #include <util.h>
 
 /** Define to 1 to enable debugging messages */
-#define BUF_DEBUG 1
+//#define BUF_DEBUG 1
 
 /* Forward declaration */
 struct Pool;
@@ -533,7 +533,9 @@ static bool uncollectPools()
 static void destroyUnusedPools()
 {
 	struct Pool * pool, * prev = NULL, * next;
+#ifdef BUF_DEBUG
 	const size_t prevSize = dynIncrements;
+#endif
 
 	/* iterate over all dynamic pools */
 	for (pool = dynPools; pool; pool = next) {

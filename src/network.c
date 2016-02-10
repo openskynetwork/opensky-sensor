@@ -20,7 +20,11 @@
 #include <cfgfile.h>
 #include <util.h>
 
-#define DEBUG
+//#define DEBUG
+
+#ifndef PREFIX
+#define PREFIX "NET"
+#endif
 
 /** Networking socket */
 static volatile int sock = -1;
@@ -124,7 +128,7 @@ static bool doConnect()
 		sock = -1;
 	}
 
-	sock = NETC_connect("NET", CFG_config.net.host, CFG_config.net.port);
+	sock = NETC_connect(PREFIX, CFG_config.net.host, CFG_config.net.port);
 	return sock != -1;
 }
 
@@ -143,7 +147,7 @@ static void unlockIfLocked(bool * locked)
 void NET_sync_send()
 {
 #ifdef DEBUG
-	NOC_puts("NET: send synchronizing");
+	NOC_puts(PREFIX ": send synchronizing");
 #endif
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&unlock, NULL);
@@ -151,7 +155,7 @@ void NET_sync_send()
 		pthread_cond_wait(&condConnected, &mutex);
 	reconnectedSend = false;
 #ifdef DEBUG
-	NOC_puts("NET: send synchronized");
+	NOC_puts(PREFIX ": send synchronized");
 #endif
 	CLEANUP_POP();
 }
@@ -160,7 +164,7 @@ void NET_sync_send()
 void NET_sync_recv()
 {
 #ifdef DEBUG
-	NOC_puts("NET: recv synchronizing");
+	NOC_puts(PREFIX ": recv synchronizing");
 #endif
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&unlock, NULL);
@@ -168,7 +172,7 @@ void NET_sync_recv()
 		pthread_cond_wait(&condConnected, &mutex);
 	reconnectedRecv = false;
 #ifdef DEBUG
-	NOC_puts("NET: recv synchronized");
+	NOC_puts(PREFIX ": recv synchronized");
 #endif
 	CLEANUP_POP();
 }
@@ -177,7 +181,7 @@ static inline void emitDisconnect()
 {
 	shutdown(sock, SHUT_RDWR);
 #ifdef DEBUG
-	NOC_printf("NET: Disconnect Event. Connected: %d, inRecv: %d, inSend: "
+	NOC_printf(PREFIX ": Disconnect Event. Connected: %d, inRecv: %d, inSend: "
 		"%d -> ", connected, inRecv, inSend);
 #endif
 	if (!connected || (!inRecv && !inSend)) {
@@ -202,7 +206,7 @@ static inline bool sendDataUnlocked(const void * data, size_t len)
 
 	ssize_t rc = send(sock, data, len, MSG_NOSIGNAL);
 	if (unlikely(rc <= 0)) {
-		NOC_fprintf(stderr, "NET: could not send: %s\n",
+		NOC_fprintf(stderr, PREFIX ": could not send: %s\n",
 			rc == 0 ? "Connection lost" : strerror(errno));
 		++STAT_stats.NET_msgsFailed;
 		emitDisconnect();
@@ -230,7 +234,7 @@ static inline bool sendData(const void * data, size_t len)
 	locked = true;
 	CLEANUP_PUSH(&unlockIfLocked, &locked);
 	if (!connected || reconnectedSend) {
-		NOC_fprintf(stderr, "NET: could not send: %s\n",
+		NOC_fprintf(stderr, PREFIX ": could not send: %s\n",
 			!connected ? "not connected" : "unsynchronized");
 		++STAT_stats.NET_msgsFailed;
 		ret = false;
@@ -243,7 +247,7 @@ static inline bool sendData(const void * data, size_t len)
 		pthread_mutex_lock(&mutex);
 		inSend = false;
 		if (rc <= 0) {
-			NOC_fprintf(stderr, "NET: could not send: %s\n",
+			NOC_fprintf(stderr, PREFIX ": could not send: %s\n",
 				rc == 0 ? "Connection lost" : strerror(errno));
 			++STAT_stats.NET_msgsFailed;
 			emitDisconnect();
@@ -323,7 +327,7 @@ ssize_t NET_receive(uint8_t * buf, size_t len)
 	locked = true;
 	CLEANUP_PUSH(&unlockIfLocked, &locked);
 	if (!connected || reconnectedRecv) {
-		NOC_fprintf(stderr, "NET: could not receive: %s\n",
+		NOC_fprintf(stderr, PREFIX ": could not receive: %s\n",
 			!connected ? "not connected" : "unsynchronized");
 		++STAT_stats.NET_msgsRecvFailed;
 		ret = -1;
@@ -336,7 +340,7 @@ ssize_t NET_receive(uint8_t * buf, size_t len)
 		pthread_mutex_lock(&mutex);
 		inRecv = false;
 		if (unlikely(ret <= 0)) {
-			NOC_fprintf(stderr, "NET: could not receive: %s\n",
+			NOC_fprintf(stderr, PREFIX ": could not receive: %s\n",
 					ret == 0 ? "Connection lost" : strerror(errno));
 			++STAT_stats.NET_msgsRecvFailed;
 			emitDisconnect();
