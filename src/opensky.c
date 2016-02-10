@@ -36,16 +36,34 @@ void OPENSKY_stop()
 	COMP_destructAll();
 }
 
-static inline void append(uint8_t ** buf, uint8_t c)
+static inline void append(uint8_t ** out, uint8_t c)
 {
-	if ((*(*buf)++ = c) == 0x1a)
-		*(*buf)++ = 0x1a;
+	if ((*(*out)++ = c) == 0x1a)
+		*(*out)++ = 0x1a;
 }
 
-static inline void encode(uint8_t ** buf, const uint8_t * src, size_t len)
+static inline void encode(uint8_t ** out, const uint8_t * in, size_t len)
 {
-	while (len--)
-		append(buf, *src++);
+	if (unlikely(!len))
+		return;
+
+	uint8_t * ptr = *out;
+
+	while (true) {
+		/* TODO: better: overlap */
+		uint8_t * esc = memchr(in, '\x1a', len);
+		if (unlikely(esc)) {
+			memcpy(ptr, in, esc + 1 - in);
+			ptr += esc + 1 - in;
+			in = esc + 1;
+
+			*(ptr++) = '\x1a';
+		} else {
+			memcpy(ptr, in, len);
+			*out = ptr + len;
+			break;
+		}
+	}
 }
 
 __attribute__((visibility("default")))
@@ -58,18 +76,20 @@ void OPENSKY_frame(const struct OPENSKY_Frame * frame)
 	assert(out);
 	memcpy(out, frame, sizeof * frame);
 
-	uint8_t * buf = out->raw;
-	buf[0] = '\x1a';
-	buf[1] = frame->frameType + '1';
+	/* todo: LEN MUST FIT */
 
-	uint8_t * ptr = buf + 2;
+	uint8_t * raw = out->raw;
+	raw[0] = '\x1a';
+	raw[1] = frame->frameType + '1';
+
+	uint8_t * ptr = raw + 2;
 	uint64_t mlat = htobe64(frame->mlat);
 	encode(&ptr, ((uint8_t*)&mlat) + 2, 6);
 
 	append(&ptr, frame->siglevel);
 	encode(&ptr, (const uint8_t*)frame->payload, frame->payloadLen);
 
-	out->raw_len = ptr - buf;
+	out->raw_len = ptr - raw;
 
 	BUF_commitFrame(out);
 }
