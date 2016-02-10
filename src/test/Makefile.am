@@ -11,7 +11,7 @@ endif
 libtest_a_SOURCES = ../buffer.h ../buffer.c ../cfgfile.h \
 	../statistics.h ../statistics.c ../component.h ../component.c \
 	../util.h ../util.c ../message.h ../message.c ../adsb.h ../adsb.c \
-	../recv.h ../recv.c
+	../recv.h ../recv.c ../filter.h ../filter.c
 libtest_a_CFLAGS = $(AM_CFLAGS)
 
 AM_CFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@
@@ -36,7 +36,7 @@ perf_adsb_LDFLAGS =
 perf_buffer_SOURCES = perf_buffer.c input_perf.h input_perf.c \
 	../statistics.h ../statistics.c ../adsb.h ../adsb.c \
 	../buffer.h ../buffer.c ../component.h ../component.c \
-	../recv.h ../recv.c
+	../recv.h ../recv.c ../filter.h ../filter.c
 perf_buffer_CFLAGS = $(AM_CFLAGS)
 perf_buffer_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@
 perf_buffer_LDFLAGS = 
