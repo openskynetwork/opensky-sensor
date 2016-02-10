@@ -11,6 +11,7 @@
 #include <filter.h>
 #include <assert.h>
 #include <string.h>
+#include <util.h>
 
 __attribute__((visibility("default")))
 void OPENSKY_configure()
@@ -49,18 +50,28 @@ static inline void encode(uint8_t ** out, const uint8_t * in, size_t len)
 
 	uint8_t * ptr = *out;
 
+	/* first time: search for escape from in up to len */
+	uint8_t * esc = memchr(in, '\x1a', len);
 	while (true) {
-		/* TODO: better: overlap */
-		uint8_t * esc = memchr(in, '\x1a', len);
 		if (unlikely(esc)) {
+			/* if esc found: copy up to (including) esc */
 			memcpy(ptr, in, esc + 1 - in);
 			ptr += esc + 1 - in;
-			in = esc + 1;
-
-			*(ptr++) = '\x1a';
+			len -= esc + 1 - in;
+			in = esc; /* important: in points to the esc now */
 		} else {
+			/* no esc found: copy rest, fast return */
 			memcpy(ptr, in, len);
 			*out = ptr + len;
+			break;
+		}
+		if (len) {
+			/* still something to do: search for next escape, but
+			 * in points to the last esc -> skip it */
+			esc = memchr(in + 1, '\x1a', len - 1);
+		} else {
+			/* nothing to be done anymore: return */
+			*out = ptr;
 			break;
 		}
 	}
@@ -69,14 +80,16 @@ static inline void encode(uint8_t ** out, const uint8_t * in, size_t len)
 __attribute__((visibility("default")))
 void OPENSKY_frame(const struct OPENSKY_Frame * frame)
 {
+	struct ADSB_Frame * out;
+	if (unlikely(frame->payloadLen > ((sizeof out->raw) >> 1)))
+		return;
+
 	if (FILTER_filter((const struct ADSB_Frame*)frame))
 		return;
 
-	struct ADSB_Frame * out = BUF_newFrame();
+	out = BUF_newFrame();
 	assert(out);
 	memcpy(out, frame, sizeof * frame);
-
-	/* todo: LEN MUST FIT */
 
 	uint8_t * raw = out->raw;
 	raw[0] = '\x1a';
