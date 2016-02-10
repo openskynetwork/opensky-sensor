@@ -13,6 +13,9 @@ endif
 if WANT_WD
 bin_PROGRAMS += wd
 endif
+if WANT_EXAMPLES
+bin_PROGRAMS += opensky-lib-example
+endif
 
 lib_LTLIBRARIES=libopensky.la
 
@@ -24,6 +27,10 @@ libopensky_la_SOURCES=buffer.c buffer.h \
 libopensky_la_LDFLAGS=-version-info 0:0:0
 libopensky_la_CFLAGS=-fvisibility=hidden
 include_HEADERS=opensky.h
+
+opensky_lib_example_SOURCES=opensky-example.c
+opensky_lib_example_AM_CFLAGS=@PTHREAD_CFLAGS@
+opensky_lib_example_LDFLAGS=@PTHREAD_CFLAGS@ @PTHREAD_LIBS@ libopensky.la
 
 # common sources of openskyd
 SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \

@@ -121,6 +121,15 @@ AC_ARG_ENABLE([wd],
    esac], [wd=false])
 AM_CONDITIONAL([WANT_WD], [test x$wd = xtrue])
 
+AC_ARG_ENABLE([examples],
+  [AS_HELP_STRING([--enable-examples], [Build Library Examples @<:@no@:>@])],
+  [case "${enableval}" in
+    yes) libexamples=true ;;
+    no)  libexamples=false ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-examples]) ;;
+   esac], [libexamples=false])
+AM_CONDITIONAL([WANT_EXAMPLES], [test x$libexamples = xtrue])
+
 AC_ARG_ENABLE([talkback],
   [AS_HELP_STRING([--enable-talkback], [Enable talkback @<:@yes@:>@])],
   [case "${enableval}" in
@@ -172,8 +181,9 @@ AS_IF([test x"$with_pacman" != x"no"],
 AS_IF([test x"$with_pacman" != x"no"],
   [AC_DEFINE([WITH_PACMAN], [1], [Enable pacman integration])])
 
-AS_IF([test x$network = xfalse -a x$uart = xfalse -a x$wd = xfalse -a x$dummy = xfalse],
-  [AC_MSG_ERROR([No input layer chosen])])
+AS_IF([test x$network = xfalse -a x$uart = xfalse -a x$wd = xfalse -a x$dummy = xfalse \
+  -a x$libexamples = xfalse],
+  [AC_MSG_ERROR([Nothing to build])])
 
 AS_IF([test x$development = xtrue],
   [AC_DEFINE([DEVELOPMENT], [], [Enable development features])])
