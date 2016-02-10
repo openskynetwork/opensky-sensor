@@ -25,12 +25,13 @@ libopensky_la_SOURCES=buffer.c buffer.h \
 	opensky.h opensky.c filter.h filter.c
 # version info: CURRENT (=iface version) : REVISION (internal changes only) : AGE (delta to last iface supported)
 libopensky_la_LDFLAGS=-version-info 0:0:0
-libopensky_la_CFLAGS=-fvisibility=hidden
+libopensky_la_CFLAGS=-fvisibility=hidden -DPREFIX=\"OpenSky\"
 include_HEADERS=opensky.h
 
 opensky_lib_example_SOURCES=opensky-example.c
 opensky_lib_example_AM_CFLAGS=@PTHREAD_CFLAGS@
-opensky_lib_example_LDFLAGS=@PTHREAD_CFLAGS@ @PTHREAD_LIBS@ libopensky.la
+opensky_lib_example_LDFLAGS=@PTHREAD_CFLAGS@ @PTHREAD_LIBS@
+opensky_lib_example_LDADD=libopensky.la
 
 # common sources of openskyd
 SOURCES = main.c gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
