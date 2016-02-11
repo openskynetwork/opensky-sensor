@@ -1,0 +1,14 @@
+Schnittstellen:
+
+-- Zur Library --
+- configure(opensky config struct):
+  - puffer: mit historie, maximum
+  - Berechtigung: nur ext squitter, nur long, long & short, ac, fec, crc
+- status(opensky status struct):
+  - synchronisationsstatus gps
+- frame(opensky frame struct):
+- start: zuvor muss configure aufgerufen worden sein
+- stop
+
+-- Von Library --
+- setzen von frame filtern auf fpga
