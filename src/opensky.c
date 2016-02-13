@@ -96,26 +96,29 @@ static inline void encode(uint8_t ** out, const uint8_t * in, size_t len)
 
 	/* first time: search for escape from in up to len */
 	uint8_t * esc = memchr(in, '\x1a', len);
+	--len;
 	while (true) {
 		if (unlikely(esc)) {
 			/* if esc found: copy up to (including) esc */
 			memcpy(ptr, in, esc + 1 - in);
 			ptr += esc + 1 - in;
-			len -= esc + 1 - in;
+			len -= esc - in;
 			in = esc; /* important: in points to the esc now */
 		} else {
 			/* no esc found: copy rest, fast return */
-			memcpy(ptr, in, len);
-			*out = ptr + len;
+			memcpy(ptr, in, len + 1);
+			*out = ptr + len + 1;
 			break;
 		}
-		if (len) {
-			/* still something to do: search for next escape, but
-			 * in points to the last esc -> skip it */
-			esc = memchr(in + 1, '\x1a', len - 1);
+		if (likely(len)) {
+			esc = memchr(in + 1, '\x1a', len);
 		} else {
-			/* nothing to be done anymore: return */
-			*out = ptr;
+			/* nothing more to do, but the last \x1a is still to be copied.
+			 * instead of setting esc = NULL and re-iterating, we do things
+			 * faster here.
+			 */
+			*ptr = '\x1a';
+			*out = ptr + 1;
 			break;
 		}
 	}
