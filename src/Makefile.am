@@ -45,9 +45,7 @@ if !DEVELOPMENT
 AM_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"' -DFWDIR='"$(libdir)"'
 endif
 
-# Network needs another flag. Do this also with openskyd-uart, so object files
-#  will be named properly
-#openskyd_CPPFLAGS = $(AM_CPPFLAGS)
+# WD needs other flags
 wd_CPPFLAGS = -DWD_ONLY
 
 # data files
