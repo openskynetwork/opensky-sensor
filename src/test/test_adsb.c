@@ -655,7 +655,7 @@ START_TEST(test_buffer_end_escape_fail)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf;
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
+	INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
 		"\x1a" "b", 2);
 	buf.payload = frm;
 	buf.length = 10;

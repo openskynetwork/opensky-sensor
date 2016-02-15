@@ -102,5 +102,9 @@
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.672002806;cdt.managedbuild.toolchain.gnu.base.672002806.72070667;cdt.managedbuild.tool.gnu.c.compiler.base.1632423604;cdt.managedbuild.tool.gnu.c.compiler.input.1218871380">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.672002806.516674183;cdt.managedbuild.toolchain.gnu.base.672002806.516674183.;cdt.managedbuild.tool.gnu.c.compiler.base.1488666301;cdt.managedbuild.tool.gnu.c.compiler.input.641443763">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

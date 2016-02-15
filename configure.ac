@@ -1,5 +1,5 @@
 dnl initialize autoconf
-AC_INIT(openskyd, 1.0.2)
+AC_INIT(openskyd, 1.0.3)
 
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR([build-aux])
@@ -85,32 +85,21 @@ AC_ARG_ENABLE([test-coverage],
    esac], [test_coveraget=false])
 AM_CONDITIONAL([TEST_COVERAGE], [test x$test_coverage = xtrue])
 
-AC_ARG_ENABLE([network],
-  [AS_HELP_STRING([--enable-network], [Build network input layer @<:@no@:>@])],
+AC_ARG_ENABLE([input],
+  [AS_HELP_STRING([--enable-input],
+    [Select input layer (one of none, uart, network, dummy) @<:@uart@:>@])],
   [case "${enableval}" in
-    yes) network=true ;;
-    no)  network=false ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-network]) ;;
-   esac], [network=false])
-AM_CONDITIONAL([WANT_NETWORK], [test x$network = xtrue])
-
-AC_ARG_ENABLE([uart],
-  [AS_HELP_STRING([--enable-uart], [Build uart input layer @<:@yes@:>@])],
-  [case "${enableval}" in
-    yes) uart=true ;;
-    no)  uart=false ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-uart]) ;;
-   esac], [uart=true])
-AM_CONDITIONAL([WANT_UART], [test x$uart = xtrue])
-
-AC_ARG_ENABLE([dummy],
-  [AS_HELP_STRING([--enable-dummy], [Build dummy input layer @<:@no@:>@])],
-  [case "${enableval}" in
-    yes) dummy=true ;;
-    no)  dummy=false ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-dummy]) ;;
-   esac], [dummy=false])
-AM_CONDITIONAL([WANT_DUMMY], [test x$dummy = xtrue])
+    none) input=; daemon=false;;
+    uart|network|dummy) input=$enableval; daemon=true;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-input]) ;;
+   esac], [input=uart;daemon=true])
+INPUT_LAYER=$input
+AC_SUBST([INPUT_LAYER])
+DEF_INPUT_LAYER=INPUT_LAYER_`echo $INPUT_LAYER | tr '[[:lower:]]' '[[:upper:]]'`
+AM_CONDITIONAL([WANT_DAEMON], [test x$daemon = xtrue])
+AS_IF([test x$input = xuart], [AC_DEFINE([INPUT_LAYER_UART], [1], [Input Layer: UART])])
+AS_IF([test x$input = xnetwork], [AC_DEFINE([INPUT_LAYER_NETWORK], [1], [Input Layer: Network])])
+AS_IF([test x$input = xdummy], [AC_DEFINE([INPUT_LAYER_DUMMY], [1], [Input Layer: Dummy])])
 
 AC_ARG_ENABLE([wd],
   [AS_HELP_STRING([--enable-wd], [Build Watchdog Daemon @<:@no@:>@])],
@@ -139,6 +128,17 @@ AC_ARG_ENABLE([cleanup],
    esac], [cleanup=yes])
 AS_IF([test x"$cleanup" = x"yes"],
   [AC_DEFINE([CLEANUP], [1], [Add cleanup routines])])
+
+AC_ARG_ENABLE([standalone],
+  [AS_HELP_STRING([--enable-standalone], [Enable standalone features @<:@yes@:>@])],
+  [case "${enableval}" in
+    yes) standalone=true ;;
+    no)  standalone=false ;;
+     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-standalone]) ;;
+   esac], [standalone=true])
+AM_CONDITIONAL([STANDALONE], [test x$standalone = xtrue])
+AS_IF([test x$standalone = xtrue],
+  [AC_DEFINE([STANDALONE], [1], [Add standalone components])])
 
 AC_ARG_WITH([systemd],
   [AS_HELP_STRING([--with-systemd], [Compile with systemd integration @<:@check@:>@])],
@@ -171,9 +171,6 @@ AS_IF([test x"$with_pacman" != x"no"],
      [AC_MSG_ERROR([pacman required, but not found.])])])])
 AS_IF([test x"$with_pacman" != x"no"],
   [AC_DEFINE([WITH_PACMAN], [1], [Enable pacman integration])])
-
-AS_IF([test x$network = xfalse -a x$uart = xfalse -a x$wd = xfalse -a x$dummy = xfalse],
-  [AC_MSG_ERROR([No input layer chosen])])
 
 AS_IF([test x$development = xtrue],
   [AC_DEFINE([DEVELOPMENT], [], [Enable development features])])

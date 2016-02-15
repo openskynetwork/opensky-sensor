@@ -94,10 +94,10 @@ void UTIL_dropPrivileges()
 		free(buffer);
 	}
 
-	chdir("/tmp");
+	if (chdir("/tmp")) {} /* silence gcc */
 	printf("Dropping privileges to uid %u and gid %u\n", (unsigned)u_nobody,
 		(unsigned)g_nobody);
 	setgroups(0, NULL);
-	setgid(g_nobody);
-	setuid(u_nobody);
+	if (setgid(g_nobody)) {}
+	if (setuid(u_nobody)) {}
 }
