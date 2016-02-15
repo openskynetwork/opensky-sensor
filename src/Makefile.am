@@ -21,6 +21,8 @@ openskyd_SOURCES = main.c \
 # input layer
 openskyd_SOURCES += input_@INPUT_LAYER@.c
 
+EXTRA_DIST = input_uart.c input_network.c input_dummy.c
+
 # watchdog sources
 wd_SOURCES = gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
 	cfgfile.h cfgfile.c util.h util.c wd-main.c
@@ -50,7 +52,7 @@ wd_CPPFLAGS = -DWD_ONLY
 
 # data files
 openskyd_DATA = openskyd.conf
-EXTRA_DIST = openskyd.conf
+EXTRA_DIST += openskyd.conf
 
 # configuration directory
 openskyddir = $(sysconfdir)

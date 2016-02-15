@@ -18,8 +18,8 @@ build:
 	cd openskyd-$(VERSION) && ./configure --host=arm-angstrom-linux-gnueabi \
 		--prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd \
 		--enable-silent-rules \
-		--disable-uart --enable-network --disable-talkback --without-systemd \
-		--without-pacman \
+		--enable-input=network --disable-standalone --disable-talkback \
+		--without-systemd --without-pacman --without-check \
 		CFLAGS="-O3 -g -Wall -mtune=native"
 	make -C openskyd-$(VERSION)
 

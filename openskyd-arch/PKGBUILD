@@ -26,8 +26,8 @@ build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd \
     --enable-silent-rules \
-    --disable-network --enable-talkback --with-systemd --with-pacman \
-    --with-check
+    --enable-input=uart --enable-standalone --enable-talkback \
+    --with-systemd --with-pacman --with-check
   make
 }
 
@@ -40,7 +40,6 @@ package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
   make DESTDIR="${pkgdir}" install
   install -Dm644 "${srcdir}/${pkgname}-${pkgver}/COPYING" "${pkgdir}/usr/share/licenses/openskyd/LICENSE"
-  mv "${pkgdir}/usr/bin/openskyd-uart" "${pkgdir}/usr/bin/openskyd"
   install -Dm644 "${srcdir}/${pkgname}.service" "${pkgdir}/usr/lib/systemd/system/${pkgname}.service"
   install -Dm755 "${srcdir}/${pkgname}-start.sh" "${pkgdir}/usr/bin/${pkgname}-start.sh"
   install -Dm644 "${srcdir}/${pkgname}.rbf" "${pkgdir}/usr/lib/openskyd/${pkgname}.rbf"
