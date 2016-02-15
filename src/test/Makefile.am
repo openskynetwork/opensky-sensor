@@ -26,8 +26,8 @@ test_adsb_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 test_recv_SOURCES = test_recv.c input_test.h input_test.c
 test_recv_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
-test_lib_SOURCES = test_lib.c ../opensky.h ../opensky.c
-test_lib_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
+test_lib_SOURCES = test_lib.c ../lib/opensky.h ../lib/opensky.c
+test_lib_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS) -I../lib
 
 perf_adsb_SOURCES = perf_adsb.c input_perf.h input_perf.c \
 	../statistics.h ../statistics.c ../adsb.h ../adsb.c \

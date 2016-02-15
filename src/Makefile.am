@@ -7,25 +7,6 @@ endif
 if WANT_WD
 bin_PROGRAMS += wd
 endif
-if WANT_EXAMPLES
-bin_PROGRAMS += opensky-lib-example
-endif
-
-lib_LTLIBRARIES=libopensky.la
-
-libopensky_la_SOURCES=buffer.c buffer.h \
-	relay.h relay.c network.h network.c net_common.h net_common.c \
-	statistics.h statistics.c threads.h component.h component.c util.h util.c \
-	opensky.h opensky.c filter.h filter.c
-# version info: CURRENT (=iface version) : REVISION (internal changes only) : AGE (delta to last iface supported)
-libopensky_la_LDFLAGS=-version-info 0:0:0
-libopensky_la_CFLAGS=-fvisibility=hidden -DPREFIX=\"OpenSky\"
-include_HEADERS=opensky.h
-
-opensky_lib_example_SOURCES=opensky-example.c
-opensky_lib_example_AM_CFLAGS=@PTHREAD_CFLAGS@
-opensky_lib_example_LDFLAGS=@PTHREAD_CFLAGS@ @PTHREAD_LIBS@
-opensky_lib_example_LDADD=libopensky.la
 
 # common sources of openskyd
 openskyd_SOURCES = main.c \
@@ -78,4 +59,4 @@ openskyddir = $(sysconfdir)
 clean-local:
 	-rm -f *.gcno *.gcda
 
-SUBDIRS = . test
+SUBDIRS = . lib test

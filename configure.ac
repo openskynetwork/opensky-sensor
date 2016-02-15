@@ -188,4 +188,4 @@ AS_IF([test x$talkback = xtrue],
   [AC_DEFINE([TALKBACK], [], [Enable talkback component])])
 
 dnl output directive
-AC_OUTPUT([Makefile src/Makefile src/test/Makefile])
+AC_OUTPUT([Makefile src/Makefile src/lib/Makefile src/test/Makefile])
