@@ -1,9 +1,9 @@
 Package: openskyd-net
-Version: 1.0.2
+Version: 1.0.3
 Description: OpenSky Daemon for client mode
 Section: openskyd
 Priority: optional
-Maintainer: Sero Systems
+Maintainer: Opensky Network
 Architecture: armv7a-vfp-neon
 Homepage: http://opensky-network.org
 Source: http://opensky-network.org

@@ -1,6 +1,6 @@
-# Maintainer: Markus Engel <m_engel at sero-systems dot de>
+# Maintainer: Markus Engel <m_engel at opensky minus network dot org>
 pkgname=openskyd
-pkgver=1.0.2
+pkgver=1.0.3
 pkgrel=1
 pkgdesc="RadarCape Replacement Daemon for OpenSky network"
 url="http://www.opensky-network.org"

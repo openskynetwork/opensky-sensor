@@ -1,4 +1,8 @@
-2015-09-20 Markus Engel <engel@sero-systems.de>
+2016-02-15 Markus Engel <engel@opensky-network.org>
+	* Changed input layer selection
+	* Fixed compiler warnings
+
+2015-09-20 Markus Engel <engel@opensky-network.org>
 	* reverted multi buffer system as there seems to be no need for it
 	* added a test infrastructure
 	* added a lot of test fixtures

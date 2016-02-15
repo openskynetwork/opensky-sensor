@@ -3,7 +3,7 @@ Section: custom
 Priority: optional
 Maintainer: Markus Engel <engel@opensky-network.org>
 Build-Depends: debhelper (>= 9), autotools-dev, pkg-config
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Homepage: http://opensky-network.org
 
 Package: openskyd
