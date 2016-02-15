@@ -1,3 +1,15 @@
+openskyd (1.0.3-1) stable; urgency=low
+
+  * Changes in compile architecure.
+
+ -- Markus Engel <engel@opensky-network.org>  Mon, 15 Feb 2016 20:20:36 +0000
+
+openskyd (1.0.2-2) stable; urgency=medium
+
+  * Changed configuration. This mitigates possible message drops.
+
+ -- Markus Engel <engel@opensky-network.org>  Sun, 14 Feb 2016 17:45:56 +0000
+
 openskyd (1.0.2-1) stable; urgency=low
 
   * Initial release.
