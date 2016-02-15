@@ -27,7 +27,7 @@ test_recv_SOURCES = test_recv.c input_test.h input_test.c
 test_recv_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
 test_lib_SOURCES = test_lib.c ../lib/opensky.h ../lib/opensky.c
-test_lib_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS) -I../lib
+test_lib_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS) -I$(srcdir)/../lib
 
 perf_adsb_SOURCES = perf_adsb.c input_perf.h input_perf.c \
 	../statistics.h ../statistics.c ../adsb.h ../adsb.c \
@@ -49,6 +49,8 @@ libtest_a_CFLAGS += -fprofile-arcs -ftest-coverage
 test_buffer_LDFLAGS = -fprofile-arcs -ftest-coverage
 test_adsb_LDFLAGS = -fprofile-arcs -ftest-coverage
 test_recv_LDFLAGS = -fprofile-arcs -ftest-coverage
+test_lib_CFLAGS +=  -fprofile-arcs -ftest-coverage
+test_lib_LDFLAGS =  -fprofile-arcs -ftest-coverage
 
 lcov: check
 	lcov --capture --directory .. --base-directory $(PWD) \
