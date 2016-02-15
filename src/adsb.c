@@ -98,7 +98,7 @@ void ADSB_destruct()
 /** Setup ADSB receiver with some options. */
 static bool configure()
 {
-#ifndef NETWORK
+#ifndef INPUT_LAYER_NETWORK
 	const struct CFG_RECV * cfg = &CFG_config.recv;
 	/* setup ADSB */
 	return setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN) &&
@@ -121,6 +121,7 @@ static bool configure()
 /** Set an option for the ADSB decoder.
  * \param option option to be set
  */
+__attribute__((unused))
 static inline bool setOption(enum ADSB_OPTION option)
 {
 	uint8_t w[3] = { '\x1a', '1', (uint8_t)option };

@@ -332,23 +332,23 @@ static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg)
 static void scanOptionINPUT(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "uart")) {
-#ifndef NETWORK
+#ifndef INPUT_LAYER_NETWORK
 		parseString(opt, cfg->input.uart, sizeof cfg->input.uart);
 #endif
 	} else if (isOption(opt, "host")) {
-#ifdef NETWORK
+#ifdef INPUT_LAYER_NETWORK
 		parseString(opt, cfg->input.host, sizeof cfg->input.host);
 #endif
 	} else if (isOption(opt, "port")) {
-#ifdef NETWORK
+#ifdef INPUT_LAYER_NETWORK
 		uint_fast32_t n = parseInt(opt);
 		if (n > 0xffff)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 			": port must be < 65535", bufferLine);
 		cfg->input.port = n;
 #endif
 	} else if (isOption(opt, "rtscts")) {
-#ifndef NETWORK
+#ifndef INPUT_LAYER_NETWORK
 		cfg->input.rtscts = parseBool(opt);
 #endif
 	} else if (isOption(opt, "reconnectInterval"))
@@ -458,18 +458,18 @@ static void scanOptionGPS(const struct Option * opt, struct CFG_Config * cfg)
 {
 	/* TODO: use gps specific compilation flags? */
 	if (isOption(opt, "uart")) {
-#ifndef NETWORK
+#ifndef INPUT_LAYER_NETWORK
 		parseString(opt, cfg->gps.uart, sizeof cfg->gps.uart);
 #endif
 	} else if (isOption(opt, "host")) {
-#ifdef NETWORK
+#ifdef INPUT_LAYER_NETWORK
 		parseString(opt, cfg->gps.host, sizeof cfg->gps.host);
 #endif
 	} else if (isOption(opt, "port")) {
-#ifdef NETWORK
+#ifdef INPUT_LAYER_NETWORK
 		uint_fast32_t n = parseInt(opt);
 		if (n > 0xffff)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIu32
+		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
 			": port must be < 65535", bufferLine);
 		cfg->gps.port = n;
 #endif
@@ -570,7 +570,7 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->fpga.retries = 2;
 	cfg->fpga.timeout = 10;
 
-#ifdef NETWORK
+#ifdef INPUT_LAYER_NETWORK
 	strncpy(cfg->input.host, "localhost", sizeof cfg->input.host);
 	cfg->input.port = 30003;
 #else
@@ -603,7 +603,7 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->stats.enabled = true;
 	cfg->stats.interval = 600;
 
-#ifdef NETWORK
+#ifdef INPUT_LAYER_NETWORK
 	strncpy(cfg->gps.host, "localhost", sizeof cfg->gps.host);
 	cfg->gps.port = 30003; /* TODO */
 #else
@@ -614,7 +614,7 @@ static void loadDefaults(struct CFG_Config * cfg)
 
 static void fix(struct CFG_Config * cfg)
 {
-#ifdef NETWORK
+#ifdef INPUT_LAYER_NETWORK
 	if (cfg->fpga.configure) {
 		cfg->fpga.configure = false;
 		fprintf(stderr, "Configuration warning: FPGA.configure is ignored in "
@@ -670,7 +670,7 @@ static void check(const struct CFG_Config * cfg)
 	if (cfg->net.port == 0)
 		error(EXIT_FAILURE, 0, "Configuration error: NET.port = 0");
 
-#ifdef NETWORK
+#ifdef INPUT_LAYER_NETWORK
 	if (cfg->input.host[0] == '\0')
 		error(EXIT_FAILURE, 0, "Configuration error: INPUT.host is empty");
 	if (cfg->input.port == 0)
@@ -686,7 +686,7 @@ static void check(const struct CFG_Config * cfg)
 	if (cfg->stats.interval == 0)
 		error(EXIT_FAILURE, 0, "Configuration error: STATISTICS.interval is 0");
 
-#ifdef NETWORK
+#ifdef INPUT_LAYER_NETWORK
 	if (cfg->gps.host[0] == '\0')
 		error(EXIT_FAILURE, 0, "Configuration error: GPS.host is empty");
 	if (cfg->gps.port == 0)
