@@ -1,5 +1,5 @@
 Package: openskyd
-Version: 1.0.3
+Version: 1.0.4
 Description: OpenSky Daemon for client mode
 Section: openskyd
 Priority: optional
