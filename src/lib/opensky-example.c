@@ -1,3 +1,4 @@
+/* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
 #include <opensky.h>
 #include <unistd.h>

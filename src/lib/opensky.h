@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016 OpenSky Network <engel at opensky minus network dot org> */
+/* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
 #ifndef _HAVE_OPENSKY_H
 #define _HAVE_OPENSKY_H
