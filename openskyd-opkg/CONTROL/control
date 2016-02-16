@@ -3,8 +3,9 @@ Version: 1.0.3
 Description: OpenSky Daemon for client mode
 Section: openskyd
 Priority: optional
-Maintainer: Opensky Network
+Maintainer: OpenSky Network <contact@opensky-network.org>
 Architecture: armv7a-vfp-neon
 Homepage: http://opensky-network.org
 Source: http://opensky-network.org
 Depends: radarcaped
+Replaces: openskyd-net

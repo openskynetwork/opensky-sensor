@@ -1,4 +1,4 @@
-# Maintainer: Markus Engel <m_engel at opensky minus network dot org>
+# Maintainer: OpenSky Network <contact@opensky-network.org>
 pkgname=openskyd
 pkgver=1.0.3
 pkgrel=1
