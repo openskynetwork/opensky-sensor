@@ -1,4 +1,4 @@
-This is the Opensky Daemon (OpenSkyD), a program running on a radarcape,
+This is the OpenSky Daemon (OpenSkyD), a program running on a radarcape,
 relaying ADS-B frames to the OpenSky collector server.
 It is meant as a replacement for rcd, although there is a possiblity for
 interwork with rcd.
@@ -9,18 +9,15 @@ Configuration
 The project is a standard autotools project.
 For configure, there are several flags to specify the flavors to be built and
 the features to be included.
-* --enable-uart[=yes]         build the UART flavor. This is the default and
-                              meant for using the radarcape standalone, i.e.
-                              without the rcd.
-* --enable-network[=no]       build the network flavor. It will read the
-                              frames from an rcd over (local) network.
-* --enable-dummy[=no]         build the dummy flavor. It will generate frames
-                              for testing.
+* --enable-input[=uart]       select input layer. One of uart, network, dummy or
+                              none.
+* --enable-standalone[=yes]   build features needed only for standalone daemon
+                              (i.e. not needed for interacting with rcd).
 * --enable-wd[=no]            build the watchdog flavor. It will not read any
                               frames but only trigger the watchdog.
-* --enable-development[=no]   enables building all flavors for development.
-                              This means, that configuration files are
-                              searched within the current directory.
+* --enable-development[=no]   enables building for development. This means, that
+                              configuration files are expected within the
+                              current directory.
 * --enable-test-coverage[=no] Build tests for using them with gcov.
 * --enable-cleanup[=yes]      Add cleanup routines when exiting the daemon.
                               Especially meant for testing with valgrind etc.
@@ -29,6 +26,6 @@ the features to be included.
 * --with-pacman[=auto]        Enable pacman specific commands.
 
 Requirements
-* check                       Needed for make test.
+* check (optional)            Needed for make test.
 * pacman (optional)           Needed for upgrading itself.
 

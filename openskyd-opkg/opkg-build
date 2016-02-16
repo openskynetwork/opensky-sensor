@@ -239,7 +239,7 @@ rm -f $pkg_file
 if [ "$outer" = "ar" ] ; then
   ( cd $tmp_dir && arm-angstrom-linux-gnueabi-ar -crf $pkg_file ./debian-binary ./data.tar.gz ./control.tar.gz )
 else
-  ( cd $tmp_dir && tar -zcf $pkg_file ./debian-binary ./data.tar.gz ./control.tar.gz )
+  ( cd $tmp_dir && tar $ogargs -zcf $pkg_file ./debian-binary ./data.tar.gz ./control.tar.gz )
 fi
 
 rm $tmp_dir/debian-binary $tmp_dir/data.tar.gz $tmp_dir/control.tar.gz
