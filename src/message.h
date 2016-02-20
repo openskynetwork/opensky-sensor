@@ -5,6 +5,10 @@
 
 #include <adsb.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum MSG_TYPE {
 	MSG_TYPE_ADSB = 0,
 	MSG_TYPE_LOG = 1,
@@ -25,5 +29,9 @@ struct MSG_Message {
 
 	};
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

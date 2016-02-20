@@ -6,6 +6,10 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct Component {
 	const char * description;
 
@@ -35,5 +39,9 @@ void COMP_initAll();
 void COMP_destructAll();
 bool COMP_startAll();
 void COMP_stopAll();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

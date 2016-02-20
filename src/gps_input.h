@@ -7,10 +7,18 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void GPS_INPUT_init();
 void GPS_INPUT_destruct();
 void GPS_INPUT_connect();
 size_t GPS_INPUT_read(uint8_t * buf, size_t bufLen);
 size_t GPS_INPUT_write(const uint8_t * buf, size_t bufLen);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

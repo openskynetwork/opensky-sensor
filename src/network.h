@@ -11,11 +11,19 @@
 
 extern struct Component NET_comp;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void NET_sync_send();
 bool NET_sendFrame(const struct ADSB_Frame * frame);
 bool NET_sendTimeout();
 
 void NET_sync_recv();
 ssize_t NET_receive(uint8_t * buf, size_t len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

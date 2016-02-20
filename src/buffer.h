@@ -8,6 +8,10 @@
 #include <adsb.h>
 #include <component.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern struct Component BUF_comp;
 
 void BUF_flush();
@@ -24,5 +28,9 @@ const struct ADSB_Frame * BUF_getFrame();
 const struct ADSB_Frame * BUF_getFrameTimeout(uint_fast32_t timeout_ms);
 void BUF_releaseFrame(const struct ADSB_Frame * frame);
 void BUF_putFrame(const struct ADSB_Frame * frame);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

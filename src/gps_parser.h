@@ -8,6 +8,10 @@
 #include <string.h>
 #include <endian.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void GPS_PARSER_init();
 void GPS_PARSER_destruct();
 
@@ -76,5 +80,9 @@ static inline double GPS_todouble(const uint8_t * buf)
 	c.u = GPS_tou64(buf);
 	return c.d;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

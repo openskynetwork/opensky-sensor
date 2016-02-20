@@ -3,6 +3,10 @@
 #ifndef _HAVE_THREADS_H
 #define _HAVE_THREADS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef CLEANUP
 
 #include <pthread.h>
@@ -57,5 +61,9 @@
 #define NOC_fprintf(f, format, args...) NOC_call(fprintf, f, format, args)
 
 #define NOC_puts(str) NOC_call(puts, str)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

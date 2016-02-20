@@ -7,6 +7,10 @@
 #include <component.h>
 #include <message.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct STAT_Statistics {
 	uint_fast64_t ADSB_outOfSync;
 	uint_fast64_t ADSB_frameType[4];
@@ -42,5 +46,9 @@ struct STAT_Statistics {
 extern struct Component STAT_comp;
 
 extern volatile struct STAT_Statistics STAT_stats;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

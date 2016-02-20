@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum ADSB_FRAME_TYPE {
 	ADSB_FRAME_TYPE_MODE_AC = 0,
 	ADSB_FRAME_TYPE_MODE_S_SHORT = 1,
@@ -32,5 +36,9 @@ void ADSB_destruct();
 
 void ADSB_connect();
 bool ADSB_getFrame(struct ADSB_Frame * frame);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

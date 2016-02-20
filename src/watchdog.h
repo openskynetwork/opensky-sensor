@@ -5,6 +5,14 @@
 
 #include <component.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern struct Component WD_comp;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

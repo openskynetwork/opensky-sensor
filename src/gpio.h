@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <component.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum GPIO_DIRECTION {
 	GPIO_DIRECTION_IN,
 	GPIO_DIRECTION_OUT
@@ -17,5 +21,9 @@ void GPIO_setDirection(uint_fast32_t gpio, enum GPIO_DIRECTION dir);
 void GPIO_set(uint_fast32_t gpio);
 void GPIO_clear(uint_fast32_t gpio);
 uint_fast32_t GPIO_read(uint_fast32_t gpio);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

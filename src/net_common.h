@@ -5,6 +5,14 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int NETC_connect(const char * component, const char * hostName, uint16_t port);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

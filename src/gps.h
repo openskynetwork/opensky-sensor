@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <stdatomic.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern struct Component GPS_comp;
 
 enum GPS_TIME_FLAGS {
@@ -27,5 +31,9 @@ inline enum GPS_TIME_FLAGS GPS_getTimeFlags()
 	extern _Atomic enum GPS_TIME_FLAGS GPS_timeFlags;
 	return atomic_load_explicit(&GPS_timeFlags, memory_order_relaxed);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

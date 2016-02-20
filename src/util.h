@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 bool UTIL_getSerial(uint32_t * serial);
 
 void UTIL_dropPrivileges();
@@ -21,5 +25,9 @@ void UTIL_dropPrivileges();
 
 #define likely(x) __builtin_expect(!!(x),1)
 #define unlikely(x) __builtin_expect(!!(x),0)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

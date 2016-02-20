@@ -8,6 +8,10 @@
 #include <limits.h>
 #include <netdb.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct CFG_WD {
 	bool enabled;
 };
@@ -96,5 +100,9 @@ struct CFG_Config {
 extern struct CFG_Config CFG_config;
 
 void CFG_read(const char * file);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
