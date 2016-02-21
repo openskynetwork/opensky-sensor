@@ -19,7 +19,7 @@ struct Component RELAY_comp = {
 	.main = &mainloop
 };
 
-static void cleanup(struct ADSB_Frame * frame)
+static void cleanup(struct ADSB_RawFrame * frame)
 {
 	BUF_putFrame(frame);
 }
@@ -38,7 +38,7 @@ static void mainloop()
 		bool success;
 		do {
 			/* read a frame from the buffer */
-			const struct ADSB_Frame * frame =
+			const struct ADSB_RawFrame * frame =
 				BUF_getFrameTimeout(CFG_config.net.timeout);
 			if (!frame) {
 				/* timeout */

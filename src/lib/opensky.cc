@@ -14,6 +14,7 @@
 #include <cfgfile.h>
 #include <error.h>
 #include <stdlib.h>
+#include <MessageTypes.h>
 
 extern "C" {
 struct CFG_Config CFG_config;
@@ -24,11 +25,12 @@ namespace OpenSky {
 static std::ostream * msgLog = NULL;
 static std::ostream * errLog = NULL;
 
-static inline void append(uint8_t ** out, uint8_t c);
-static inline void encode(uint8_t ** out, const uint8_t * in, size_t len);
+static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len);
 
 static bool configured = false;
 static bool running = false;
+
+static GpsTimeStatus_t gpsTimeStatus = GpsTimeInvalid;
 
 #pragma GCC visibility push(default)
 
@@ -72,6 +74,7 @@ void enable()
 		error(EXIT_FAILURE, 0, "OpenSky: call OPENSKY_configure first");
 
 	FILTER_reset();
+	FILTER_setSynchronized(gpsTimeStatus != GpsTimeInvalid);
 
 	COMP_register(&BUF_comp, NULL);
 	COMP_register(&NET_comp, NULL);
@@ -95,63 +98,58 @@ void disable()
 	}
 }
 
+void setGpsTimeStatus(const GpsTimeStatus_t gpsTimeStatus)
+{
+	OpenSky::gpsTimeStatus = gpsTimeStatus;
+	FILTER_setSynchronized(gpsTimeStatus != GpsTimeInvalid);
+}
+
 void output_message(const unsigned char * const msg,
 	const enum MessageType_T messageType)
 {
 	if (unlikely(!configured))
 		return;
 
-	struct ADSB_Frame * out;
-
-	if (messageType != MessageType_ModeSLong)
-		return;
-
-	out = BUF_newFrame();
-	assert(out);
-	out->frameType = ADSB_FRAME_TYPE_MODE_S_LONG;
-	memcpy(&out->mlat, msg, 6);
-	out->mlat = be64toh(out->mlat) >> 16;
-	out->siglevel = msg[6];
-	out->payloadLen = 14;
-	memcpy(out->payload, msg + 7, 14);
-
-	if (!FILTER_filter(out)) {
-		BUF_abortFrame(out);
+	size_t msgLen;
+	switch (messageType) {
+	case MessageType_ModeAC:
+		msgLen = 7 + 2;
+		break;
+	case MessageType_ModeSShort:
+		msgLen = 7 + 7;
+		break;
+	case MessageType_ModeSLong:
+		msgLen = 7 + 14;
+		break;
+	default:
 		return;
 	}
-	uint8_t * raw = out->raw;
-	raw[0] = '\x1a';
-	raw[1] = out->frameType + '1';
 
-	uint8_t * ptr = raw + 2;
-	uint64_t mlat = htobe64(out->mlat);
-	encode(&ptr, ((uint8_t*)&mlat) + 2, 6);
+	enum ADSB_FRAME_TYPE frameType = (enum ADSB_FRAME_TYPE)(messageType - '1');
 
-	append(&ptr, out->siglevel);
-	encode(&ptr, out->payload, out->payloadLen);
+	if (!FILTER_filter(frameType, msg[7]))
+		return;
 
-	out->raw_len = ptr - raw;
+	struct ADSB_RawFrame * out = BUF_newFrame();
+	assert(out);
+	out->raw[0] = '\x1a';
+	out->raw[1] = (uint8_t)messageType;
+	out->raw_len = encode(out->raw + 2, msg, msgLen) + 2;
 
 	BUF_commitFrame(out);
 }
 
 #pragma GCC visibility pop
 
-static inline void append(uint8_t ** out, uint8_t c)
-{
-	if ((*(*out)++ = c) == 0x1a)
-		*(*out)++ = 0x1a;
-}
-
-static inline void encode(uint8_t ** out, const uint8_t * in, size_t len)
+static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len)
 {
 	if (unlikely(!len))
-		return;
+		return 0;
 
-	uint8_t * ptr = *out;
+	uint8_t * ptr = out;
 
 	/* first time: search for escape from in up to len */
-	uint8_t * esc = (uint8_t*)memchr(in, '\x1a', len);
+	const uint8_t * esc = (uint8_t*)memchr(in, '\x1a', len);
 	--len;
 	while (true) {
 		if (unlikely(esc)) {
@@ -163,8 +161,7 @@ static inline void encode(uint8_t ** out, const uint8_t * in, size_t len)
 		} else {
 			/* no esc found: copy rest, fast return */
 			memcpy(ptr, in, len + 1);
-			*out = ptr + len + 1;
-			break;
+			return ptr + len + 1 - out;
 		}
 		if (likely(len)) {
 			esc = (uint8_t*)memchr(in + 1, '\x1a', len);
@@ -174,8 +171,7 @@ static inline void encode(uint8_t ** out, const uint8_t * in, size_t len)
 			 * faster here.
 			 */
 			*ptr = '\x1a';
-			*out = ptr + 1;
-			break;
+			return ptr + 1 - out;
 		}
 	}
 }

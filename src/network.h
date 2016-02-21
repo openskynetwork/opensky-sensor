@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 void NET_sync_send();
-bool NET_sendFrame(const struct ADSB_Frame * frame);
+bool NET_sendFrame(const struct ADSB_RawFrame * frame);
 bool NET_sendTimeout();
 
 void NET_sync_recv();

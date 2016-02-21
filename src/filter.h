@@ -12,7 +12,8 @@ extern "C" {
 
 void FILTER_init();
 void FILTER_reset();
-bool FILTER_filter(const struct ADSB_Frame * frame);
+void FILTER_setSynchronized(bool synchronized);
+bool FILTER_filter(enum ADSB_FRAME_TYPE frameType, uint8_t firstByte);
 
 #ifdef __cplusplus
 }

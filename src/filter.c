@@ -35,17 +35,15 @@ void FILTER_reset()
 	isSynchronized = false;
 }
 
-bool FILTER_filter(const struct ADSB_Frame * frame)
+void FILTER_setSynchronized(bool synchronized)
 {
-	++STAT_stats.ADSB_frameType[frame->frameType];
+	isSynchronized = synchronized;
+}
 
-	if (unlikely(frame->frameType == ADSB_FRAME_TYPE_STATUS)) {
-		if (!isSynchronized)
-			isSynchronized = frame->mlat != 0;
-		return false;
-	}
+bool FILTER_filter(enum ADSB_FRAME_TYPE frameType, uint8_t firstByte)
+{
+	++STAT_stats.ADSB_frameType[frameType];
 
-	/* filter if unsynchronized and filter is enabled */
 	if (unlikely(!isSynchronized)) {
 		++STAT_stats.ADSB_framesUnsynchronized;
 		if (CFG_config.recv.syncFilter) {
@@ -55,12 +53,12 @@ bool FILTER_filter(const struct ADSB_Frame * frame)
 	}
 
 	/* apply filter */
-	if (frame->frameType != ADSB_FRAME_TYPE_MODE_S_LONG) {
+	if (frameType != ADSB_FRAME_TYPE_MODE_S_LONG) {
 		++STAT_stats.ADSB_framesFiltered;
 		return false;
 	}
 
-	uint_fast32_t ftype = (frame->payload[0] >> 3) & 0x1f;
+	uint_fast32_t ftype = (firstByte >> 3) & 0x1f;
 	++STAT_stats.ADSB_longType[ftype];
 	/* apply filter */
 	if (!((1 << ftype) & frameFilterLong)) {

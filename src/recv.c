@@ -34,7 +34,7 @@ static void destruct()
 	ADSB_destruct();
 }
 
-static void cleanup(struct ADSB_Frame ** frame)
+static void cleanup(struct ADSB_RawFrame ** frame)
 {
 	if (*frame)
 		BUF_abortFrame(*frame);
@@ -42,7 +42,8 @@ static void cleanup(struct ADSB_Frame ** frame)
 
 static void mainloop()
 {
-	struct ADSB_Frame * frame = NULL;
+	struct ADSB_RawFrame * frame = NULL;
+	struct ADSB_DecodedFrame decoded;
 
 	CLEANUP_PUSH(&cleanup, &frame);
 	while (true) {
@@ -52,9 +53,13 @@ static void mainloop()
 
 		frame = BUF_newFrame();
 		while (true) {
-			bool success = ADSB_getFrame(frame);
+			bool success = ADSB_getFrame(frame, &decoded);
 			if (likely(success)) {
-				if (FILTER_filter(frame)) {
+				if (decoded.frameType == ADSB_FRAME_TYPE_STATUS &&
+					decoded.mlat != 0)
+					FILTER_setSynchronized(true);
+
+				if (FILTER_filter(decoded.frameType, decoded.payload[0])) {
 					BUF_commitFrame(frame);
 					frame = BUF_newFrame();
 				}

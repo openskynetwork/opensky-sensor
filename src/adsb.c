@@ -83,7 +83,7 @@ static inline bool next(uint8_t * ch);
 static inline bool synchronize();
 static inline bool setOption(enum ADSB_OPTION option);
 static inline enum DECODE_STATUS decode(uint8_t * buf, size_t len,
-	struct ADSB_Frame * frame);
+	struct ADSB_RawFrame * raw);
 
 void ADSB_init()
 {
@@ -145,9 +145,10 @@ void ADSB_connect()
 	bufEnd = bufCur;
 }
 
-bool ADSB_getFrame(struct ADSB_Frame * frame)
+bool ADSB_getFrame(struct ADSB_RawFrame * raw,
+	struct ADSB_DecodedFrame * decoded)
 {
-	frame->raw[0] = 0x1a;
+	raw->raw[0] = 0x1a;
 
 	while (true) {
 		/* synchronize */
@@ -193,25 +194,25 @@ decode_frame:
 			++STAT_stats.ADSB_frameTypeUnknown;
 			goto synchronize;
 		}
-		frame->frameType = type - '1';
-		frame->payloadLen = payload_len;
-		frame->raw[1] = type;
-		frame->raw_len = 2;
+		decoded->frameType = type - '1';
+		decoded->payloadLen = payload_len;
+		raw->raw[1] = type;
+		raw->raw_len = 2;
 
 		/* decode header */
 		__attribute__((aligned(8))) union { uint8_t u8[7]; uint64_t u64; } hdr;
-		enum DECODE_STATUS rs = decode(hdr.u8, sizeof hdr.u8, frame);
+		enum DECODE_STATUS rs = decode(hdr.u8, sizeof hdr.u8, raw);
 		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
 			++STAT_stats.ADSB_outOfSync;
 			goto decode_frame;
 		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
 		/* decode mlat and signal level */
-		frame->mlat = be64toh(hdr.u64) >> 16;
-		frame->siglevel = hdr.u8[6];
+		decoded->mlat = be64toh(hdr.u64) >> 16;
+		decoded->siglevel = hdr.u8[6];
 
 		/* read payload */
-		rs = decode(frame->payload, payload_len, frame);
+		rs = decode(decoded->payload, payload_len, raw);
 		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
 			++STAT_stats.ADSB_outOfSync;
 			goto decode_frame;
@@ -229,10 +230,10 @@ decode_frame:
  * \param frame frame to be decoded, used for raw decoding
  */
 static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
-	struct ADSB_Frame * frame)
+	struct ADSB_RawFrame * raw)
 {
 	/* get current raw ptr */
-	uint8_t * rawPtr = frame->raw + frame->raw_len;
+	uint8_t * rawPtr = raw->raw + raw->raw_len;
 
 	do {
 		if (unlikely(bufCur == bufEnd)) {
@@ -249,7 +250,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 			/* escape found: copy buffer up to escape, if applicable */
 			memcpy(rawPtr, bufCur, esc + 1 - bufCur);
 			rawPtr += esc + 1 - bufCur;
-			frame->raw_len += esc + 1 - bufCur;
+			raw->raw_len += esc + 1 - bufCur;
 
 			if (likely(esc != bufCur)) {
 				memcpy(dst, bufCur, esc - bufCur);
@@ -267,7 +268,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 				/* it's another escape -> append escape */
 				*dst++ = '\x1a';
 				*rawPtr++ = '\x1a';
-				++frame->raw_len;
+				++raw->raw_len;
 				--len;
 				++bufCur;
 			} else {
@@ -279,7 +280,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 			memcpy(dst, bufCur, mlen);
 			memcpy(rawPtr, bufCur, mlen);
 			rawPtr += mlen;
-			frame->raw_len += mlen;
+			raw->raw_len += mlen;
 			dst += mlen;
 			bufCur += mlen;
 			len -= mlen;

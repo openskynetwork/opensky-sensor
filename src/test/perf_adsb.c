@@ -15,7 +15,8 @@ struct CFG_Config CFG_config;
 
 int main()
 {
-	struct ADSB_Frame frame;
+	struct ADSB_RawFrame raw;
+	struct ADSB_DecodedFrame decoded;
 	uint8_t buf[46];
 	size_t len = INPUT_buildFrame(buf, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
 		-10, "abcdefghijklmn", 14);
@@ -28,7 +29,7 @@ int main()
 	clock_gettime(CLOCK_REALTIME, &start);
 	size_t i;
 	for (i = 0; i < 10000000; ++i) {
-		ADSB_getFrame(&frame);
+		ADSB_getFrame(&raw, &decoded);
 	}
 	clock_gettime(CLOCK_REALTIME, &end);
 

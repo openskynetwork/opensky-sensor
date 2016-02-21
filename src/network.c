@@ -293,7 +293,7 @@ static bool sendSerial()
 /** Send an ADSB frame to the server.
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
  */
-bool NET_sendFrame(const struct ADSB_Frame * frame)
+bool NET_sendFrame(const struct ADSB_RawFrame * frame)
 {
 	/*char buf[250];
 	size_t len = snprintf(buf, 250 - 29,

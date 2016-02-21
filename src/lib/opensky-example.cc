@@ -1,8 +1,8 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
 #include <opensky.hh>
-#include <unistd.h>
 #include <cstring>
+#include <unistd.h>
 #include <endian.h>
 #include <stdint.h>
 
@@ -12,12 +12,14 @@ int main()
 
 	OpenSky::enable();
 
+	OpenSky::setGpsTimeStatus(UsingGpsTime);
+
 	/* sleep is normally not needed, just for some testing purpose */
 	sleep(1);
 
 	unsigned char frame[6 + 1 + 14];
-	::uint64_t mlat = ::htobe64(123456789012345);
-	::memcpy(frame, &mlat, 6);
+	uint64_t mlat = htobe64(123456789012345);
+	memcpy(frame, &mlat, 6);
 	frame[6] = 100;
 	frame[7] = 0x8a;
 

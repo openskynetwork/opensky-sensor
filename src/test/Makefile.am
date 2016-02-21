@@ -15,6 +15,7 @@ libtest_a_SOURCES = ../buffer.h ../buffer.c ../cfgfile.h \
 libtest_a_CFLAGS = $(AM_CFLAGS)
 
 AM_CFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@
+AM_CXXFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@
 LDADD = @CHECK_LIBS@ @PTHREAD_LIBS@ @PTHREAD_CFLAGS@ libtest.a
 
 test_buffer_SOURCES = test_buffer.c
@@ -26,8 +27,8 @@ test_adsb_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 test_recv_SOURCES = test_recv.c input_test.h input_test.c
 test_recv_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
-test_lib_SOURCES = test_lib.c ../lib/opensky.h ../lib/opensky.c
-test_lib_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS) -I$(srcdir)/../lib
+test_lib_SOURCES = test_lib.cc ../lib/opensky.hh ../lib/opensky.cc
+test_lib_CXXFLAGS = @CHECK_CFLAGS@ $(AM_CXXFLAGS) -I$(srcdir)/../lib
 
 perf_adsb_SOURCES = perf_adsb.c input_perf.h input_perf.c \
 	../statistics.h ../statistics.c ../adsb.h ../adsb.c \
@@ -49,7 +50,7 @@ libtest_a_CFLAGS += -fprofile-arcs -ftest-coverage
 test_buffer_LDFLAGS = -fprofile-arcs -ftest-coverage
 test_adsb_LDFLAGS = -fprofile-arcs -ftest-coverage
 test_recv_LDFLAGS = -fprofile-arcs -ftest-coverage
-test_lib_CFLAGS +=  -fprofile-arcs -ftest-coverage
+test_lib_CXXFLAGS +=  -fprofile-arcs -ftest-coverage
 test_lib_LDFLAGS =  -fprofile-arcs -ftest-coverage
 
 lcov: check

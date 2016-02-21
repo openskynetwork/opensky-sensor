@@ -25,7 +25,7 @@ struct MSG_Message {
 	enum MSG_TYPE type;
 
 	union {
-		struct ADSB_Frame adsb;
+		struct ADSB_RawFrame adsb;
 
 	};
 };

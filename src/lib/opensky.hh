@@ -1,8 +1,14 @@
 
 #pragma once
 
-#include <MessageTypes.h>
 #include <ostream>
+#include <MessageTypes.h>
+
+typedef enum {
+	GpsTimeInvalid,
+	UsingCpuTime,
+	UsingGpsTime
+} GpsTimeStatus_t;
 
 namespace OpenSky {
 
@@ -25,6 +31,8 @@ void enable();
 
 /** Disable OpenSky feeder. */
 void disable();
+
+void setGpsTimeStatus(const GpsTimeStatus_t gpsTimeStatus);
 
 /** Submit a frame to the OpenSky network.
  * \param msg Message, consisting of timestamp (6 byte, big endian),
