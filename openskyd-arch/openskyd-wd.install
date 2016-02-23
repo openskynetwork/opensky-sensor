@@ -1,15 +1,15 @@
 post_install() {
 	systemctl daemon-reload
-	systemctl enable openskyd
+	systemctl enable openskyd-wd
 }
 
 post_upgrade() {
 	systemctl daemon-reload
-	systemctl restart openskyd
+	systemctl restart openskyd-wd
 }
 
 pre_remove() {
 	systemctl stop openskyd
-	systemctl disable openskyd
+	systemctl disable openskyd-wd
 }
 
