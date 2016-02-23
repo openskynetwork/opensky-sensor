@@ -48,7 +48,7 @@ AM_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"' -DFWDIR='"$(libdir)"'
 endif
 
 # WD needs other flags
-wd_CPPFLAGS = -DWD_ONLY
+wd_CPPFLAGS = -DWD_ONLY $(AM_CPPFLAGS)
 
 # data files
 openskyd_DATA = openskyd.conf
