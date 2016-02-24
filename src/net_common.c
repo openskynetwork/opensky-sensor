@@ -4,8 +4,10 @@
 #include <config.h>
 #endif
 #include <net_common.h>
+#include <log.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <error.h>
 #include <errno.h>
@@ -22,7 +24,7 @@ static void cleanup(struct addrinfo * hosts)
 		freeaddrinfo(hosts);
 }
 
-int NETC_connect(const char * component, const char * hostName, uint16_t port)
+int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 {
 	struct addrinfo * hosts = NULL, * host;
 	int sock = -1;
@@ -32,8 +34,8 @@ int NETC_connect(const char * component, const char * hostName, uint16_t port)
 	CLEANUP_PUSH(&cleanup, hosts);
 
 	if (rc) {
-		NOC_fprintf(stderr, "%s: could not resolve '%s': %s\n",
-			component, hostName, gai_strerror(rc));
+		LOG_logf(LOG_LEVEL_WARN, prefix, "Could not resolve host '%s': %s",
+			hostName, gai_strerror(rc));
 		return -1;
 	}
 
@@ -41,40 +43,54 @@ int NETC_connect(const char * component, const char * hostName, uint16_t port)
 	for (host = hosts; host != NULL; host = host->ai_next) {
 		struct sockaddr * addr = host->ai_addr;
 
+		const void * inaddr;
+
 		/* extend address info for connecting */
 		switch (host->ai_family) {
 		case AF_INET:
 			((struct sockaddr_in*)addr)->sin_port = port_be;
+			inaddr = &((struct sockaddr_in*)addr)->sin_addr;
 		break;
 		case AF_INET6:
 			((struct sockaddr_in6*)addr)->sin6_port = port_be;
+			inaddr = &((struct sockaddr_in6*)addr)->sin6_addr;
 		break;
 		default:
-			NOC_printf("%s: ignoring unknown family %d for address '%s'",
-				component, host->ai_family, hostName);
+			LOG_logf(LOG_LEVEL_INFO, prefix, "Ignoring unknown address family "
+				"%d for host '%s'", host->ai_family, hostName);
 			continue;
 		}
+
+		char ip[INET6_ADDRSTRLEN];
+		if (inet_ntop(host->ai_family, inaddr, ip, sizeof ip) != NULL)
+			strcpy(ip, "??");
+
+		LOG_logf(LOG_LEVEL_INFO, "Trying to connect to '%s': [%s]:%" PRIu16,
+			hostName, ip, port);
 
 		/* create socket */
 		sock = socket(host->ai_family, SOCK_STREAM | SOCK_CLOEXEC, 0);
 		if (sock < 0)
-			error(EXIT_FAILURE, errno, "socket");
+			LOG_errno(LOG_LEVEL_ERROR, prefix, "could not create socket");
 
 		/* connect socket */
 		rc = connect(sock, addr, host->ai_addrlen);
 		if (rc < 0) {
+			LOG_errno(LOG_LEVEL_WARN, prefix, "Could not connect");
 			close(sock);
 		} else {
-			NOC_printf("%s: connected to '%s:%" PRIu16 "'\n", component,
-				hostName, port);
+			char ip[INET6_ADDRSTRLEN];
+			if (inet_ntop(host->ai_family, inaddr, ip, sizeof ip) != NULL)
+				strcpy(ip, "??");
+			LOG_logf(LOG_LEVEL_INFO, prefix, "connected to '%s'", hostName);
 			break;
 		}
 	}
 	CLEANUP_POP();
 
 	if (!host) {
-		NOC_fprintf(stderr, "%s: could not connect to '%s:%" PRIu16 "': %s\n",
-			component, hostName, port, strerror(errno));
+		LOG_logf(LOG_LEVEL_WARN, prefix, "Tried all addresses of '%s': could "
+			"not connect", hostName);
 		return -1;
 	} else {
 		return sock;

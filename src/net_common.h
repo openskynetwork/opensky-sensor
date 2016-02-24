@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-int NETC_connect(const char * component, const char * hostName, uint16_t port);
+int NETC_connect(const char * prefix, const char * hostName, uint16_t port);
 
 #ifdef __cplusplus
 }
