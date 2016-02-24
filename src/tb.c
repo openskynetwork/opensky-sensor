@@ -4,6 +4,7 @@
 #include <config.h>
 #endif
 #include <tb.h>
+#include <log.h>
 #include <stdbool.h>
 #include <inttypes.h>
 #include <unistd.h>
@@ -18,6 +19,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <proc.h>
+
+static const char PFX[] = "TB";
 
 /* Packet format:
  * Format: |ID|Len|Payload|
@@ -57,7 +60,7 @@ static void construct(void * argv);
 static void mainloop();
 
 struct Component TB_comp = {
-	.description = "TB",
+	.description = PFX,
 	.construct = &construct,
 	.main = &mainloop
 };
@@ -122,9 +125,9 @@ static void mainloop()
 				frame.len = be16toh(buf16[1]);
 				if (frame.len > 128 || frame.len < 4) {
 					/* sanity check failed, reset buffer */
-					fprintf(stderr, "TB: Wrong packet format (type=%"
-						PRIuFAST16 ", len=%" PRIuFAST16 "), resetting buffer\n",
-						frame.type, frame.len);
+					LOG_logf(LOG_LEVEL_WARN, PFX, "Wrong packet format "
+						"(type=%" PRIuFAST16 ", len=%" PRIuFAST16 "), "
+						"resetting buffer", frame.type, frame.len);
 					bufLen = 0;
 					break;
 				}
@@ -161,8 +164,8 @@ static void processPacket(const struct TB_Packet * packet)
 
 	if (packet->type > n_processors || !processors[packet->type]) {
 		/* packet type unknown */
-		fprintf(stderr, "TB: Unknown packet type (type = %" PRIuFAST16
-			", len = %" PRIuFAST16 ")\n", packet->type, packet->len);
+		LOG_logf(LOG_LEVEL_WARN, PFX, "Unknown packet type (type=%"
+			PRIuFAST16 ", len=%" PRIuFAST16 ")", packet->type, packet->len);
 		return;
 	}
 
@@ -177,8 +180,9 @@ static void packetShell(const struct TB_Packet * packet)
 {
 	/* sanity check */
 	if (packet->len != 10) {
-		fprintf(stderr, "TB: packet of type %" PRIuFAST16 " too short (len = %"
-			PRIuFAST16 ", discarding\n", packet->type, packet->len);
+		LOG_logf(LOG_LEVEL_WARN, PFX, "packet of type %" PRIuFAST16 " too "
+			"short (len=%" PRIuFAST16 "), discarding\n", packet->type,
+			packet->len);
 		return;
 	}
 
@@ -200,7 +204,7 @@ static void packetShell(const struct TB_Packet * packet)
 	snprintf(addr, sizeof addr, "%s:%" PRIu16, ip, port);
 
 	/* start rcc in background */
-	printf("TB: Starting rcc to %s\n", addr);
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Starting rcc to %s\n", addr);
 
 	char *argv[] = { "/usr/bin/rcc", "-t", ":22", "-r", addr, "-n", NULL };
 	PROC_forkAndExec(argv); /* returns while executing in the background */
@@ -210,8 +214,8 @@ static void packetShell(const struct TB_Packet * packet)
  * \param packet packet */
 static void packetRestartDaemon(const struct TB_Packet * frame)
 {
-	printf("TB: restarting daemon\n");
-	fflush(stdout);
+	LOG_log(LOG_LEVEL_INFO, PFX, "restarting daemon");
+	LOG_flush();
 
 	/* replace daemon by new instance */
 	PROC_execRaw(daemonArgv);
