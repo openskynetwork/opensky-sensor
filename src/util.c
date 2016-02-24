@@ -4,6 +4,7 @@
 #include <config.h>
 #endif
 #include <util.h>
+#include <log.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <linux/if.h>
@@ -21,6 +22,8 @@
 #include <limits.h>
 
 #define ETHER_DEVICE "enp2s0"
+
+static const char PFX[] = "UTIL";
 
 /** whether the serial number has already been resolved */
 static bool cachedSerial;
@@ -88,18 +91,23 @@ bool UTIL_getSerial(uint32_t * serial)
 		"Length Ethernet MAC address is not 6 bytes");
 
 	uint8_t mac[IFHWADDRLEN];
-	if (!getMacBySocket(ETHER_DEVICE, mac) &&
-		!getMacBySysfs(ETHER_DEVICE, mac))
-		return false;
+	if (!getMacBySocket(ETHER_DEVICE, mac)) {
+		LOG_log(LOG_LEVEL_INFO, PFX, "Could not get MAC by Socket API");
+		if (!getMacBySysfs(ETHER_DEVICE, mac)) {
+			LOG_log(LOG_LEVEL_INFO, PFX, "Could not get MAC by Sysfs");
+			return false;
+		}
+	}
 
 	uint32_t serial_be;
 	memcpy(&serial_be, mac + 2, sizeof serial_be);
 	/* get the lower 31 bit */
 	*serial = serialNo = be32toh(serial_be) & 0x7fffffff;
 
-	printf("MAC address: %02" PRIx8 ":%02" PRIx8 ":%02"	PRIx8 ":%02" PRIx8
-		":%02" PRIx8 ":%02" PRIx8 " -> Serial number: %" PRIu32
-		"\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], serial_be);
+	LOG_logf(LOG_LEVEL_INFO, PFX, "MAC address: %02" PRIx8 ":%02" PRIx8 ":%02"
+		PRIx8 ":%02" PRIx8 ":%02" PRIx8 ":%02" PRIx8
+		" -> Serial number: %" PRIu32,
+		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], serial_be);
 
 	cachedSerial = true;
 
@@ -137,8 +145,8 @@ void UTIL_dropPrivileges()
 	}
 
 	if (chdir("/tmp")) {} /* silence gcc */
-	printf("Dropping privileges to uid %u and gid %u\n", (unsigned)u_nobody,
-		(unsigned)g_nobody);
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Dropping privileges to uid %u and "
+		"gid %u\n", (unsigned)u_nobody, (unsigned)g_nobody);
 	setgroups(0, NULL);
 	if (setgid(g_nobody)) {}
 	if (setuid(u_nobody)) {}
