@@ -83,8 +83,8 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 	CANCEL_RESTORE(&r);
 }
 
-__attribute__((format(printf, 3, 4)))
-void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
+static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
+	const char * fmt, va_list ap)
 {
 	const struct LevelName * levelName = &levelNames[level];
 
@@ -95,13 +95,10 @@ void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 	if (prefix)
 		printf("[%s] ", prefix);
 
-	va_list ap;
-	va_start(ap, fmt);
 	vprintf(fmt, ap);
-	va_end(ap);
 
 	char errstr[100];
-	int rc = strerror_r(errno, errstr, sizeof errstr);
+	int rc = strerror_r(err, errstr, sizeof errstr);
 	if (rc == 0)
 		printf(": %s (%d)", errstr, errno);
 	else
@@ -109,6 +106,25 @@ void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 	putchar('\n');
 
 	CANCEL_RESTORE(&r);
+}
+
+__attribute__((format(printf, 3, 4)))
+void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	logWithErr(level, errno, prefix, fmt, ap);
+	va_end(ap);
+}
+
+__attribute__((format(printf, 4, 5)))
+void LOG_errno2(enum LOG_LEVEL level, int err, const char * prefix,
+	const char * fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	logWithErr(level, err, prefix, fmt, ap);
+	va_end(ap);
 }
 
 void LOG_flush()
