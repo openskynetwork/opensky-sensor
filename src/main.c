@@ -15,10 +15,10 @@
 #include <tb.h>
 #include <recv.h>
 #include <relay.h>
+#include <log.h>
 #include <signal.h>
 #include <pthread.h>
 #include <string.h>
-#include <error.h>
 
 #if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
@@ -41,7 +41,7 @@ int main(int argc, char * argv[])
 		if (!strcmp(argv[1], "--black")) {
 			bbwhite = false;
 		} else {
-			error(EXIT_FAILURE, 0, "Usage: %s [--black]", argv[0]);
+			LOG_logf(LOG_LEVEL_ERROR, "MAIN", "Usage: %s [--black]", argv[0]);
 		}
 	}
 #endif

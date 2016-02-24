@@ -3,7 +3,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <error.h>
+#include <log.h>
 #include <errno.h>
 #include <assert.h>
 #include <pthread.h>
@@ -16,6 +16,8 @@
 #include <cfgfile.h>
 #include <threads.h>
 #include <util.h>
+
+static const char PFX[] = "BUF";
 
 /** Define to 1 to enable debugging messages */
 //#define BUF_DEBUG 1
@@ -93,7 +95,7 @@ static bool start(struct Component * c, void * data);
 static void stop(struct Component * c);
 
 struct Component BUF_comp = {
-	.description = "BUF",
+	.description = PFX,
 	.construct = &construct,
 	.destruct = &destruct,
 	.main = &mainloop,
@@ -132,7 +134,7 @@ static void construct()
 	dynMaxIncrements = CFG_config.buf.history ? CFG_config.buf.dynIncrement : 0;
 
 	if (!deployPool(&staticPool, CFG_config.buf.statBacklog))
-		error(-1, errno, "malloc failed");
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "malloc failed");
 }
 
 static void destruct()
@@ -186,7 +188,7 @@ static void gc()
 {
 	++STAT_stats.BUF_GCRuns;
 #ifdef BUF_DEBUG
-	NOC_puts("BUF: Running Garbage Collector");
+	LOG_log(LOG_LEVEL_DEBUG, PFX, "Running Garbage Collector");
 #endif
 	collectPools();
 	destroyUnusedPools();
@@ -227,7 +229,7 @@ static inline struct FrameLink * getFrameFromPool()
 		/* pool was empty, but we could uncollect a pool which was about to be
 		 *  garbage collected */
 #ifdef BUF_DEBUG
-		NOC_puts("BUF: Uncollected pool");
+		LOG_log(LOG_LEVEL_DEBUG, PFX, "Uncollected pool");
 #endif
 		++STAT_stats.BUF_uncollects;
 		overCapacity = 0;
@@ -235,8 +237,8 @@ static inline struct FrameLink * getFrameFromPool()
 	} else if (dynIncrements < dynMaxIncrements && createDynPool()) {
 		/* pool was empty, but we just created another one */
 #ifdef BUF_DEBUG
-		NOC_printf("BUF: Created another pool (%zu/%zu)\n", dynIncrements,
-			dynMaxIncrements);
+		LOG_logf(LOG_LEVEL_DEBUG, PFX, "Created another pool (%zu/%zu)",
+			dynIncrements, dynMaxIncrements);
 #endif
 		overCapacity = 0;
 		ret = shift(&pool);
@@ -244,7 +246,7 @@ static inline struct FrameLink * getFrameFromPool()
 		/* no more space in the pool and no more pools
 		 * -> sacrifice oldest frame */
 #if defined(BUF_DEBUG) && BUF_DEBUG > 1
-		NOC_puts("BUF: Sacrificing oldest frame");
+		LOG_log(LOG_LEVEL_DEBUG, PFX, "Sacrificing oldest frame");
 #endif
 		if (++overCapacity > overCapacityMax)
 			overCapacityMax = overCapacity;
@@ -319,7 +321,7 @@ const struct ADSB_RawFrame * BUF_getFrame()
 	while (!queue.head) {
 		int r = pthread_cond_wait(&cond, &mutex);
 		if (r)
-			error(-1, r, "pthread_cond_wait failed");
+			LOG_errno2(LOG_LEVEL_ERROR, r, PFX, "pthread_cond_wait failed");
 	}
 	currentFrame = shift(&queue);
 	CLEANUP_POP();
@@ -353,7 +355,8 @@ const struct ADSB_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms)
 			ret = NULL;
 			break;
 		} else if (r) {
-			error(-1, r, "pthread_cond_timedwait failed");
+			LOG_errno2(LOG_LEVEL_ERROR, r, PFX,
+				"pthread_cond_timedwait failed");
 		}
 	}
 	if (queue.head) {
@@ -498,8 +501,8 @@ static void collectPools()
 		}
 	}
 #ifdef BUF_DEBUG
-	NOC_printf("BUF: Collected %zu of %zu frames from overall pool to their "
-		"dynamic pools\n", prevSize - pool.size, prevSize);
+	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Collected %zu of %zu frames from overall "
+		"pool to their dynamic pools", prevSize - pool.size, prevSize);
 #endif
 }
 
@@ -559,7 +562,7 @@ static void destroyUnusedPools()
 		}
 	}
 #ifdef BUF_DEBUG
-	NOC_printf("BUF: Destroyed %zu of %zu dynamic pools\n",
+	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Destroyed %zu of %zu dynamic pools",
 		prevSize - dynIncrements, prevSize);
 #endif
 }

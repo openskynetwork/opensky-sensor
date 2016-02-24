@@ -9,8 +9,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <error.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>

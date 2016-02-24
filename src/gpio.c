@@ -8,12 +8,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <error.h>
-#include <errno.h>
 #include <unistd.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <util.h>
+#include <log.h>
+
+static const char PFX[] = "GPIO";
 
 /** Represents a GPIO controller */
 struct Controller {
@@ -44,7 +45,7 @@ static void destruct();
 static void construct();
 
 struct Component GPIO_comp = {
-	.description = "GPIO",
+	.description = PFX,
 	.construct = &construct,
 	.destruct = &destruct
 };
@@ -61,7 +62,7 @@ static void construct()
 	/* open /dev/mem */
 	int devfd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
 	if (devfd < 0)
-		error(EXIT_FAILURE, errno, "GPIO: Could not open /dev/mem");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "Could not open /dev/mem");
 
 	/* initialize all 4 controllers */
 	size_t i;
@@ -133,9 +134,8 @@ static void controllerInit(int devfd, struct Controller * ctrl)
 		ctrl->base);
 
 	if (ctrl->map == (char*)-1) {
-		error(EXIT_FAILURE, errno,
-			"GPIO: Could not mmap /dev/mem for base 0x%08" PRIxPTR,
-			ctrl->base);
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not mmap /dev/mem for base 0x%08"
+			PRIxPTR, ctrl->base);
 	}
 
 	ctrl->set = (volatile uint32_t*)(ctrl->map + 0x194);

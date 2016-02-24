@@ -81,7 +81,6 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 	uint_fast32_t k2 = s2(pow(x2 / 400., 2.)) * 20000;
 	x2 = (x2 + 1) % 401;
 	uint_fast32_t s = 5000ul + random() % 100000ul + k + k2;
-	//printf("k: %6" PRIu32 ", s: %7" PRIu32 "\n", k, s);
 	usleep(s);
 	return l;
 }

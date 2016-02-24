@@ -7,14 +7,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <error.h>
 #include <termios.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <net_common.h>
 #include <cfgfile.h>
 #include <util.h>
+
+static const char PFX[] = "INPUT";
 
 /** file descriptor for UART */
 static int sock;
@@ -51,7 +51,7 @@ static bool doConnect()
 {
 	closeConn();
 
-	sock = NETC_connect("INPUT", CFG_config.input.host, CFG_config.input.port);
+	sock = NETC_connect(PFX, CFG_config.input.host, CFG_config.input.port);
 	return sock != -1;
 }
 
@@ -59,7 +59,7 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = recv(sock, buf, bufLen, 0);
 	if (unlikely(rc < 0)) {
-		error(0, errno, "INPUT: recv failed");
+		LOG_errno(LOG_LEVEL_WARN, PFX, "recv failed");
 		closeConn();
 		return 0;
 	} else {
@@ -71,7 +71,7 @@ size_t INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = send(sock, buf, bufLen, MSG_NOSIGNAL);
 	if (unlikely(rc <= 0)) {
-		error(0, errno, "INPUT: send failed");
+		LOG_errno(LOG_LEVEL_WARN, PFX, "send failed");
 		return 0;
 	}
 	return rc;

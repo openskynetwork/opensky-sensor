@@ -3,13 +3,12 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <log.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <error.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -21,6 +20,8 @@
 #include <stdio.h>
 #include <cfgfile.h>
 #include <util.h>
+
+static const char PFX[] = "CFG";
 
 struct CFG_Config CFG_config;
 
@@ -60,7 +61,10 @@ enum SECTION {
 	SECTION_GPS,
 
 	/** Number of sections */
-	SECTIONS
+	SECTIONS,
+
+	/** Section not known */
+	SECTION_UNKNOWN = SECTIONS
 };
 
 /** Current begin of parser */
@@ -92,6 +96,8 @@ static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionSTAT(const struct Option * opt, struct CFG_Config * cfg);
 static void scanOptionGPS(const struct Option * opt, struct CFG_Config * cfg);
+static void scanOptionUnknown(const struct Option * opt,
+	struct CFG_Config * cfg);
 
 /** Description of all sections */
 static const struct Section sections[] = {
@@ -105,6 +111,7 @@ static const struct Section sections[] = {
 	[SECTION_DEVICE] = { "DEVICE", &scanOptionDEV },
 	[SECTION_STAT] = { "STATISTICS", &scanOptionSTAT },
 	[SECTION_GPS] = { "GPS", &scanOptionGPS },
+	[SECTION_UNKNOWN] = { NULL, &scanOptionUnknown }
 };
 
 /** Read and check a configuration file.
@@ -119,28 +126,25 @@ void CFG_read(const char * file)
 	/* open input file */
 	int fd = open(file, O_RDONLY | O_CLOEXEC);
 	if (fd < 0)
-		error(EXIT_FAILURE, errno, "Configuration error: could not open '%s'",
-			file);
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not open '%s'", file);
 
 	/* stat input file for its size */
 	struct stat st;
 	if (fstat(fd, &st) < 0) {
 		close(fd);
-		error(EXIT_FAILURE, errno, "Configuration error: could not stat '%s'",
-			file);
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not stat '%s'", file);
 	}
 
 	/* mmap input file */
 	char * cfgStr = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 	close(fd);
 	if (cfgStr == MAP_FAILED)
-		error(EXIT_FAILURE, errno, "Configuration error: could not mmap '%s'",
-			file);
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not mmap '%s'", file);
 
 	/* actually read configuration */
 	readCfg(cfgStr, st.st_size, &CFG_config);
 
-	/* unmap and close file */
+	/* unmap file */
 	munmap(cfgStr, st.st_size);
 
 	/* fix configuration */
@@ -177,11 +181,11 @@ static enum SECTION scanSection()
 
 	/* sanity checks */
 	if (!c || n < c)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-			": ] expected, but newline found", bufferLine);
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": ] expected "
+			"before end of line", bufferLine);
 	if (c != n - 1)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-			": newline after ] expected", bufferLine);
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": newline after ] "
+			"expected", bufferLine);
 
 	/* calculate length */
 	const ptrdiff_t len = c - bufferInput - 1;
@@ -189,23 +193,20 @@ static enum SECTION scanSection()
 
 	/* search section */
 	enum SECTION sect;
-	for (sect = 1; sect < SECTIONS; ++sect) {
-		if (isSame(sections[sect].name, buf, len)) {
-			/* found: advance parser and return */
-			bufferInput += len + 3;
-			bufferSize -= len + 3;
-			++bufferLine;
+	for (sect = 1; sect < SECTIONS; ++sect)
+		if (isSame(sections[sect].name, buf, len))
+			break;
 
-			return sect;
-		}
-	}
+	if (sect == SECTION_UNKNOWN)
+		LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": Section %.*s is "
+			"unknown", bufferLine, (int)len, buf);
 
-	/* section not found */
-	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-		": Section %.*s is unknown", bufferLine, (int)len, buf);
+	/* advance parser and return */
+	bufferInput += len + 3;
+	bufferSize -= len + 3;
+	++bufferLine;
 
-	/* keep gcc happy */
-	return SECTION_NONE;
+	return sect;
 }
 
 /** Scan a comment. This will just advance the parser to the end of line/file */
@@ -229,16 +230,16 @@ static inline uint_fast32_t parseInt(const struct Option * opt)
 {
 	char buf[20];
 	if (opt->valLen + 1 > sizeof buf || opt->valLen == 0)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-			": Not a number", bufferLine);
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": Number expected",
+			bufferLine);
 	strncpy(buf, opt->val, opt->valLen);
 	buf[opt->valLen] = '\0';
 
 	char * end;
 	unsigned long int n = strtoul(buf, &end, 0);
 	if (*end != '\0')
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-			": Garbage trailing line", bufferLine);
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": Garbage after "
+			"number", bufferLine);
 
 	return n;
 }
@@ -256,10 +257,9 @@ static inline bool parseBool(const struct Option * opt)
 		|| isSame("0", opt->val, opt->valLen))
 		return false;
 
-	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-		": boolean option has unexpected value '%.*s'", bufferLine,
-		(int)opt->valLen, opt->val);
-	return false;
+	LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": boolean option has "
+		"unexpected value '%.*s'", bufferLine, (int)opt->valLen, opt->val);
+	return false; /* silence GCC */
 }
 
 /** Parse a string.
@@ -270,8 +270,8 @@ static inline bool parseBool(const struct Option * opt)
 static inline void parseString(const struct Option * opt, char * str, size_t sz)
 {
 	if (opt->valLen > sz - 1)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-			": Value to long (max %zu expected)", bufferLine, sz - 1);
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": Value too long "
+			"(max. length %zu expected)", bufferLine, sz - 1);
 	memcpy(str, opt->val, opt->valLen);
 	str[opt->valLen] = '\0';
 }
@@ -291,8 +291,8 @@ static inline bool isOption(const struct Option * opt, const char * name)
  */
 static inline void unknownKey(const struct Option * opt)
 {
-	error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-		": unknown key '%.*s'", bufferLine, (int)opt->keyLen, opt->key);
+	LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": unknown key '%.*s'",
+		bufferLine, (int)opt->keyLen, opt->key);
 }
 
 /** Scan Watchdog Section.
@@ -343,8 +343,8 @@ static void scanOptionINPUT(const struct Option * opt, struct CFG_Config * cfg)
 #ifdef INPUT_LAYER_NETWORK
 		uint_fast32_t n = parseInt(opt);
 		if (n > 0xffff)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-			": port must be < 65535", bufferLine);
+			LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": port must be "
+				"< 65536", bufferLine);
 		cfg->input.port = n;
 #endif
 	} else if (isOption(opt, "rtscts")) {
@@ -388,8 +388,8 @@ static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg)
 	else if (isOption(opt, "port")) {
 		uint_fast32_t n = parseInt(opt);
 		if (n > 0xffff)
-			error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-				": port must be < 65535", bufferLine);
+			LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": port must be "
+				"< 65536", bufferLine);
 		cfg->net.port = n;
 	} else if (isOption(opt, "timeout"))
 		cfg->net.timeout = parseInt(opt);
@@ -469,14 +469,23 @@ static void scanOptionGPS(const struct Option * opt, struct CFG_Config * cfg)
 #ifdef INPUT_LAYER_NETWORK
 		uint_fast32_t n = parseInt(opt);
 		if (n > 0xffff)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-			": port must be < 65535", bufferLine);
+			LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": port must be "
+				"< 65536", bufferLine);
 		cfg->gps.port = n;
 #endif
 	} else if (isOption(opt, "reconnectInterval"))
 		cfg->gps.reconnectInterval = parseInt(opt);
 	else
 		unknownKey(opt);
+}
+
+/** Scan Unknown Section.
+ * \param opt option to be parsed
+ * \param cfg configuration to be filled
+ */
+static void scanOptionUnknown(const struct Option * opt,
+	struct CFG_Config * cfg)
+{
 }
 
 /** Scan an option line.
@@ -492,8 +501,8 @@ static void scanOption(enum SECTION sect, struct CFG_Config * cfg)
 		n = bufferInput + bufferSize - 1;
 	/* sanity check */
 	if (n < e)
-		error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-			": = expected, but newline found", bufferLine);
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": '=' before end "
+			"of line expected", bufferLine);
 
 	struct Option opt;
 
@@ -549,10 +558,11 @@ static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg)
 			scanComment();
 		break;
 		default:
-			if (sect == SECTION_NONE)
-				error(EXIT_FAILURE, 0, "Configuration error: Line %" PRIuFAST32
-					": Unexpected '%c' outside any section", bufferLine,
-					bufferInput[0]);
+			if (sect == SECTION_NONE) {
+				LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": "
+					"Unexpected option outside any section", bufferLine);
+				sect = SECTION_UNKNOWN;
+			}
 			scanOption(sect, cfg);
 		}
 	}
@@ -617,36 +627,34 @@ static void fix(struct CFG_Config * cfg)
 #ifdef INPUT_LAYER_NETWORK
 	if (cfg->fpga.configure) {
 		cfg->fpga.configure = false;
-		fprintf(stderr, "Configuration warning: FPGA.configure is ignored in "
-			"network mode\n");
+		LOG_log(LOG_LEVEL_WARN, PFX, "FPGA.configure is ignored in network "
+			"mode");
 	}
 
 	if (cfg->wd.enabled) {
 		cfg->wd.enabled = false;
-		fprintf(stderr, "Configuration warning: WATCHDOG.enabled is ignored in "
-			"network mode\n");
+		LOG_log(LOG_LEVEL_WARN, PFX, "WATCHDOG.enabled is ignored in network "
+			"mode");
 	}
 #endif
 
 	if (cfg->buf.statBacklog < 2) {
 		cfg->buf.statBacklog = 2;
-		fprintf(stderr, "Configuration warning: BUFFER.staticBacklog was "
-			"increased to 2\n");
+		LOG_log(LOG_LEVEL_WARN, PFX, "BUFFER.staticBacklog was increased to 2");
 	}
 
 	if (cfg->buf.gcEnabled && !cfg->buf.history) {
 		cfg->buf.gcEnabled = false;
-		fprintf(stderr, "Configuration warning: ignoring BUFFER.gcEnabled "
-			"because BUFFER.history is not enabled\n");
+		LOG_log(LOG_LEVEL_WARN, PFX, "Ignoring BUFFER.gcEnabled because "
+			"BUFFER.history is not enabled");
 
 	}
 
 	if (cfg->dev.serialSet) {
 		if (cfg->dev.serial & 0x80000000) {
 			cfg->dev.serial &= 0x7fffffff;
-			fprintf(stderr, "Configuration warning: DEVICE.serial was "
-				"truncated to 31 bits, it's %" PRIu32 " now\n",
-				cfg->dev.serial);
+			LOG_logf(LOG_LEVEL_WARN, PFX, "DEVICE.serial was truncated to 31 "
+				"bits, it is %" PRIu32 " now\n", cfg->dev.serial);
 		}
 	} else {
 		cfg->dev.serialSet = UTIL_getSerial(&cfg->dev.serial);
@@ -659,41 +667,40 @@ static void fix(struct CFG_Config * cfg)
 static void check(const struct CFG_Config * cfg)
 {
 	if (cfg->fpga.configure && cfg->fpga.file[0] == '\0')
-		error(EXIT_FAILURE, 0, "Configuration error: FPGA.file is empty");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "FPGA.file is missing");
 
 	if (cfg->buf.statBacklog <= 2)
-		error(EXIT_FAILURE, 0,
-			"Configuration error: BUFFER.staticBacklog must be >= 2");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "BUFFER.staticBacklog must be >= 2");
 
 	if (cfg->net.host[0] == '\0')
-		error(EXIT_FAILURE, 0, "Configuration error: NET.host is empty");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "NET.host is missing");
 	if (cfg->net.port == 0)
-		error(EXIT_FAILURE, 0, "Configuration error: NET.port = 0");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "NET.port = 0");
 
 #ifdef INPUT_LAYER_NETWORK
 	if (cfg->input.host[0] == '\0')
-		error(EXIT_FAILURE, 0, "Configuration error: INPUT.host is empty");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "INPUT.host is missing");
 	if (cfg->input.port == 0)
-		error(EXIT_FAILURE, 0, "Configuration error: INPUT.port = 0");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "INPUT.port = 0");
 #else
 	if (cfg->input.uart[0] == '\0')
-		error(EXIT_FAILURE, 0, "Configuration error: INPUT.uart is empty");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "INPUT.uart is missing");
 #endif
 
 	if (!cfg->dev.serialSet)
-		error(EXIT_FAILURE, 0, "Configuration error: DEVICE.serial is missing");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "DEVICE.serial is missing");
 
 	if (cfg->stats.interval == 0)
-		error(EXIT_FAILURE, 0, "Configuration error: STATISTICS.interval is 0");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "STATISTICS.interval = 0");
 
 #ifdef INPUT_LAYER_NETWORK
 	if (cfg->gps.host[0] == '\0')
-		error(EXIT_FAILURE, 0, "Configuration error: GPS.host is empty");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "GPS.host is missing");
 	if (cfg->gps.port == 0)
-		error(EXIT_FAILURE, 0, "Configuration error: GPS.port = 0");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "GPS.port = 0");
 #else
 	if (cfg->gps.uart[0] == '\0')
-		error(EXIT_FAILURE, 0, "Configuration error: GPS.uart is empty");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "GPS.uart is missing");
 #endif
 }
 

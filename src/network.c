@@ -8,8 +8,6 @@
 #include <net_common.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <error.h>
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
@@ -146,7 +144,7 @@ static void unlockIfLocked(bool * locked)
 void NET_sync_send()
 {
 #ifdef DEBUG
-	NOC_puts(PREFIX ": send synchronizing");
+	LOG_log(LOG_LEVEL_DEBUG, PFX, "send synchronizing");
 #endif
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&unlock, NULL);
@@ -154,7 +152,7 @@ void NET_sync_send()
 		pthread_cond_wait(&condConnected, &mutex);
 	reconnectedSend = false;
 #ifdef DEBUG
-	NOC_puts(PREFIX ": send synchronized");
+	LOG_log(LOG_LEVEL_DEBUG, PFX, "send synchronized");
 #endif
 	CLEANUP_POP();
 }
@@ -163,7 +161,7 @@ void NET_sync_send()
 void NET_sync_recv()
 {
 #ifdef DEBUG
-	NOC_puts(PREFIX ": recv synchronizing");
+	LOG_log(LOG_LEVEL_DEBUG, PFX, "recv synchronizing");
 #endif
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&unlock, NULL);
@@ -171,7 +169,7 @@ void NET_sync_recv()
 		pthread_cond_wait(&condConnected, &mutex);
 	reconnectedRecv = false;
 #ifdef DEBUG
-	NOC_puts(PREFIX ": recv synchronized");
+	LOG_log(LOG_LEVEL_DEBUG, PFX, "recv synchronized");
 #endif
 	CLEANUP_POP();
 }
@@ -179,16 +177,15 @@ void NET_sync_recv()
 static inline void emitDisconnect()
 {
 	shutdown(sock, SHUT_RDWR);
+	bool doReconnect = !connected || (!inRecv && !inSend);
 #ifdef DEBUG
-	NOC_printf(PREFIX ": Disconnect Event. Connected: %d, inRecv: %d, inSend: "
-		"%d -> ", connected, inRecv, inSend);
+	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Disconnect Event. Connected: %d, "
+		"inRecv: %d, inSend: %d -> %s", connected, inRecv, inSend,
+		doReconnect ? "reconnect" : "wait");
 #endif
-	if (!connected || (!inRecv && !inSend)) {
-		NOC_puts("reconnect");
+	if (doReconnect) {
 		reconnect = true;
 		pthread_cond_signal(&condReconnect);
-	} else {
-		NOC_puts("wait");
 	}
 	connected = false;
 }

@@ -4,8 +4,7 @@
 #include <config.h>
 #endif
 #define _DEFAULT_SOURCE
-#include <error.h>
-#include <errno.h>
+#include <log.h>
 #include <assert.h>
 #include <string.h>
 #include <stdint.h>
@@ -20,6 +19,8 @@
 #include <cfgfile.h>
 #include <threads.h>
 #include <util.h>
+
+static const char PFX[] = "ADSB";
 
 /** receive buffer */
 static uint8_t buf[128];
@@ -156,7 +157,7 @@ bool ADSB_getFrame(struct ADSB_RawFrame * raw,
 		if (unlikely(!next(&sync)))
 			return false;
 		if (unlikely(sync != 0x1a)) {
-			NOC_fprintf(stderr, "ADSB: Out of Sync: got 0x%2" PRIx8
+			LOG_logf(LOG_LEVEL_WARN, PFX, "Out of Sync: got 0x%02" PRIx8
 				" instead of 0x1a\n", sync);
 			++STAT_stats.ADSB_outOfSync;
 synchronize:
@@ -184,13 +185,13 @@ decode_frame:
 			payload_len = 14;
 		break;
 		case '\x1a': /* resynchronize */
-			NOC_puts("ADSB: Out of Sync: got unescaped 0x1a in frame, "
-				"resynchronizing");
+			LOG_log(LOG_LEVEL_WARN, PFX, "Out of Sync: got unescaped 0x1a in "
+				"frame, resynchronizing");
 			++STAT_stats.ADSB_outOfSync;
 			goto synchronize;
 		default:
-			NOC_fprintf(stderr, "ADSB: Unknown frame type %c, "
-				"resynchronizing\n", type);
+			LOG_logf(LOG_LEVEL_WARN, PFX, "Unknown frame type %c, "
+				"resynchronizing", type);
 			++STAT_stats.ADSB_frameTypeUnknown;
 			goto synchronize;
 		}

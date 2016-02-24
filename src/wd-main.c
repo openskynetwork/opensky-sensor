@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <util.h>
 #include <string.h>
+#include <log.h>
 
 #if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
@@ -67,8 +68,8 @@ int main(int argc, char * argv[])
 
 		FPGA_comp.construct(&bbwhite);
 		if (!FPGA_comp.start(&FPGA_comp, NULL)) {
-			fprintf(stderr,
-				"Could not configure fpga, triggering watchdog only\n");
+			LOG_log(LOG_LEVEL_WARN, "MAIN", "Could not configure fpga, "
+				"triggering watchdog only");
 		}
 	}
 

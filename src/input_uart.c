@@ -8,12 +8,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <poll.h>
-#include <errno.h>
-#include <error.h>
 #include <termios.h>
 #include <unistd.h>
+#include <errno.h>
 #include <cfgfile.h>
 #include <util.h>
+
+static const char PFX[] = "INPUT";
 
 /** file descriptor for UART */
 static int fd;
@@ -54,7 +55,7 @@ static bool doConnect()
 	/* open uart */
 	fd = open(CFG_config.input.uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
 	if (fd < 0) {
-		error(0, errno, "INPUT: Could not open UART at '%s'",
+		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not open UART at '%s'",
 			CFG_config.input.uart);
 		fd = -1;
 		return false;
@@ -63,7 +64,7 @@ static bool doConnect()
 	/* set uart options */
 	struct termios t;
 	if (tcgetattr(fd, &t) == -1) {
-		error(0, errno, "INPUT: tcgetattr failed");
+		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not get UART settings");
 		closeUart();
 		return false;
 	}
@@ -78,7 +79,7 @@ static bool doConnect()
 	t.c_ospeed = B3500000;
 
 	if (tcsetattr(fd, TCSANOW, &t)) {
-		error(0, errno, "INPUT: tcsetattr failed");
+		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not set UART settings");
 		closeUart();
 		return false;
 	}
@@ -100,7 +101,7 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 			if (errno == EAGAIN) {
 				poll(&fds, 1, -1);
 			} else {
-				error(0, errno, "INPUT: read failed");
+				LOG_errno(LOG_LEVEL_WARN, PFX, "Could not read from UART");
 				closeUart();
 				return 0;
 			}

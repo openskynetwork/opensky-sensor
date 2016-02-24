@@ -4,17 +4,18 @@
 #include <config.h>
 #endif
 #include <proc.h>
+#include <log.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <error.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+
+static const char PFX[] = "PROC";
 
 /** Print a command line which is about to be executed to stdout.
  * \param argv the whole argument vector where argv[0] is the executable.
@@ -23,10 +24,19 @@ static void printCmdLine(char * argv[])
 {
 	char * const * arg;
 
-	printf("PROC: Executing ");
+	char buf[1000];
+	buf[0] = '\0';
+	char * const end = buf + sizeof(buf);
+	char * ptr = buf + 1;
 
-	for (arg = argv; *arg; ++arg)
-		printf("%s%c", *arg, arg[1] ? ' ' : '\n');
+	for (arg = argv; *arg && ptr && ptr != end; ++arg) {
+		ptr[-1] = ' ';
+		ptr = memccpy(ptr, *arg, '\0', end - ptr);
+	}
+	if (*arg && (!ptr || ptr == end))
+		strcpy(&end[-4], "...");
+
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Executing%s\n", buf);
 }
 
 /** Fork from parent process.
@@ -36,7 +46,7 @@ bool PROC_fork()
 {
 	pid_t childPid = fork();
 	if (childPid == -1) {
-		error(0, errno, "fork failed");
+		LOG_errno(LOG_LEVEL_WARN, PFX, "fork failed");
 		return false;
 	} else if (childPid) { /* parent */
 		return false;
@@ -60,7 +70,7 @@ void PROC_execAndFinalize(char * argv[])
 	(void)umask(~0755);
 
 	PROC_execRaw(argv);
-	_exit(EXIT_FAILURE);
+	_Exit(EXIT_FAILURE);
 }
 
 /** Print command line and execute. This will replace the current process by
@@ -72,7 +82,7 @@ void PROC_execRaw(char * argv[])
 	char * envp[] = { NULL };
 	int ret = execve(argv[0], argv, envp);
 	if (ret != 0)
-		error(0, errno, "TB: exec failed");
+		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not execute");
 }
 
 /** Escape the cgroup, so systemd won't kill us when stopping the daemon */
@@ -82,7 +92,8 @@ static inline void escape_cgroup()
 	pid_t pid = getpid();
 	FILE * f = fopen("/sys/fs/cgroup/systemd/tasks", "a");
 	if (!f) {
-		error(0, errno, "Could not open cgroup/tasks for appending");
+		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not open cgroup/tasks for "
+			"appending");
 		return;
 	}
 	fprintf(f, "%u\n", (unsigned int)pid);
@@ -98,9 +109,9 @@ void PROC_forkAndExec(char * argv[])
 	if (!PROC_fork())
 		return; /* parent */
 	/* daemonize and chdir to root */
-	if (daemon(0, 1) < 0)
-		error(0, errno, "PROC: daemon failed");
-	else {
+	if (daemon(0, 1) < 0) {
+		_Exit(EXIT_FAILURE);
+	} else {
 		escape_cgroup();
 		PROC_execAndFinalize(argv);
 	}
