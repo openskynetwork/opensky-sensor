@@ -14,7 +14,7 @@ openskyd_SOURCES = main.c \
 	statistics.h statistics.c tb.h tb.c recv.h recv.c \
 	input.h net_common.h net_common.c util.h util.c \
 	component.h component.c threads.h relay.h relay.c message.h message.c \
-	filter.h filter.c
+	filter.h filter.c log.h log_stdio.c
 
 # for now, disable gps
 #	gps.h gps.c gps_input.h gps_input_uart.c gps_parser.h gps_parser.c
