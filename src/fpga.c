@@ -5,6 +5,7 @@
 #endif
 #include <gpio.h>
 #include <fpga.h>
+#include <log.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -20,6 +21,8 @@
 #include <limits.h>
 #include <string.h>
 #include <cfgfile.h>
+
+static const char PFX[] = "FPGA";
 
 #if defined(DEVELOPMENT) && !defined(FWDIR)
 #define FWDIR "."
@@ -61,7 +64,7 @@ static void construct();
 static bool program();
 
 struct Component FPGA_comp = {
-	.description = "FPGA",
+	.description = PFX,
 	.construct = &construct,
 	.start = &program
 };
@@ -105,14 +108,14 @@ static bool program()
 	/* open input file */
 	int fd = open(file, O_RDONLY | O_CLOEXEC);
 	if (fd < 0) {
-		error(0, errno, "FPGA: could not open '%s'", file);
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "could not open '%s'", file);
 		return false;
 	}
 
 	/* stat input file for its size */
 	if (fstat(fd, &st) < 0) {
 		close(fd);
-		error(0, errno, "FPGA: could not stat '%s'", file);
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "could not stat '%s'", file);
 		return 0;
 	}
 
@@ -120,21 +123,22 @@ static bool program()
 	uint8_t * rfd = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 	close(fd);
 	if (rfd == MAP_FAILED) {
-		error(0, errno, "FPGA: could not mmap '%s'", file);
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "could not mmap '%s'", file);
 		return false;
 	}
 
 	uint32_t try;
 	uint32_t retries = CFG_config.fpga.retries + 1;
 	for (try = 1; try < retries; ++try) {
-		printf("FPGA: Programming (attempt %" PRIu32 " of %" PRIu32 ")\n", try,
-			retries);
+		LOG_logf(LOG_LEVEL_INFO, PFX, "Programming (attempt %" PRIu32
+			" of %" PRIu32 ")", try, retries);
 
 		/* reset FPGA */
 		if (!reset(CFG_config.fpga.timeout))
 			continue;
 
-		printf("FPGA: Transferring RBF for beagle bone %s\n", fpga->name);
+		LOG_logf(LOG_LEVEL_INFO, PFX, "Transferring RBF for beagle bone %s",
+			fpga->name);
 		if (!transfer(rfd, st.st_size))
 			continue;
 
@@ -142,19 +146,19 @@ static bool program()
 		while (GPIO_read(fpga->confd) && spin--)
 			usleep(50);
 		if (!GPIO_read(fpga->confd)) {
-			fprintf(stderr, "FPGA: could not program: CONF_DONE = 0 after "
-				"last byte");
+			LOG_log(LOG_LEVEL_WARN, PFX, "could not program: CONF_DONE = 0"
+				"after last byte");
 			continue;
 		}
 
 		munmap(rfd, st.st_size);
 
-		puts("FPGA: done");
+		LOG_log(LOG_LEVEL_INFO, PFX, "done");
 		break;
 	}
 	if (try == retries) {
-		error(0, 0, "FPGA: could not program fpga after %" PRIu32 " attempts",
-			retries);
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "could not program fpga after %" PRIu32
+			" attempts", retries);
 		return false;
 	}
 	return true;
@@ -165,19 +169,19 @@ static bool program()
  */
 static bool reset(uint32_t timeout)
 {
-	puts("FPGA: Reset");
+	LOG_log(LOG_LEVEL_DEBUG, PFX, "Reset");
 	GPIO_clear(fpga->nconf);
 	usleep(50000);
 	GPIO_clear(fpga->dclk);
 	GPIO_set(fpga->nconf);
 
-	puts("FPGA: Synchronizing");
+	LOG_log(LOG_LEVEL_DEBUG, PFX, "Synchronizing");
 	while (timeout--) {
 		if (GPIO_read(fpga->nstat))
 			return true;
 		usleep(50);
 	}
-	error(0, 0, "FPGA: could not synchronize with the FPGA");
+	LOG_logf(LOG_LEVEL_ERROR, PFX, "could not synchronize with the FPGA");
 	return false;
 }
 
@@ -207,8 +211,8 @@ static bool transfer(const uint8_t * rfd, off_t size)
 		}
 		/* monitor FPGA status */
 		if (!GPIO_read(fpga->nstat)) {
-			fprintf(stderr, "FPGA: could not program: nSTATUS = 0 "
-				"at byte %lu\n", (unsigned long int)pos);
+			LOG_logf(LOG_LEVEL_WARN, PFX, "could not program: nSTATUS = 0 "
+				"at byte %lu", (unsigned long int)pos);
 			return false;
 		}
 	}
