@@ -48,9 +48,9 @@ extern "C" {
 #define CLEANUP_POP0() \
 	} while (0)
 
-#define CANCEL_DISABLE(r) do {} while(0)
+#define CANCEL_DISABLE(r) do { (void)r; } while(0)
 
-#define CANCEL_RESTORE(r) do {} while(0)
+#define CANCEL_RESTORE(r) do { (void)r; } while(0)
 
 #define NOC_call(func, args...) func(args)
 
