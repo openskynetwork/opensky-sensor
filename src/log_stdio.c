@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <threads.h>
 
 struct LevelName {
 	const char name[7];
@@ -13,7 +16,7 @@ struct LevelName {
 static const struct LevelName levelNames[] = {
 	[LOG_LEVEL_INFO] = { "INFO", 4 },
 	[LOG_LEVEL_DEBUG] = { "DEBUG", 5 },
-	[LOG_LEVEL_SEVERE] = { "SEVERE", 6 },
+	[LOG_LEVEL_WARN] = { "SEVERE", 6 },
 	[LOG_LEVEL_ERROR] = { "ERROR", 5 }
 };
 
@@ -21,6 +24,9 @@ __attribute__((format(printf, 3, 4)))
 void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 {
 	const struct LevelName * levelName = &levelNames[level];
+
+	int r;
+	CANCEL_DISABLE(&r);
 
 	printf("[%s] ", levelName->name);
 	if (prefix)
@@ -31,6 +37,8 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 	vprintf(fmt, ap);
 	va_end(ap);
 	putchar('\n');
+
+	CANCEL_RESTORE(&r);
 
 #if 0
 	char buf[1000];
@@ -63,9 +71,47 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 {
 	const struct LevelName * levelName = &levelNames[level];
 
+	int r;
+	CANCEL_DISABLE(&r);
+
 	printf("[%s] ", levelName->name);
 	if (prefix)
 		printf("[%s] ", prefix);
 
 	puts(str);
+
+	CANCEL_RESTORE(&r);
+}
+
+__attribute__((format(printf, 3, 4)))
+void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
+{
+	const struct LevelName * levelName = &levelNames[level];
+
+	int r;
+	CANCEL_DISABLE(&r);
+
+	printf("[%s] ", levelName->name);
+	if (prefix)
+		printf("[%s] ", prefix);
+
+	va_list ap;
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+
+	char errstr[100];
+	int rc = strerror_r(errno, errstr, sizeof errstr);
+	if (rc == 0)
+		printf(": %s (%d)", errstr, errno);
+	else
+		printf(": ?? (%d)", errno);
+	putchar('\n');
+
+	CANCEL_RESTORE(&r);
+}
+
+void LOG_flush()
+{
+	NOC_call(fflush, stdout);
 }
