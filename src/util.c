@@ -45,10 +45,12 @@ bool UTIL_getSerial(uint32_t * serial)
 	struct ifreq ifr;
 	strncpy(ifr.ifr_name, "eth0", IFNAMSIZ);
 
-	if (ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) /* no such eth0 */
-		return false;
+	int ret = ioctl(sock, SIOCGIFHWADDR, &ifr);
 
 	close(sock);
+
+	if (ret < 0) /* no such eth0 */
+		return false;
 
 	if (ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER) /* eth0 is not ethernet? */
 		return false;
