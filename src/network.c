@@ -33,9 +33,9 @@ static volatile bool reconnect;
 static volatile bool reconnectedRecv;
 /** Flag: socket has been reconnected (for sender) */
 static volatile bool reconnectedSend;
-/** Flag: currently in inexclusive region (recv) */
+/** Flag: currently in exclusive region (recv) */
 static volatile bool inRecv;
-/** Flag: currently in inexclusive region (send) */
+/** Flag: currently in exclusive region (send) */
 static volatile bool inSend;
 
 /** Mutex for all shared variables */
