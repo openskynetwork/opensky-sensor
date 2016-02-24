@@ -17,11 +17,58 @@
 #include <grp.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
+#include <limits.h>
+
+#define ETHER_DEVICE "enp2s0"
 
 /** whether the serial number has already been resolved */
 static bool cachedSerial;
 /** the serial number, if cachedSerial is true */
 static uint32_t serialNo;
+
+static bool getMacBySocket(const char * dev, uint8_t mac[IFHWADDRLEN])
+{
+	int sock = socket(PF_INET, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_IP);
+	if (sock < 0)
+		return false;
+
+	struct ifreq ifr;
+	strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+
+	int ret = ioctl(sock, SIOCGIFHWADDR, &ifr);
+
+	close(sock);
+
+	if (ret < 0) /* no such device */
+		return false;
+
+	if (ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER) /* device is not ethernet */
+		return false;
+
+	memcpy(mac, ifr.ifr_hwaddr.sa_data, IFHWADDRLEN);
+
+	return true;
+}
+
+static bool getMacBySysfs(const char * dev, uint8_t mac[IFHWADDRLEN])
+{
+	char path[PATH_MAX];
+
+	int len = snprintf(path, sizeof path, "/sys/class/net/%s/address", dev);
+	if (len < 0 || len >= sizeof path)
+		return false;
+
+	FILE * sys = fopen(path, "re");
+	if (!sys)
+		return false;
+
+	len = fscanf(sys, "%" SCNx8 ":%" SCNx8 ":%"	SCNx8 ":%" SCNx8 ":%" SCNx8
+		":%" SCNx8, &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
+	fclose(sys);
+
+	return len == 6;
+}
 
 /** Get a unique identification of the device by taking parts of its mac
  *   address. The serial number is the least 31 bits of the mac address of
@@ -37,29 +84,22 @@ bool UTIL_getSerial(uint32_t * serial)
 		return true;
 	}
 
-	/* get serial number from mac of eth0 */
-	int sock = socket(PF_INET, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_IP);
-	if (sock < 0)
-		return false;
+	_Static_assert(IFHWADDRLEN == 6,
+		"Length Ethernet MAC address is not 6 bytes");
 
-	struct ifreq ifr;
-	strncpy(ifr.ifr_name, "eth0", IFNAMSIZ);
-
-	int ret = ioctl(sock, SIOCGIFHWADDR, &ifr);
-
-	close(sock);
-
-	if (ret < 0) /* no such eth0 */
-		return false;
-
-	if (ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER) /* eth0 is not ethernet? */
+	uint8_t mac[IFHWADDRLEN];
+	if (!getMacBySocket(ETHER_DEVICE, mac) &&
+		!getMacBySysfs(ETHER_DEVICE, mac))
 		return false;
 
 	uint32_t serial_be;
-	memcpy(&serial_be, ((uint8_t*)ifr.ifr_hwaddr.sa_data) + 2,
-		sizeof serial_be);
+	memcpy(&serial_be, mac + 2, sizeof serial_be);
 	/* get the lower 31 bit */
 	*serial = serialNo = be32toh(serial_be) & 0x7fffffff;
+
+	printf("MAC address: %02" PRIx8 ":%02" PRIx8 ":%02"	PRIx8 ":%02" PRIx8
+		":%02" PRIx8 ":%02" PRIx8 " -> Serial number: %" PRIu32
+		"\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], serial_be);
 
 	cachedSerial = true;
 
