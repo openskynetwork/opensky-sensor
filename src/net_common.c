@@ -31,13 +31,13 @@ int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 
 	/* resolve name */
 	int rc = getaddrinfo(hostName, NULL, NULL, &hosts);
-	CLEANUP_PUSH(&cleanup, hosts);
-
 	if (rc) {
 		LOG_logf(LOG_LEVEL_WARN, prefix, "Could not resolve host '%s': %s",
 			hostName, gai_strerror(rc));
 		return -1;
 	}
+
+	CLEANUP_PUSH(&cleanup, hosts);
 
 	uint16_t port_be = htons(port);
 	for (host = hosts; host != NULL; host = host->ai_next) {
