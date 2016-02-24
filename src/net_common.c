@@ -29,13 +29,13 @@ int NETC_connect(const char * component, const char * hostName, uint16_t port)
 
 	/* resolve name */
 	int rc = getaddrinfo(hostName, NULL, NULL, &hosts);
-	CLEANUP_PUSH(&cleanup, hosts);
-
 	if (rc) {
 		NOC_fprintf(stderr, "%s: could not resolve '%s': %s\n",
 			component, hostName, gai_strerror(rc));
 		return -1;
 	}
+
+	CLEANUP_PUSH(&cleanup, hosts);
 
 	uint16_t port_be = htons(port);
 	for (host = hosts; host != NULL; host = host->ai_next) {
