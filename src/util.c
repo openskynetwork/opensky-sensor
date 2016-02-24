@@ -21,7 +21,7 @@
 #include <inttypes.h>
 #include <limits.h>
 
-#define ETHER_DEVICE "enp2s0"
+#define ETHER_DEVICE "eth0"
 
 static const char PFX[] = "UTIL";
 
