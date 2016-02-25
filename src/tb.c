@@ -181,7 +181,7 @@ static void packetShell(const struct TB_Packet * packet)
 	/* sanity check */
 	if (packet->len != 10) {
 		LOG_logf(LOG_LEVEL_WARN, PFX, "packet of type %" PRIuFAST16 " too "
-			"short (len=%" PRIuFAST16 "), discarding\n", packet->type,
+			"short (len=%" PRIuFAST16 "), discarding", packet->type,
 			packet->len);
 		return;
 	}
@@ -204,7 +204,7 @@ static void packetShell(const struct TB_Packet * packet)
 	snprintf(addr, sizeof addr, "%s:%" PRIu16, ip, port);
 
 	/* start rcc in background */
-	LOG_logf(LOG_LEVEL_INFO, PFX, "Starting rcc to %s\n", addr);
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Starting rcc to %s", addr);
 
 	char *argv[] = { "/usr/bin/rcc", "-t", ":22", "-r", addr, "-n", NULL };
 	PROC_forkAndExec(argv); /* returns while executing in the background */
@@ -242,7 +242,7 @@ static void packetUpgradeDaemon(const struct TB_Packet * frame)
 	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "--needed", "-Sy",
 		"openskyd", "rcc", NULL };
 	if (!PROC_execAndReturn(argv)) {
-		printf("TB: upgrade failed\n");
+		LOG_log(LOG_LEVEL_WARN, PFX, "Upgrade failed");
 	} else {
 		char *argv1[] = { "/bin/systemctl", "daemon-reload", NULL };
 		PROC_execAndReturn(argv1);

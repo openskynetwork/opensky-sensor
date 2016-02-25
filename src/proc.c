@@ -36,7 +36,7 @@ static void printCmdLine(char * argv[])
 	if (*arg && (!ptr || ptr == end))
 		strcpy(&end[-4], "...");
 
-	LOG_logf(LOG_LEVEL_INFO, PFX, "Executing%s\n", buf);
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Executing%s", buf);
 }
 
 /** Fork from parent process.

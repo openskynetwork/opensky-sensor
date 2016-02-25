@@ -158,7 +158,7 @@ bool ADSB_getFrame(struct ADSB_RawFrame * raw,
 			return false;
 		if (unlikely(sync != 0x1a)) {
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Out of Sync: got 0x%02" PRIx8
-				" instead of 0x1a\n", sync);
+				" instead of 0x1a", sync);
 			++STAT_stats.ADSB_outOfSync;
 synchronize:
 			if (unlikely(!synchronize()))

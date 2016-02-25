@@ -654,7 +654,7 @@ static void fix(struct CFG_Config * cfg)
 		if (cfg->dev.serial & 0x80000000) {
 			cfg->dev.serial &= 0x7fffffff;
 			LOG_logf(LOG_LEVEL_WARN, PFX, "DEVICE.serial was truncated to 31 "
-				"bits, it is %" PRIu32 " now\n", cfg->dev.serial);
+				"bits, it is %" PRIu32 " now", cfg->dev.serial);
 		}
 	} else {
 		cfg->dev.serialSet = UTIL_getSerial(&cfg->dev.serial);
