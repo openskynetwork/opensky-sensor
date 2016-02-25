@@ -147,24 +147,23 @@ static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len)
 		return 0;
 
 	uint8_t * ptr = out;
+	const uint8_t * end = in + len;
 
 	/* first time: search for escape from in up to len */
 	const uint8_t * esc = (uint8_t*)memchr(in, '\x1a', len);
-	--len;
 	while (true) {
 		if (unlikely(esc)) {
 			/* if esc found: copy up to (including) esc */
 			memcpy(ptr, in, esc + 1 - in);
 			ptr += esc + 1 - in;
-			len -= esc - in;
 			in = esc; /* important: in points to the esc now */
 		} else {
 			/* no esc found: copy rest, fast return */
-			memcpy(ptr, in, len + 1);
-			return ptr + len + 1 - out;
+			memcpy(ptr, in, end - in);
+			return ptr + (end - in) - out;
 		}
 		if (likely(len)) {
-			esc = (uint8_t*)memchr(in + 1, '\x1a', len);
+			esc = (uint8_t*)memchr(in + 1, '\x1a', end - in - 1);
 		} else {
 			/* nothing more to do, but the last \x1a is still to be copied.
 			 * instead of setting esc = NULL and re-iterating, we do things
