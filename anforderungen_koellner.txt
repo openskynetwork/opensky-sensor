@@ -12,3 +12,9 @@ Schnittstellen:
 
 -- Von Library --
 - setzen von frame filtern auf fpga
+
+
+Fragen:
+- Werden auch kaputte Frames weitergegeben, wenn der User CRC/FEC abgeschaltet hat?
+- Wird jeder String in ostream mit newline abgeschlossen, oder muss std::endl selbst angehängt werden?
+
