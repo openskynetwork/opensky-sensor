@@ -55,7 +55,7 @@ void configure()
 
 	CFG_config.stats.enabled = false;
 
-	CFG_config.dev.serialSet = UTIL_getSerial(&CFG_config.dev.serial);
+	CFG_config.dev.serialSet = UTIL_getSerial("eth0", &CFG_config.dev.serial);
 
 	configured = true;
 

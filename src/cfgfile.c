@@ -432,6 +432,8 @@ static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg)
 	if (isOption(opt, "serial")) {
 		cfg->dev.serial = parseInt(opt);
 		cfg->dev.serialSet = true;
+	} else if (isOption(opt, "device")) {
+		parseString(opt, cfg->dev.deviceName, sizeof cfg->dev.deviceName);
 	} else
 		unknownKey(opt);
 }
@@ -573,9 +575,15 @@ static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg)
  */
 static void loadDefaults(struct CFG_Config * cfg)
 {
+#ifdef STANDALONE
 	cfg->wd.enabled = true;
 
 	cfg->fpga.configure = true;
+#else
+	cfg->wd.enabled = false;
+
+	cfg->fpga.configure = false;
+#endif
 	strncpy(cfg->fpga.file, "cape.rbf", sizeof cfg->fpga.file);
 	cfg->fpga.retries = 2;
 	cfg->fpga.timeout = 10;
@@ -609,6 +617,7 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->buf.gcLevel = 2;
 
 	cfg->dev.serialSet = false;
+	strncpy(cfg->dev.deviceName, "eth0", sizeof cfg->dev.deviceName);
 
 	cfg->stats.enabled = true;
 	cfg->stats.interval = 600;
@@ -624,16 +633,16 @@ static void loadDefaults(struct CFG_Config * cfg)
 
 static void fix(struct CFG_Config * cfg)
 {
-#ifdef INPUT_LAYER_NETWORK
+#ifndef STANDALONE
 	if (cfg->fpga.configure) {
 		cfg->fpga.configure = false;
-		LOG_log(LOG_LEVEL_WARN, PFX, "FPGA.configure is ignored in network "
+		LOG_log(LOG_LEVEL_WARN, PFX, "FPGA.configure is ignored in non-standalone "
 			"mode");
 	}
 
 	if (cfg->wd.enabled) {
 		cfg->wd.enabled = false;
-		LOG_log(LOG_LEVEL_WARN, PFX, "WATCHDOG.enabled is ignored in network "
+		LOG_log(LOG_LEVEL_WARN, PFX, "WD.enabled is ignored in non-standalone "
 			"mode");
 	}
 #endif
@@ -656,8 +665,9 @@ static void fix(struct CFG_Config * cfg)
 			LOG_logf(LOG_LEVEL_WARN, PFX, "DEVICE.serial was truncated to 31 "
 				"bits, it is %" PRIu32 " now", cfg->dev.serial);
 		}
-	} else {
-		cfg->dev.serialSet = UTIL_getSerial(&cfg->dev.serial);
+	} else if (cfg->dev.deviceName[0]) {
+		cfg->dev.serialSet = UTIL_getSerial(cfg->dev.deviceName,
+			&cfg->dev.serial);
 	}
 }
 

@@ -21,8 +21,6 @@
 #include <inttypes.h>
 #include <limits.h>
 
-#define ETHER_DEVICE "eth0"
-
 static const char PFX[] = "UTIL";
 
 /** whether the serial number has already been resolved */
@@ -75,12 +73,13 @@ static bool getMacBySysfs(const char * dev, uint8_t mac[IFHWADDRLEN])
 
 /** Get a unique identification of the device by taking parts of its mac
  *   address. The serial number is the least 31 bits of the mac address of
- *   eth0. This way, it will fit into Javas 32 bit signed integer.
+ *   an ethernet device. This way, it will fit into Javas 32 bit signed integer.
+ * \param device name of the ethernet device
  * \param serial the serial number will be written to this address, if the
  *  return value is true.
  * \return true if operation succeeded, false otherwise
  */
-bool UTIL_getSerial(uint32_t * serial)
+bool UTIL_getSerial(const char * device, uint32_t * serial)
 {
 	if (cachedSerial) {
 		*serial = serialNo;
@@ -91,9 +90,9 @@ bool UTIL_getSerial(uint32_t * serial)
 		"Length Ethernet MAC address is not 6 bytes");
 
 	uint8_t mac[IFHWADDRLEN];
-	if (!getMacBySocket(ETHER_DEVICE, mac)) {
+	if (!getMacBySocket(device, mac)) {
 		LOG_log(LOG_LEVEL_INFO, PFX, "Could not get MAC by Socket API");
-		if (!getMacBySysfs(ETHER_DEVICE, mac)) {
+		if (!getMacBySysfs(device, mac)) {
 			LOG_log(LOG_LEVEL_INFO, PFX, "Could not get MAC by Sysfs");
 			return false;
 		}
