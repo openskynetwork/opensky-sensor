@@ -91,9 +91,9 @@ bool UTIL_getSerial(const char * device, uint32_t * serial)
 
 	uint8_t mac[IFHWADDRLEN];
 	if (!getMacBySocket(device, mac)) {
-		LOG_log(LOG_LEVEL_INFO, PFX, "Could not get MAC by Socket API");
+		LOG_log(LOG_LEVEL_WARN, PFX, "Could not get MAC by Socket API");
 		if (!getMacBySysfs(device, mac)) {
-			LOG_log(LOG_LEVEL_INFO, PFX, "Could not get MAC by Sysfs");
+			LOG_log(LOG_LEVEL_WARN, PFX, "Could not get MAC by Sysfs");
 			return false;
 		}
 	}
