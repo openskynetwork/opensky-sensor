@@ -7,16 +7,17 @@
 #include <errno.h>
 #include <string.h>
 #include <threads.h>
+#include <util.h>
 
 struct LevelName {
-	const char name[7];
+	const char name[6];
 	size_t len;
 };
 
 static const struct LevelName levelNames[] = {
 	[LOG_LEVEL_INFO] = { "INFO", 4 },
 	[LOG_LEVEL_DEBUG] = { "DEBUG", 5 },
-	[LOG_LEVEL_WARN] = { "SEVERE", 6 },
+	[LOG_LEVEL_WARN] = { "WARN", 6 },
 	[LOG_LEVEL_ERROR] = { "ERROR", 5 }
 };
 
@@ -39,6 +40,9 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 	putchar('\n');
 
 	CANCEL_RESTORE(&r);
+
+	if (unlikely(level == LOG_LEVEL_ERROR))
+		exit(EXIT_FAILURE);
 
 #if 0
 	char buf[1000];
@@ -81,6 +85,9 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 	puts(str);
 
 	CANCEL_RESTORE(&r);
+
+	if (unlikely(level == LOG_LEVEL_ERROR))
+		exit(EXIT_FAILURE);
 }
 
 static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
@@ -106,6 +113,9 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	putchar('\n');
 
 	CANCEL_RESTORE(&r);
+
+	if (unlikely(level == LOG_LEVEL_ERROR))
+		exit(EXIT_FAILURE);
 }
 
 __attribute__((format(printf, 3, 4)))
