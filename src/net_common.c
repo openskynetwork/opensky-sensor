@@ -60,11 +60,11 @@ int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 		}
 
 		char ip[INET6_ADDRSTRLEN];
-		if (inet_ntop(host->ai_family, inaddr, ip, sizeof ip) != NULL)
+		if (inet_ntop(host->ai_family, inaddr, ip, sizeof ip) == NULL)
 			strcpy(ip, "??");
 
-		LOG_logf(LOG_LEVEL_INFO, "Trying to connect to '%s': [%s]:%" PRIu16,
-			hostName, ip, port);
+		LOG_logf(LOG_LEVEL_INFO, prefix, "Trying to connect to '%s': [%s]:%"
+			PRIu16, hostName, ip, port);
 
 		/* create socket */
 		sock = socket(host->ai_family, SOCK_STREAM | SOCK_CLOEXEC, 0);
