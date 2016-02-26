@@ -563,9 +563,15 @@ static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg)
  */
 static void loadDefaults(struct CFG_Config * cfg)
 {
+#ifdef STANDALONE
 	cfg->wd.enabled = true;
 
 	cfg->fpga.configure = true;
+#else
+	cfg->wd.enabled = false;
+
+	cfg->fpga.configure = false;
+#endif
 	strncpy(cfg->fpga.file, "cape.rbf", sizeof cfg->fpga.file);
 	cfg->fpga.retries = 2;
 	cfg->fpga.timeout = 10;
@@ -614,17 +620,17 @@ static void loadDefaults(struct CFG_Config * cfg)
 
 static void fix(struct CFG_Config * cfg)
 {
-#ifdef INPUT_LAYER_NETWORK
+#ifndef STANDALONE
 	if (cfg->fpga.configure) {
 		cfg->fpga.configure = false;
 		fprintf(stderr, "Configuration warning: FPGA.configure is ignored in "
-			"network mode\n");
+			"non-standalone mode\n");
 	}
 
 	if (cfg->wd.enabled) {
 		cfg->wd.enabled = false;
 		fprintf(stderr, "Configuration warning: WATCHDOG.enabled is ignored in "
-			"network mode\n");
+			"non-standalone mode\n");
 	}
 #endif
 
