@@ -26,7 +26,7 @@ EXTRA_DIST = input_uart.c input_network.c input_dummy.c
 
 # watchdog sources
 wd_SOURCES = gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
-	cfgfile.h cfgfile.c util.h util.c wd-main.c
+	cfgfile.h cfgfile.c util.h util.c wd-main.c log.h log_stdio.c
 
 # sources for standalone
 if STANDALONE
