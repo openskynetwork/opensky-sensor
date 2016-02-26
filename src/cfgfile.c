@@ -432,6 +432,8 @@ static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg)
 	if (isOption(opt, "serial")) {
 		cfg->dev.serial = parseInt(opt);
 		cfg->dev.serialSet = true;
+	} else if (isOption(opt, "device")) {
+		parseString(opt, cfg->dev.deviceName, sizeof cfg->dev.deviceName);
 	} else
 		unknownKey(opt);
 }
@@ -605,6 +607,7 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->buf.gcLevel = 2;
 
 	cfg->dev.serialSet = false;
+	strncpy(cfg->dev.deviceName, "eth0", sizeof cfg->dev.deviceName);
 
 	cfg->stats.enabled = true;
 	cfg->stats.interval = 600;
@@ -654,8 +657,9 @@ static void fix(struct CFG_Config * cfg)
 				"truncated to 31 bits, it's %" PRIu32 " now\n",
 				cfg->dev.serial);
 		}
-	} else {
-		cfg->dev.serialSet = UTIL_getSerial(&cfg->dev.serial);
+	} else if (cfg->dev.deviceName[0]) {
+		cfg->dev.serialSet = UTIL_getSerial(cfg->dev.deviceName,
+			&cfg->dev.serial);
 	}
 }
 

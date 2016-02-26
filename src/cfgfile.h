@@ -66,6 +66,7 @@ struct CFG_BUF {
 struct CFG_DEV {
 	uint32_t serial;
 	bool serialSet;
+	char deviceName[20];
 };
 
 struct CFG_STATS {
