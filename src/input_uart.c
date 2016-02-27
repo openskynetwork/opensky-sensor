@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <cfgfile.h>
 #include <util.h>
+#include <log.h>
 
 static const char PFX[] = "INPUT";
 
