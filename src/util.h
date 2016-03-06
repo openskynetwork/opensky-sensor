@@ -22,4 +22,6 @@ void UTIL_dropPrivileges();
 #define likely(x) __builtin_expect(!!(x),1)
 #define unlikely(x) __builtin_expect(!!(x),0)
 
+uint32_t UTIL_randInt(uint32_t n);
+
 #endif
