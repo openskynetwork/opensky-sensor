@@ -19,6 +19,8 @@
 #include <signal.h>
 #include <pthread.h>
 #include <string.h>
+#include <error.h>
+#include <sys/time.h>
 
 #if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
@@ -34,6 +36,10 @@ int main(int argc, char * argv[])
 {
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
+
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	srand(tv.tv_sec + tv.tv_usec);
 
 #ifdef STANDALONE
 	bool bbwhite = true;

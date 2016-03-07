@@ -15,30 +15,74 @@
 #include <string.h>
 #include <unistd.h>
 #include <threads.h>
+#include <util.h>
+#include <assert.h>
 
-static void cleanup(struct addrinfo * hosts)
+struct Hosts {
+	struct addrinfo * hosts;
+	struct addrinfo ** shuffled;
+};
+
+static void cleanup(struct Hosts * hosts)
 {
-	if (hosts)
-		freeaddrinfo(hosts);
+	if (hosts) {
+		if (hosts->hosts)
+			freeaddrinfo(hosts->hosts);
+		free(hosts->shuffled);
+		free(hosts);
+	}
 }
 
 int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 {
-	struct addrinfo * hosts = NULL, * host;
+	struct addrinfo * host, hints;
 	int sock = -1;
 
+	// must be pointer for correct cleanup
+	struct Hosts * hosts = malloc(sizeof *hosts);
+	assert(hosts);
+
+	hosts->hosts = NULL;
+	hosts->shuffled = NULL;
+
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+	hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
+
+	CLEANUP_PUSH(&cleanup, hosts);
+
 	/* resolve name */
-	int rc = getaddrinfo(hostName, NULL, NULL, &hosts);
+	int rc = getaddrinfo(hostName, NULL, &hints, &hosts->hosts);
 	if (rc) {
 		LOG_logf(LOG_LEVEL_WARN, prefix, "Could not resolve host '%s': %s",
 			hostName, gai_strerror(rc));
 		return -1;
 	}
 
-	CLEANUP_PUSH(&cleanup, hosts);
+	/* count hosts */
+	size_t nHosts = 0;
+	for (host = hosts->hosts; host != NULL; host = host->ai_next)
+		++nHosts;
+
+	/* copy hosts */
+	hosts->shuffled = malloc(nHosts * sizeof(struct addrinfo));
+	assert(hosts->shuffled);
+	size_t i;
+	for (i = 0, host = hosts->hosts; host != NULL; host = host->ai_next, ++i)
+		hosts->shuffled[i] = host;
+
+	/* shuffle hosts */
+	for (i = nHosts; i; --i) {
+		size_t j = UTIL_randInt(i);
+		struct addrinfo * tmp = hosts->shuffled[i - 1];
+		hosts->shuffled[i - 1] = hosts->shuffled[j];
+		hosts->shuffled[j] = tmp;
+	}
 
 	uint16_t port_be = htons(port);
-	for (host = hosts; host != NULL; host = host->ai_next) {
+	for (i = 0; i < nHosts; ++i) {
+		host = hosts->shuffled[i];
 		struct sockaddr * addr = host->ai_addr;
 
 		const void * inaddr;
@@ -67,7 +111,8 @@ int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 			PRIu16, hostName, ip, port);
 
 		/* create socket */
-		sock = socket(host->ai_family, SOCK_STREAM | SOCK_CLOEXEC, 0);
+		sock = socket(host->ai_family, host->ai_socktype | SOCK_CLOEXEC,
+			host->ai_protocol);
 		if (sock < 0)
 			LOG_errno(LOG_LEVEL_ERROR, prefix, "could not create socket");
 
@@ -84,6 +129,8 @@ int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 			break;
 		}
 	}
+	if (i == nHosts)
+		host = NULL;
 	CLEANUP_POP();
 
 	if (!host) {

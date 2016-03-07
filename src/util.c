@@ -150,3 +150,12 @@ void UTIL_dropPrivileges()
 	if (setgid(g_nobody)) {}
 	if (setuid(u_nobody)) {}
 }
+
+uint32_t UTIL_randInt(uint32_t n)
+{
+  uint32_t limit = RAND_MAX - RAND_MAX % n;
+  uint32_t rnd;
+
+  do rnd = rand(); while (rnd >= limit);
+  return rnd % n;
+}
