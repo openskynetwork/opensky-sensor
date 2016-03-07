@@ -122,9 +122,6 @@ int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 			LOG_errno(LOG_LEVEL_WARN, prefix, "Could not connect");
 			close(sock);
 		} else {
-			char ip[INET6_ADDRSTRLEN];
-			if (inet_ntop(host->ai_family, inaddr, ip, sizeof ip) != NULL)
-				strcpy(ip, "??");
 			LOG_logf(LOG_LEVEL_INFO, prefix, "connected to '%s'", hostName);
 			break;
 		}
