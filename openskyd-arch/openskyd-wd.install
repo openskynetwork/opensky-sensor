@@ -9,7 +9,7 @@ post_upgrade() {
 }
 
 pre_remove() {
-	systemctl stop openskyd
+	systemctl stop openskyd-wd
 	systemctl disable openskyd-wd
 }
 
