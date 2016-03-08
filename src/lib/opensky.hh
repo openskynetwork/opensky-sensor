@@ -1,3 +1,4 @@
+/* Copyright (c) 2015-2016 SeRo Systems <contact@sero-systems.de> */
 
 #pragma once
 
@@ -13,7 +14,6 @@ typedef enum {
 namespace OpenSky {
 
 /** Set or change configuration of the OpenSky feeder.
- * \note TODO: Agree on parameters
  */
 void configure();
 

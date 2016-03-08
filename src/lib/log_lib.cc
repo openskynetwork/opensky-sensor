@@ -1,6 +1,7 @@
 /* Copyright (c) 2015-2016 SeRo Systems <contact@sero-systems.de> */
 
 #include <log.h>
+#include <opensky.hh>
 #include <iostream>
 #include <stdio.h>
 #include <stdarg.h>
@@ -9,6 +10,20 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+
+namespace OpenSky {
+
+static std::ostream * msgLog = &std::cout;
+static std::ostream * errLog = &std::cerr;
+
+__attribute__((visibility("default")))
+void setLogStreams(std::ostream & msgLog, std::ostream & errLog)
+{
+	OpenSky::msgLog = &msgLog;
+	OpenSky::errLog = &errLog;
+}
+
+}
 
 struct LevelName {
 	const char name[6];
@@ -33,14 +48,23 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 	LOG_log(level, prefix, str);
 }
 
+static std::ostream & getStream(enum LOG_LEVEL level)
+{
+	if (unlikely(level == LOG_LEVEL_ERROR))
+		return *OpenSky::errLog;
+	else
+		return *OpenSky::msgLog;
+}
+
 void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 {
 	int r;
 	CANCEL_DISABLE(&r);
-	std::cout << '[' << levelNames[level].name << ']';
+	std::ostream & stream = getStream(level);
+	stream << '[' << levelNames[level].name << ']';
 	if (prefix)
-		std::cout << ' ' << '[' << prefix << ']';
-	std::cout << ' ' << str << std::endl;
+		stream << ' ' << '[' << prefix << ']';
+	stream << ' ' << str << std::endl;
 	CANCEL_RESTORE(&r);
 
 	if (unlikely(level == LOG_LEVEL_ERROR)) {
@@ -51,7 +75,8 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 
 void LOG_flush()
 {
-	std::flush(std::cout);
+	std::flush(*OpenSky::msgLog);
+	std::flush(*OpenSky::errLog);
 }
 
 static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
@@ -75,15 +100,16 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	int r;
 	CANCEL_DISABLE(&r);
 
-	std::cout << '[' << levelNames[level].name << ']';
+	std::ostream & stream = getStream(level);
+	stream << '[' << levelNames[level].name << ']';
 	if (prefix)
-		std::cout << ' ' << '[' << prefix << ']';
-	std::cout << ' ' << str;
+		stream << ' ' << '[' << prefix << ']';
+	stream << ' ' << str;
 
 	if (errstr)
-		std::cout << ':' << errstr << ' ' << '(' << err << ')' << std::endl;
+		stream << ':' << errstr << ' ' << '(' << err << ')' << std::endl;
 	else
-		std::cout << ": Unknown error (" << err << ')' << std::endl;
+		stream << ": Unknown error (" << err << ')' << std::endl;
 
 	CANCEL_RESTORE(&r);
 

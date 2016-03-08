@@ -22,11 +22,11 @@ struct CFG_Config CFG_config;
 
 namespace OpenSky {
 
-static std::ostream * msgLog = NULL;
-static std::ostream * errLog = NULL;
+static const char PFX[] = "OpenSky";
 
 static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len);
 
+static bool initialized = false;
 static bool configured = false;
 static bool running = false;
 
@@ -34,13 +34,35 @@ static GpsTimeStatus_t gpsTimeStatus = GpsTimeInvalid;
 
 #pragma GCC visibility push(default)
 
+void init()
+{
+	CFG_config.dev.serialSet = false;
+	configure();
+
+	FILTER_init();
+
+	COMP_register(&BUF_comp, NULL);
+	COMP_register(&NET_comp, NULL);
+	COMP_register(&RELAY_comp, NULL);
+
+	COMP_setSilent(true);
+
+	COMP_initAll();
+
+	initialized = true;
+}
+
 void configure()
 {
+#ifdef DEVELOPMENT
+	strncpy(CFG_config.net.host, "localhost", sizeof CFG_config.net.host);
+#else
 	strncpy(CFG_config.net.host, "collector.opensky-network.org",
 		sizeof CFG_config.net.host);
+#endif
 	CFG_config.net.port = 10004;
 	CFG_config.net.reconnectInterval = 10;
-	CFG_config.net.timeout = 1500;
+	CFG_config.net.timeout = 1500; // TODO: increase
 
 	CFG_config.recv.modeSLongExtSquitter = true;
 	CFG_config.recv.syncFilter = true;
@@ -55,23 +77,27 @@ void configure()
 
 	CFG_config.stats.enabled = false;
 
-	CFG_config.dev.serialSet = UTIL_getSerial("eth0", &CFG_config.dev.serial);
-
-	configured = true;
-
-	FILTER_init();
+	if (!CFG_config.dev.serialSet) {
+		CFG_config.dev.serialSet = UTIL_getSerial("eth0",
+			&CFG_config.dev.serial);
+		if (!CFG_config.dev.serialSet) {
+			// TODO
+		} else {
+			configured = true;
+		}
+	}
 }
 
-void setLogStreams(std::ostream & msgLog, std::ostream & errLog)
-{
-	OpenSky::msgLog = &msgLog;
-	OpenSky::errLog = &errLog;
-}
+// TODO: race between disable and output_message
+//TODO: message log levels -> exit or no exit
 
 void enable()
 {
+	if (unlikely(!initialized))
+		LOG_log(LOG_LEVEL_ERROR, PFX, "Call OpenSky::init first");
+
 	if (unlikely(!configured))
-		error(EXIT_FAILURE, 0, "OpenSky: call OPENSKY_configure first");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "Feeder could not be initialized properly");
 
 	FILTER_reset();
 	FILTER_setSynchronized(gpsTimeStatus != GpsTimeInvalid);
@@ -107,7 +133,7 @@ void setGpsTimeStatus(const GpsTimeStatus_t gpsTimeStatus)
 void output_message(const unsigned char * const msg,
 	const enum MessageType_T messageType)
 {
-	if (unlikely(!configured))
+	if (unlikely(!configured || !running))
 		return;
 
 	size_t msgLen;
