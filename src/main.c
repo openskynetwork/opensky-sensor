@@ -22,13 +22,13 @@
 #include <error.h>
 #include <sys/time.h>
 
-#if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
+#if (defined(ECLIPSE) || defined(DEVELOPMENT)) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
 #endif
 
 static void sigint(int sig);
 
-bool run;
+static bool run;
 static pthread_mutex_t sigmutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t sigcond = PTHREAD_COND_INITIALIZER;
 

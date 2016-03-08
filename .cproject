@@ -26,6 +26,7 @@
 									<listOptionValue builtIn="false" value="_Atomic=/**/"/>
 									<listOptionValue builtIn="false" value="__extension__=/**/"/>
 									<listOptionValue builtIn="false" value="&quot;__auto_type=void *&quot;"/>
+									<listOptionValue builtIn="false" value="ECLIPSE=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1218871380" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -66,6 +67,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.453289232" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.541122956" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1488666301" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.906114346" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="ECLIPSE=1"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.641443763" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1167335081" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base">
