@@ -21,7 +21,7 @@
 #include <string.h>
 #include <cfgfile.h>
 
-#if defined(DEVELOPMENT) && !defined(FWDIR)
+#if (defined(ECLIPSE) || defined(DEVELOPMENT)) && !defined(FWDIR)
 #define FWDIR "."
 #endif
 

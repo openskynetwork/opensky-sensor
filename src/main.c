@@ -21,7 +21,7 @@
 #include <error.h>
 #include <sys/time.h>
 
-#if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
+#if (defined(ECLIPSE) || defined(DEVELOPMENT)) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
 #endif
 
