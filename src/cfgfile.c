@@ -85,61 +85,71 @@ struct Section {
 static void loadDefaults(struct CFG_Config * cfg);
 static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg);
 static void fix(struct CFG_Config * cfg);
-static void check(const struct CFG_Config * cfg);
+static bool check(const struct CFG_Config * cfg);
 
-static void scanOptionWD(const struct Option * opt, struct CFG_Config * cfg);
-static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg);
-static void scanOptionINPUT(const struct Option * opt, struct CFG_Config * cfg);
-static void scanOptionRECV(const struct Option * opt, struct CFG_Config * cfg);
-static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg);
-static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg);
-static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg);
-static void scanOptionSTAT(const struct Option * opt, struct CFG_Config * cfg);
-static void scanOptionGPS(const struct Option * opt, struct CFG_Config * cfg);
-static void scanOptionUnknown(const struct Option * opt,
+static void parseOptionWD(const struct Option * opt, struct CFG_Config * cfg);
+static void parseOptionFPGA(const struct Option * opt, struct CFG_Config * cfg);
+static void parseOptionINPUT(const struct Option * opt, struct CFG_Config * cfg);
+static void parseOptionRECV(const struct Option * opt, struct CFG_Config * cfg);
+static void parseOptionNET(const struct Option * opt, struct CFG_Config * cfg);
+static void parseOptionBUF(const struct Option * opt, struct CFG_Config * cfg);
+static void parseOptionDEV(const struct Option * opt, struct CFG_Config * cfg);
+static void parseOptionSTAT(const struct Option * opt, struct CFG_Config * cfg);
+static void parseOptionGPS(const struct Option * opt, struct CFG_Config * cfg);
+static void parseOptionUnknown(const struct Option * opt,
 	struct CFG_Config * cfg);
 
 /** Description of all sections */
 static const struct Section sections[] = {
 	[SECTION_NONE] = { NULL, NULL },
-	[SECTION_WD] = { "WATCHDOG", &scanOptionWD },
-	[SECTION_FPGA] = { "FPGA", &scanOptionFPGA },
-	[SECTION_INPUT] = { "INPUT", &scanOptionINPUT },
-	[SECTION_RECV] = { "RECEIVER", &scanOptionRECV },
-	[SECTION_NET] = { "NETWORK", &scanOptionNET },
-	[SECTION_BUF] = { "BUFFER", &scanOptionBUF },
-	[SECTION_DEVICE] = { "DEVICE", &scanOptionDEV },
-	[SECTION_STAT] = { "STATISTICS", &scanOptionSTAT },
-	[SECTION_GPS] = { "GPS", &scanOptionGPS },
-	[SECTION_UNKNOWN] = { NULL, &scanOptionUnknown }
+	[SECTION_WD] = { "WATCHDOG", &parseOptionWD },
+	[SECTION_FPGA] = { "FPGA", &parseOptionFPGA },
+	[SECTION_INPUT] = { "INPUT", &parseOptionINPUT },
+	[SECTION_RECV] = { "RECEIVER", &parseOptionRECV },
+	[SECTION_NET] = { "NETWORK", &parseOptionNET },
+	[SECTION_BUF] = { "BUFFER", &parseOptionBUF },
+	[SECTION_DEVICE] = { "DEVICE", &parseOptionDEV },
+	[SECTION_STAT] = { "STATISTICS", &parseOptionSTAT },
+	[SECTION_GPS] = { "GPS", &parseOptionGPS },
+	[SECTION_UNKNOWN] = { NULL, &parseOptionUnknown }
 };
 
-/** Read and check a configuration file.
- * \param file configuration file name to be read
- * \param cfg configuration structure to be filled
+/** Load default configuration values.
+ * \note this should be called prior to CFG_readFile()
  */
-void CFG_read(const char * file)
+void CFG_loadDefaults()
 {
-	/* load default values */
 	loadDefaults(&CFG_config);
+}
 
+/** Read a configuration file.
+ * \param file configuration file name to be read
+ * \return true if reading succeeded, false otherwise
+ */
+bool CFG_readFile(const char * file)
+{
 	/* open input file */
 	int fd = open(file, O_RDONLY | O_CLOEXEC);
-	if (fd < 0)
+	if (fd < 0) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not open '%s'", file);
+		return false;
+	}
 
 	/* stat input file for its size */
 	struct stat st;
 	if (fstat(fd, &st) < 0) {
 		close(fd);
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not stat '%s'", file);
+		return false;
 	}
 
 	/* mmap input file */
 	char * cfgStr = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 	close(fd);
-	if (cfgStr == MAP_FAILED)
+	if (cfgStr == MAP_FAILED) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not mmap '%s'", file);
+		return false;
+	}
 
 	/* actually read configuration */
 	readCfg(cfgStr, st.st_size, &CFG_config);
@@ -150,8 +160,17 @@ void CFG_read(const char * file)
 	/* fix configuration */
 	fix(&CFG_config);
 
+	return true;
+}
+
+/** Check the current configuration.
+ * \note Should be called after CFG_readFile()
+ * \return true if configuration is correct, false otherwise.
+ */
+bool CFG_check()
+{
 	/* check configuration */
-	check(&CFG_config);
+	return check(&CFG_config);
 }
 
 /** Checks two strings for equality (neglecting the case) where one string is
@@ -167,10 +186,10 @@ static bool isSame(const char * str1, const char * str2, size_t str2len)
 	return str1len == str2len && !strncasecmp(str2, str1, str2len);
 }
 
-/** Scan a section name.
- * \return section index
+/** Parse a section name.
+ * \return section
  */
-static enum SECTION scanSection()
+static const struct Section * parseSection()
 {
 	/* get next ']' terminator */
 	const char * c = memchr(bufferInput, ']', bufferSize);
@@ -206,7 +225,7 @@ static enum SECTION scanSection()
 	bufferSize -= len + 3;
 	++bufferLine;
 
-	return sect;
+	return &sections[sect];
 }
 
 /** Scan a comment. This will just advance the parser to the end of line/file */
@@ -222,58 +241,95 @@ static void scanComment()
 	++bufferLine;
 }
 
-/** Parse an integer.
+/** Parse an integer. Garbage after the number is ignored.
  * \param opt option to be parsed
- * \return parsed integer
+ * \param ret parsed integer. Only written if parsing was successful
+ * \return true if parsing was successful, false otherwise
  */
-static inline uint_fast32_t parseInt(const struct Option * opt)
+static inline bool parseInt(const struct Option * opt, uint32_t * ret)
 {
 	char buf[20];
-	if (opt->valLen + 1 > sizeof buf || opt->valLen == 0)
+	if (opt->valLen + 1 > sizeof buf || opt->valLen == 0) {
 		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": Number expected",
 			bufferLine);
+		return false;
+	}
 	strncpy(buf, opt->val, opt->valLen);
 	buf[opt->valLen] = '\0';
 
 	char * end;
 	unsigned long int n = strtoul(buf, &end, 0);
-	if (*end != '\0')
-		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": Garbage after "
-			"number", bufferLine);
+	if (*end != '\0') {
+		LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": Garbage after "
+			"number ignored", bufferLine);
 
-	return n;
+	}
+	*ret = n;
+
+	return true;
+}
+
+/** Parse an integer for port. Garbage after the number is ignored.
+ * \param opt option to be parsed
+ * \param ret parsed port. Only written if parsing was successful
+ * \return true if parsing was successful, false otherwise
+ */
+static inline bool parsePort(const struct Option * opt, uint16_t * ret)
+{
+	uint32_t n;
+	if (parseInt(opt, &n)) {
+		if (n > 0xffff) {
+			LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32
+				": port must be < 65536", bufferLine);
+		} else {
+			*ret = n;
+			return true;
+		}
+	}
+	return false;
+
 }
 
 /** Parse a boolean.
  * \param opt option to be parsed
- * \return parsed boolean
+ * \param ret parsed boolean. Only written if parsing was successful
+ * \return true if parsing was successful, false otherwise
  */
-static inline bool parseBool(const struct Option * opt)
+static inline bool parseBool(const struct Option * opt, bool * ret)
 {
 	if (isSame("true", opt->val, opt->valLen)
-		|| isSame("1", opt->val, opt->valLen))
+		|| isSame("1", opt->val, opt->valLen)) {
+		*ret = true;
 		return true;
+	}
 	if (isSame("false", opt->val, opt->valLen)
-		|| isSame("0", opt->val, opt->valLen))
-		return false;
+		|| isSame("0", opt->val, opt->valLen)) {
+		*ret = false;
+		return true;
+	}
 
 	LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": boolean option has "
 		"unexpected value '%.*s'", bufferLine, (int)opt->valLen, opt->val);
-	return false; /* silence GCC */
+	return false;
 }
 
 /** Parse a string.
  * \param opt option to be parsed
- * \param str string to read into (will be nul-terminated)
+ * \param str string to read into (will be nul-terminated), only written if
+ *  parsing was successful.
  * \param sz size of the string
+ * \return true if parsing was successful, false otherwise
  */
-static inline void parseString(const struct Option * opt, char * str, size_t sz)
+static inline bool parseString(const struct Option * opt, char * str, size_t sz)
 {
-	if (opt->valLen > sz - 1)
+	if (opt->valLen > sz - 1) {
 		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": Value too long "
 			"(max. length %zu expected)", bufferLine, sz - 1);
+		return false;
+	}
 	memcpy(str, opt->val, opt->valLen);
 	str[opt->valLen] = '\0';
+	return true;
 }
 
 /** Test for an option's key.
@@ -295,14 +351,14 @@ static inline void unknownKey(const struct Option * opt)
 		bufferLine, (int)opt->keyLen, opt->key);
 }
 
-/** Scan Watchdog Section.
+/** Parse Watchdog Section.
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionWD(const struct Option * opt, struct CFG_Config * cfg)
+static void parseOptionWD(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "enabled"))
-		cfg->wd.enabled = parseBool(opt);
+		parseBool(opt, &cfg->wd.enabled);
 	else
 		unknownKey(opt);
 }
@@ -311,16 +367,16 @@ static void scanOptionWD(const struct Option * opt, struct CFG_Config * cfg)
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg)
+static void parseOptionFPGA(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "configure"))
-		cfg->fpga.configure = parseBool(opt);
+		parseBool(opt, &cfg->fpga.configure);
 	else if (isOption(opt, "file"))
 		parseString(opt, cfg->fpga.file, sizeof cfg->fpga.file);
 	else if (isOption(opt, "retries"))
-		cfg->fpga.retries = parseInt(opt);
+		parseInt(opt, &cfg->fpga.retries);
 	else if (isOption(opt, "timeout"))
-		cfg->fpga.timeout = parseInt(opt);
+		parseInt(opt, &cfg->fpga.timeout);
 	else
 		unknownKey(opt);
 }
@@ -329,7 +385,7 @@ static void scanOptionFPGA(const struct Option * opt, struct CFG_Config * cfg)
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionINPUT(const struct Option * opt, struct CFG_Config * cfg)
+static void parseOptionINPUT(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "uart")) {
 #ifndef INPUT_LAYER_NETWORK
@@ -341,18 +397,14 @@ static void scanOptionINPUT(const struct Option * opt, struct CFG_Config * cfg)
 #endif
 	} else if (isOption(opt, "port")) {
 #ifdef INPUT_LAYER_NETWORK
-		uint_fast32_t n = parseInt(opt);
-		if (n > 0xffff)
-			LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": port must be "
-				"< 65536", bufferLine);
-		cfg->input.port = n;
+		parsePort(opt, &cfg->input.port);
 #endif
 	} else if (isOption(opt, "rtscts")) {
 #ifndef INPUT_LAYER_NETWORK
-		cfg->input.rtscts = parseBool(opt);
+		parseBool(opt, &cfg->input.rtscts);
 #endif
 	} else if (isOption(opt, "reconnectInterval"))
-		cfg->input.reconnectInterval = parseInt(opt);
+		parseInt(opt, &cfg->input.reconnectInterval);
 	else
 		unknownKey(opt);
 }
@@ -361,18 +413,18 @@ static void scanOptionINPUT(const struct Option * opt, struct CFG_Config * cfg)
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionRECV(const struct Option * opt, struct CFG_Config * cfg)
+static void parseOptionRECV(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "ModeS_Long_ExtSquitterOnly"))
-		cfg->recv.modeSLongExtSquitter = parseBool(opt);
+		parseBool(opt, &cfg->recv.modeSLongExtSquitter);
 	else if (isOption(opt, "SynchronizationFilter"))
-		cfg->recv.syncFilter = parseBool(opt);
+		parseBool(opt, &cfg->recv.syncFilter);
 	else if (isOption(opt, "crc"))
-		cfg->recv.crc = parseBool(opt);
+		parseBool(opt, &cfg->recv.crc);
 	else if (isOption(opt, "fec"))
-		cfg->recv.fec = parseBool(opt);
+		parseBool(opt, &cfg->recv.fec);
 	else if (isOption(opt, "gps"))
-		cfg->recv.gps = parseBool(opt);
+		parseBool(opt, &cfg->recv.gps);
 	else
 		unknownKey(opt);
 }
@@ -381,20 +433,16 @@ static void scanOptionRECV(const struct Option * opt, struct CFG_Config * cfg)
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg)
+static void parseOptionNET(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "host"))
 		parseString(opt, cfg->net.host, sizeof cfg->net.host);
 	else if (isOption(opt, "port")) {
-		uint_fast32_t n = parseInt(opt);
-		if (n > 0xffff)
-			LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": port must be "
-				"< 65536", bufferLine);
-		cfg->net.port = n;
+		parsePort(opt, &cfg->net.port);
 	} else if (isOption(opt, "timeout"))
-		cfg->net.timeout = parseInt(opt);
+		parseInt(opt, &cfg->net.timeout);
 	else if (isOption(opt, "reconnectInterval"))
-		cfg->net.reconnectInterval = parseInt(opt);
+		parseInt(opt, &cfg->net.reconnectInterval);
 	else
 		unknownKey(opt);
 }
@@ -403,22 +451,22 @@ static void scanOptionNET(const struct Option * opt, struct CFG_Config * cfg)
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg)
+static void parseOptionBUF(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "history"))
-		cfg->buf.history = parseBool(opt);
+		parseBool(opt, &cfg->buf.history);
 	else if (isOption(opt, "staticBacklog"))
-		cfg->buf.statBacklog = parseInt(opt);
+		parseInt(opt, &cfg->buf.statBacklog);
 	else if (isOption(opt, "dynamicBacklog"))
-		cfg->buf.dynBacklog = parseInt(opt);
+		parseInt(opt, &cfg->buf.dynBacklog);
 	else if (isOption(opt, "dynamicIncrement"))
-		cfg->buf.dynIncrement = parseInt(opt);
+		parseInt(opt, &cfg->buf.dynIncrement);
 	else if (isOption(opt, "gcEnabled"))
-		cfg->buf.gcEnabled = parseBool(opt);
+		parseBool(opt, &cfg->buf.gcEnabled);
 	else if (isOption(opt, "gcInterval"))
-		cfg->buf.gcInterval = parseInt(opt);
+		parseInt(opt, &cfg->buf.gcInterval);
 	else if (isOption(opt, "gcLevel"))
-		cfg->buf.gcLevel = parseInt(opt);
+		parseInt(opt, &cfg->buf.gcLevel);
 	else
 		unknownKey(opt);
 }
@@ -427,11 +475,10 @@ static void scanOptionBUF(const struct Option * opt, struct CFG_Config * cfg)
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg)
+static void parseOptionDEV(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "serial")) {
-		cfg->dev.serial = parseInt(opt);
-		cfg->dev.serialSet = true;
+		cfg->dev.serialSet = parseInt(opt, &cfg->dev.serial);
 	} else if (isOption(opt, "device")) {
 		parseString(opt, cfg->dev.deviceName, sizeof cfg->dev.deviceName);
 	} else
@@ -442,12 +489,12 @@ static void scanOptionDEV(const struct Option * opt, struct CFG_Config * cfg)
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionSTAT(const struct Option * opt, struct CFG_Config * cfg)
+static void parseOptionSTAT(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "enabled"))
-		cfg->stats.enabled = parseBool(opt);
+		parseBool(opt, &cfg->stats.enabled);
 	else if (isOption(opt, "interval"))
-		cfg->stats.interval = parseInt(opt);
+		parseInt(opt, &cfg->stats.interval);
 	else
 		unknownKey(opt);
 }
@@ -456,7 +503,7 @@ static void scanOptionSTAT(const struct Option * opt, struct CFG_Config * cfg)
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionGPS(const struct Option * opt, struct CFG_Config * cfg)
+static void parseOptionGPS(const struct Option * opt, struct CFG_Config * cfg)
 {
 	/* TODO: use gps specific compilation flags? */
 	if (isOption(opt, "uart")) {
@@ -469,14 +516,10 @@ static void scanOptionGPS(const struct Option * opt, struct CFG_Config * cfg)
 #endif
 	} else if (isOption(opt, "port")) {
 #ifdef INPUT_LAYER_NETWORK
-		uint_fast32_t n = parseInt(opt);
-		if (n > 0xffff)
-			LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": port must be "
-				"< 65536", bufferLine);
-		cfg->gps.port = n;
+		parsePort(opt, &cfg->gps.port);
 #endif
 	} else if (isOption(opt, "reconnectInterval"))
-		cfg->gps.reconnectInterval = parseInt(opt);
+		parseInt(opt, &cfg->gps.reconnectInterval);
 	else
 		unknownKey(opt);
 }
@@ -485,16 +528,16 @@ static void scanOptionGPS(const struct Option * opt, struct CFG_Config * cfg)
  * \param opt option to be parsed
  * \param cfg configuration to be filled
  */
-static void scanOptionUnknown(const struct Option * opt,
+static void parseOptionUnknown(const struct Option * opt,
 	struct CFG_Config * cfg)
 {
 }
 
-/** Scan an option line.
- * \param sect index to current section
+/** Parse an option line.
+ * \param section current section
  * \param cfg configuration to be filled
  */
-static void scanOption(enum SECTION sect, struct CFG_Config * cfg)
+static bool parseOption(const struct Section * section, struct CFG_Config * cfg)
 {
 	/* split option on '='-sign */
 	const char * e = memchr(bufferInput, '=', bufferSize);
@@ -502,9 +545,11 @@ static void scanOption(enum SECTION sect, struct CFG_Config * cfg)
 	if (n == NULL)
 		n = bufferInput + bufferSize - 1;
 	/* sanity check */
-	if (n < e)
+	if (unlikely(n < e)) {
 		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": '=' before end "
 			"of line expected", bufferLine);
+		return false;
+	}
 
 	struct Option opt;
 
@@ -523,12 +568,14 @@ static void scanOption(enum SECTION sect, struct CFG_Config * cfg)
 	opt.valLen = n - r;
 
 	/* parse option value */
-	sections[sect].parse(&opt, cfg);
+	section->parse(&opt, cfg);
 
 	/* advance buffer */
 	bufferSize -= n + 1 - bufferInput;
 	bufferInput = n + 1;
 	++bufferLine;
+
+	return true;
 }
 
 /** Read the configuration file.
@@ -538,7 +585,9 @@ static void scanOption(enum SECTION sect, struct CFG_Config * cfg)
  */
 static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg)
 {
-	enum SECTION sect = SECTION_NONE;
+	const struct Section * const sectionNone = &sections[SECTION_NONE];
+	const struct Section * const sectionUnknown = &sections[SECTION_UNKNOWN];
+	const struct Section * section = sectionNone;
 
 	/* initialize parser buffer */
 	bufferInput = cfgStr;
@@ -548,7 +597,7 @@ static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg)
 	while (bufferSize) {
 		switch (bufferInput[0]) {
 		case '[':
-			sect = scanSection();
+			section = parseSection();
 		break;
 		case '\n':
 			++bufferInput;
@@ -560,12 +609,12 @@ static void readCfg(const char * cfgStr, off_t size, struct CFG_Config * cfg)
 			scanComment();
 		break;
 		default:
-			if (sect == SECTION_NONE) {
+			if (section == sectionNone) {
 				LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": "
 					"Unexpected option outside any section", bufferLine);
-				sect = SECTION_UNKNOWN;
+				section = sectionUnknown;
 			}
-			scanOption(sect, cfg);
+			parseOption(section, cfg);
 		}
 	}
 }
@@ -636,8 +685,8 @@ static void fix(struct CFG_Config * cfg)
 #ifndef STANDALONE
 	if (cfg->fpga.configure) {
 		cfg->fpga.configure = false;
-		LOG_log(LOG_LEVEL_WARN, PFX, "FPGA.configure is ignored in non-standalone "
-			"mode");
+		LOG_log(LOG_LEVEL_WARN, PFX, "FPGA.configure is ignored in"
+			"non-standalone mode");
 	}
 
 	if (cfg->wd.enabled) {
@@ -674,43 +723,69 @@ static void fix(struct CFG_Config * cfg)
 /** Check configuration for sanity.
  * \param cfg configuration
  */
-static void check(const struct CFG_Config * cfg)
+static bool check(const struct CFG_Config * cfg)
 {
-	if (cfg->fpga.configure && cfg->fpga.file[0] == '\0')
+	if (cfg->fpga.configure && cfg->fpga.file[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "FPGA.file is missing");
+		return false;
+	}
 
-	if (cfg->buf.statBacklog <= 2)
+	if (cfg->buf.statBacklog <= 2) {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "BUFFER.staticBacklog must be >= 2");
+		return false;
+	}
 
-	if (cfg->net.host[0] == '\0')
+	if (cfg->net.host[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "NET.host is missing");
-	if (cfg->net.port == 0)
+		return false;
+	}
+	if (cfg->net.port == 0) {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "NET.port = 0");
+		return false;
+	}
 
 #ifdef INPUT_LAYER_NETWORK
-	if (cfg->input.host[0] == '\0')
+	if (cfg->input.host[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "INPUT.host is missing");
-	if (cfg->input.port == 0)
+		return false;
+	}
+	if (cfg->input.port == 0) {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "INPUT.port = 0");
+		return false;
+	}
 #else
-	if (cfg->input.uart[0] == '\0')
+	if (cfg->input.uart[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "INPUT.uart is missing");
+		return false;
+	}
 #endif
 
-	if (!cfg->dev.serialSet)
+	if (!cfg->dev.serialSet) {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "DEVICE.serial is missing");
+		return false;
+	}
 
-	if (cfg->stats.interval == 0)
+	if (cfg->stats.interval == 0) {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "STATISTICS.interval = 0");
+		return false;
+	}
 
 #ifdef INPUT_LAYER_NETWORK
-	if (cfg->gps.host[0] == '\0')
+	if (cfg->gps.host[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "GPS.host is missing");
-	if (cfg->gps.port == 0)
+		return false;
+	}
+	if (cfg->gps.port == 0) {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "GPS.port = 0");
+		return false;
+	}
 #else
-	if (cfg->gps.uart[0] == '\0')
+	if (cfg->gps.uart[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "GPS.uart is missing");
+		return false;
+	}
 #endif
+
+	return true;
 }
 

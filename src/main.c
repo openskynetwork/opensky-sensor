@@ -22,6 +22,8 @@
 #include <error.h>
 #include <sys/time.h>
 
+static const char PFX[] = "MAIN";
+
 #if (defined(ECLIPSE) || defined(DEVELOPMENT)) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
 #endif
@@ -47,13 +49,21 @@ int main(int argc, char * argv[])
 		if (!strcmp(argv[1], "--black")) {
 			bbwhite = false;
 		} else {
-			LOG_logf(LOG_LEVEL_ERROR, "MAIN", "Usage: %s [--black]", argv[0]);
+			LOG_logf(LOG_LEVEL_ERROR, PFX, "Usage: %s [--black]", argv[0]);
 		}
 	}
 #endif
 
 	/* read & check configuration */
-	CFG_read(SYSCONFDIR "/openskyd.conf");
+	CFG_loadDefaults();
+	if (!CFG_readFile(SYSCONFDIR "/openskyd.conf")) {
+		LOG_log(LOG_LEVEL_WARN, PFX,
+			"Could not read configuration, using defaults");
+	}
+	if (!CFG_check()) {
+		LOG_log(LOG_LEVEL_EMERG, PFX,
+			"Configuration inconsistent, quitting");
+	}
 
 #ifdef STANDALONE
 	if (CFG_config.wd.enabled || CFG_config.fpga.configure)

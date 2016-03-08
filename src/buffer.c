@@ -134,7 +134,7 @@ static void construct()
 	dynMaxIncrements = CFG_config.buf.history ? CFG_config.buf.dynIncrement : 0;
 
 	if (!deployPool(&staticPool, CFG_config.buf.statBacklog))
-		LOG_errno(LOG_LEVEL_ERROR, PFX, "malloc failed");
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "malloc failed"); // TODO: log level
 }
 
 static void destruct()
@@ -321,7 +321,7 @@ const struct ADSB_RawFrame * BUF_getFrame()
 	while (!queue.head) {
 		int r = pthread_cond_wait(&cond, &mutex);
 		if (r)
-			LOG_errno2(LOG_LEVEL_ERROR, r, PFX, "pthread_cond_wait failed");
+			LOG_errno2(LOG_LEVEL_EMERG, r, PFX, "pthread_cond_wait failed");
 	}
 	currentFrame = shift(&queue);
 	CLEANUP_POP();
@@ -355,7 +355,7 @@ const struct ADSB_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms)
 			ret = NULL;
 			break;
 		} else if (r) {
-			LOG_errno2(LOG_LEVEL_ERROR, r, PFX,
+			LOG_errno2(LOG_LEVEL_EMERG, r, PFX,
 				"pthread_cond_timedwait failed");
 		}
 	}

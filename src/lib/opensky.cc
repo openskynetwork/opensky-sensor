@@ -15,6 +15,7 @@
 #include <error.h>
 #include <stdlib.h>
 #include <MessageTypes.h>
+#include <log.h>
 
 extern "C" {
 struct CFG_Config CFG_config;

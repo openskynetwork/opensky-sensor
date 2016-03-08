@@ -100,7 +100,9 @@ struct CFG_Config {
 
 extern struct CFG_Config CFG_config;
 
-void CFG_read(const char * file);
+void CFG_loadDefaults();
+bool CFG_readFile(const char * file);
+bool CFG_check();
 
 #ifdef __cplusplus
 }

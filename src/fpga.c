@@ -107,7 +107,7 @@ static bool program()
 	int fd = open(file, O_RDONLY | O_CLOEXEC);
 	if (fd < 0) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "could not open '%s'", file);
-		return false;
+		return false; // TODO: log levels
 	}
 
 	/* stat input file for its size */

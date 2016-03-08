@@ -11,7 +11,8 @@ enum LOG_LEVEL {
 	LOG_LEVEL_INFO,
 	LOG_LEVEL_DEBUG,
 	LOG_LEVEL_WARN,
-	LOG_LEVEL_ERROR
+	LOG_LEVEL_ERROR,
+	LOG_LEVEL_EMERG
 };
 
 __attribute__((format(printf, 3, 4)))

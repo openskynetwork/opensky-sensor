@@ -25,16 +25,12 @@ void setLogStreams(std::ostream & msgLog, std::ostream & errLog)
 
 }
 
-struct LevelName {
-	const char name[6];
-	size_t len;
-};
-
-static const struct LevelName levelNames[] = {
-	/* [LOG_LEVEL_INFO] = */ { "INFO", 4 },
-	/* [LOG_LEVEL_DEBUG] = */ { "DEBUG", 5 },
-	/* [LOG_LEVEL_WARN] = */ { "WARN", 6 },
-	/* [LOG_LEVEL_ERROR] = */ { "ERROR", 5 }
+static const char * levelNames[] = {
+	/* [LOG_LEVEL_INFO] = */ "INFO",
+	/* [LOG_LEVEL_DEBUG] = */ "DEBUG",
+	/* [LOG_LEVEL_WARN] = */ "WARN",
+	/* [LOG_LEVEL_ERROR] = */ "ERROR",
+	/* [LOG_LEVEL_EMERG] = */ "EMERG"
 };
 
 __attribute__((format(printf, 3, 4)))
@@ -50,7 +46,7 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 
 static std::ostream & getStream(enum LOG_LEVEL level)
 {
-	if (unlikely(level == LOG_LEVEL_ERROR))
+	if (unlikely(level == LOG_LEVEL_ERROR || level == LOG_LEVEL_EMERG))
 		return *OpenSky::errLog;
 	else
 		return *OpenSky::msgLog;
@@ -61,13 +57,13 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 	int r;
 	CANCEL_DISABLE(&r);
 	std::ostream & stream = getStream(level);
-	stream << '[' << levelNames[level].name << ']';
+	stream << '[' << levelNames[level] << ']';
 	if (prefix)
 		stream << ' ' << '[' << prefix << ']';
 	stream << ' ' << str << std::endl;
 	CANCEL_RESTORE(&r);
 
-	if (unlikely(level == LOG_LEVEL_ERROR)) {
+	if (unlikely(level == LOG_LEVEL_EMERG)) {
 		LOG_flush();
 		exit(EXIT_FAILURE);
 	}
@@ -101,7 +97,7 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	CANCEL_DISABLE(&r);
 
 	std::ostream & stream = getStream(level);
-	stream << '[' << levelNames[level].name << ']';
+	stream << '[' << levelNames[level] << ']';
 	if (prefix)
 		stream << ' ' << '[' << prefix << ']';
 	stream << ' ' << str;
@@ -113,7 +109,7 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 
 	CANCEL_RESTORE(&r);
 
-	if (unlikely(level == LOG_LEVEL_ERROR)) {
+	if (unlikely(level == LOG_LEVEL_EMERG)) {
 		LOG_flush();
 		exit(EXIT_FAILURE);
 	}

@@ -9,27 +9,21 @@
 #include <threads.h>
 #include <util.h>
 
-struct LevelName {
-	const char name[6];
-	size_t len;
-};
-
-static const struct LevelName levelNames[] = {
-	[LOG_LEVEL_INFO] = { "INFO", 4 },
-	[LOG_LEVEL_DEBUG] = { "DEBUG", 5 },
-	[LOG_LEVEL_WARN] = { "WARN", 6 },
-	[LOG_LEVEL_ERROR] = { "ERROR", 5 }
+static const char * levelNames[] = {
+	[LOG_LEVEL_INFO] = "INFO",
+	[LOG_LEVEL_DEBUG] = "DEBUG",
+	[LOG_LEVEL_WARN] = "WARN",
+	[LOG_LEVEL_ERROR] = "ERROR",
+	[LOG_LEVEL_EMERG] = "EMERG"
 };
 
 __attribute__((format(printf, 3, 4)))
 void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 {
-	const struct LevelName * levelName = &levelNames[level];
-
 	int r;
 	CANCEL_DISABLE(&r);
 
-	printf("[%s] ", levelName->name);
+	printf("[%s] ", levelNames[level]);
 	if (prefix)
 		printf("[%s] ", prefix);
 
@@ -41,46 +35,18 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 
 	CANCEL_RESTORE(&r);
 
-	if (unlikely(level == LOG_LEVEL_ERROR)) {
+	if (unlikely(level == LOG_LEVEL_EMERG)) {
 		LOG_flush();
 		exit(EXIT_FAILURE);
 	}
-
-#if 0
-	char buf[1000];
-	char * bufptr;
-	size_t len = sizeof buf;
-
-	buf[0] = '[';
-	struct LevelName * levelName = &levelNames[level];
-	memcpy(buf + 1, levelName->name, levelName->len);
-	bufptr = buf + 1 + levelName;
-	*bufptr++ = ']';
-	*bufptr++ = ' ';
-
-	if (prefix && *prefix) {
-		*bufptr++ = '[';
-		len -= bufptr - buf;
-		strncpy(bufptr, prefix, len);
-		bufptr +=
-	}
-
-
-	va_list ap;
-	va_start(ap, fmt);
-	size_t len = vsnprintf(buf, sizeof buf, fmt, ap);
-	va_end(ap);
-#endif
 }
 
 void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 {
-	const struct LevelName * levelName = &levelNames[level];
-
 	int r;
 	CANCEL_DISABLE(&r);
 
-	printf("[%s] ", levelName->name);
+	printf("[%s] ", levelNames[level]);
 	if (prefix)
 		printf("[%s] ", prefix);
 
@@ -88,7 +54,7 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 
 	CANCEL_RESTORE(&r);
 
-	if (unlikely(level == LOG_LEVEL_ERROR)) {
+	if (unlikely(level == LOG_LEVEL_EMERG)) {
 		LOG_flush();
 		exit(EXIT_FAILURE);
 	}
@@ -97,12 +63,10 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	const char * fmt, va_list ap)
 {
-	const struct LevelName * levelName = &levelNames[level];
-
 	int r;
 	CANCEL_DISABLE(&r);
 
-	printf("[%s] ", levelName->name);
+	printf("[%s] ", levelNames[level]);
 	if (prefix)
 		printf("[%s] ", prefix);
 
@@ -128,7 +92,7 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 
 	CANCEL_RESTORE(&r);
 
-	if (unlikely(level == LOG_LEVEL_ERROR)) {
+	if (unlikely(level == LOG_LEVEL_EMERG)) {
 		LOG_flush();
 		exit(EXIT_FAILURE);
 	}

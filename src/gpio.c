@@ -62,7 +62,7 @@ static void construct()
 	/* open /dev/mem */
 	int devfd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
 	if (devfd < 0)
-		LOG_log(LOG_LEVEL_ERROR, PFX, "Could not open /dev/mem");
+		LOG_log(LOG_LEVEL_ERROR, PFX, "Could not open /dev/mem"); // TODO: LOG LEVEL
 
 	/* initialize all 4 controllers */
 	size_t i;
@@ -135,7 +135,7 @@ static void controllerInit(int devfd, struct Controller * ctrl)
 
 	if (ctrl->map == (char*)-1) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not mmap /dev/mem for base 0x%08"
-			PRIxPTR, ctrl->base);
+			PRIxPTR, ctrl->base); // TODO: LOG LEVEL
 	}
 
 	ctrl->set = (volatile uint32_t*)(ctrl->map + 0x194);
