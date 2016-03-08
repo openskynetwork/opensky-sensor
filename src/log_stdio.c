@@ -41,8 +41,10 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 
 	CANCEL_RESTORE(&r);
 
-	if (unlikely(level == LOG_LEVEL_ERROR))
+	if (unlikely(level == LOG_LEVEL_ERROR)) {
+		LOG_flush();
 		exit(EXIT_FAILURE);
+	}
 
 #if 0
 	char buf[1000];
@@ -86,8 +88,10 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 
 	CANCEL_RESTORE(&r);
 
-	if (unlikely(level == LOG_LEVEL_ERROR))
+	if (unlikely(level == LOG_LEVEL_ERROR)) {
+		LOG_flush();
 		exit(EXIT_FAILURE);
+	}
 }
 
 static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
@@ -104,18 +108,30 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 
 	vprintf(fmt, ap);
 
-	char errstr[100];
-	int rc = strerror_r(err, errstr, sizeof errstr);
+	char errbuf[100];
+	char * errstr;
+#if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
+	int rc = strerror_r(err, errbuf, sizeof errbuf);
 	if (rc == 0)
-		printf(": %s (%d)", errstr, errno);
+		errstr = errbuf;
 	else
-		printf(": ?? (%d)", errno);
+		errstr = NULL;
+#else
+	errstr = strerror_r(err, errbuf, sizeof errbuf);
+#endif
+
+	if (errstr)
+		printf(": %s (%d)", errstr, err);
+	else
+		printf(": Unknown Error (%d)", err);
 	putchar('\n');
 
 	CANCEL_RESTORE(&r);
 
-	if (unlikely(level == LOG_LEVEL_ERROR))
+	if (unlikely(level == LOG_LEVEL_ERROR)) {
+		LOG_flush();
 		exit(EXIT_FAILURE);
+	}
 }
 
 __attribute__((format(printf, 3, 4)))
