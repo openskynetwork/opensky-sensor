@@ -28,7 +28,7 @@ struct Snapshot {
 static time_t start;
 static char startstr[26];
 
-static void construct();
+static bool construct();
 static void destruct();
 static void mainloop();
 
@@ -45,7 +45,7 @@ static void printStatistics(struct Snapshot * lastSnapshot);
 /** Initialize statistics.
  * \param cfg pointer to buffer configuration, see cfgfile.h
  */
-static void construct()
+static bool construct()
 {
 	start = time(NULL);
 	ctime_r(&start, startstr);
@@ -53,6 +53,8 @@ static void construct()
 	memset((void*)&STAT_stats, 0, sizeof STAT_stats);
 
 	signal(SIGUSR1, &sigStats);
+
+	return true;
 }
 
 static void destruct()

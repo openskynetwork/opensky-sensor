@@ -11,7 +11,7 @@
 #include <util.h>
 #include <filter.h>
 
-static void construct();
+static bool construct();
 static void destruct();
 static void mainloop();
 
@@ -22,11 +22,13 @@ struct Component RECV_comp = {
 	.main = &mainloop
 };
 
-static void construct()
+static bool construct()
 {
 	ADSB_init();
 
 	FILTER_init();
+
+	return true;
 }
 
 static void destruct()

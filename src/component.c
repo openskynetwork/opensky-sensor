@@ -11,7 +11,10 @@ static const char PFX[] = "COMP";
 
 static struct Component * head = NULL, * tail = NULL;
 
+static void stop(struct Component * c);
+static void destruct(const struct Component * c);
 static void stopUntil(struct Component * end);
+static void destructUntil(const struct Component * end);
 
 static bool silent = false;
 
@@ -37,26 +40,27 @@ void COMP_register(struct Component * comp, void * initData)
 	tail = comp;
 }
 
-void COMP_initAll()
+bool COMP_initAll()
 {
 	const struct Component * c;
 	for (c = head; c; c = c->next) {
 		if (!silent)
-			LOG_logf(LOG_LEVEL_INFO, PFX, "Init %s", c->description);
-		if (c->construct)
-			c->construct(c->data);
+			LOG_logf(LOG_LEVEL_INFO, PFX, "Initialize %s", c->description);
+		if (c->construct && !c->construct(c->data)) {
+			LOG_logf(LOG_LEVEL_ERROR, PFX, "Failed to initialize %s",
+				c->description);
+			destructUntil(c);
+			return false;
+		}
 	}
+	return true;
 }
 
 void COMP_destructAll()
 {
 	const struct Component * c;
-	for (c = tail; c; c = c->prev) {
-		if (!silent)
-			LOG_logf(LOG_LEVEL_INFO, PFX, "Destruct %s", c->description);
-		if (c->destruct)
-			c->destruct();
-	}
+	for (c = tail; c; c = c->prev)
+		destruct(c);
 }
 
 bool COMP_startAll()
@@ -74,25 +78,10 @@ bool COMP_startAll()
 	return true;
 }
 
-static void stop(struct Component * c)
-{
-	if (!silent)
-		LOG_logf(LOG_LEVEL_INFO, PFX, "Stopping %s", c->description);
-	if (c->stop)
-		c->stop(c);
-}
-
 void COMP_stopAll()
 {
 	struct Component * c;
 	for (c = tail; c; c = c->prev)
-		stop(c);
-}
-
-static void stopUntil(struct Component * end)
-{
-	struct Component * c;
-	for (c = end->prev; c; c = c->prev)
 		stop(c);
 }
 
@@ -114,4 +103,34 @@ void COMP_stopThreaded(struct Component * c)
 {
 	pthread_cancel(c->thread);
 	pthread_join(c->thread, NULL);
+}
+
+static void stop(struct Component * c)
+{
+	if (!silent)
+		LOG_logf(LOG_LEVEL_INFO, PFX, "Stopping %s", c->description);
+	if (c->stop)
+		c->stop(c);
+}
+
+static void destruct(const struct Component * c)
+{
+	if (!silent)
+		LOG_logf(LOG_LEVEL_INFO, PFX, "Destruct %s", c->description);
+	if (c->destruct)
+		c->destruct(c);
+}
+
+static void stopUntil(struct Component * end)
+{
+	struct Component * c;
+	for (c = end->prev; c; c = c->prev)
+		stop(c);
+}
+
+static void destructUntil(const struct Component * end)
+{
+	const struct Component * c;
+	for (c = end->prev; c; c = c->prev)
+		destruct(c);
 }

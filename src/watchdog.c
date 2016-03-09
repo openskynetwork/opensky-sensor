@@ -14,7 +14,7 @@
 /** Watchdog repetition rate in seconds */
 #define WD_REPEAT 30
 
-static void construct();
+static bool construct();
 static void mainloop();
 
 struct Component WD_comp = {
@@ -26,10 +26,12 @@ struct Component WD_comp = {
 /** Initialize watchdog.
  * \note: GPIO_init() must be called prior to that function!
  */
-static void construct()
+static bool construct()
 {
 	GPIO_setDirection(WD_GPIO, GPIO_DIRECTION_OUT);
 	GPIO_clear(WD_GPIO);
+
+	return true;
 }
 
 /** Watchdog mainloop: tell the watchdog we are still here in an endless loop */

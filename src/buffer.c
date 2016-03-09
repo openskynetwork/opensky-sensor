@@ -88,7 +88,7 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Reader condition (for listOut) */
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
-static void construct();
+static bool construct();
 static void destruct();
 static void mainloop();
 static bool start(struct Component * c, void * data);
@@ -119,7 +119,7 @@ static inline void append(struct FrameList * dstList,
 static inline void clear(struct FrameList * list);
 
 /** Initialize frame buffer. */
-static void construct()
+static bool construct()
 {
 	dynIncrements = 0;
 
@@ -133,8 +133,11 @@ static void construct()
 
 	dynMaxIncrements = CFG_config.buf.history ? CFG_config.buf.dynIncrement : 0;
 
-	if (!deployPool(&staticPool, CFG_config.buf.statBacklog))
-		LOG_errno(LOG_LEVEL_ERROR, PFX, "malloc failed"); // TODO: log level
+	if (!deployPool(&staticPool, CFG_config.buf.statBacklog)) {
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "malloc failed");
+		return false;
+	} else
+		return true;
 }
 
 static void destruct()

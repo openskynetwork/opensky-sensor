@@ -13,7 +13,7 @@ extern "C" {
 struct Component {
 	const char * description;
 
-	void (*construct)(void * data);
+	bool (*construct)(void * data);
 	void (*destruct)();
 
 	void (*main)();
@@ -35,7 +35,7 @@ void COMP_register(struct Component * comp, void * initData);
 bool COMP_startThreaded(struct Component * comp, void * data);
 void COMP_stopThreaded(struct Component * comp);
 
-void COMP_initAll();
+bool COMP_initAll();
 void COMP_destructAll();
 bool COMP_startAll();
 void COMP_stopAll();

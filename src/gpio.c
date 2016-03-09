@@ -41,8 +41,8 @@ static struct Controller controllers[4] = {
 	[3] = { .base = 0x481ae000 }
 };
 
+static bool construct();
 static void destruct();
-static void construct();
 
 struct Component GPIO_comp = {
 	.description = PFX,
@@ -50,26 +50,36 @@ struct Component GPIO_comp = {
 	.destruct = &destruct
 };
 
-static void controllerInit(int devfd, struct Controller * ctrl);
+static bool controllerInit(int devfd, struct Controller * ctrl);
 static void controllerDestruct(struct Controller * ctrl);
 static inline struct Controller * getController(uint_fast32_t gpio);
 static inline uint_fast32_t getBit(uint_fast32_t gpio);
 
 /** Initialize the GPIO subsystem.
  * \note Must be called exactly once before any GPIO functions are used! */
-static void construct()
+static bool construct()
 {
 	/* open /dev/mem */
 	int devfd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
-	if (devfd < 0)
-		LOG_log(LOG_LEVEL_ERROR, PFX, "Could not open /dev/mem"); // TODO: LOG LEVEL
+	if (devfd < 0) {
+		LOG_log(LOG_LEVEL_ERROR, PFX, "Could not open /dev/mem");
+		return false;
+	}
 
 	/* initialize all 4 controllers */
 	size_t i;
-	for (i = 0; i < ARRAY_SIZE(controllers); ++i)
-		controllerInit(devfd, &controllers[i]);
+	for (i = 0; i < ARRAY_SIZE(controllers); ++i) {
+		if (!controllerInit(devfd, &controllers[i])) {
+			size_t j;
+			for (j = 0; j < i; ++j)
+				controllerDestruct(&controllers[j]);
+			return false;
+		}
+	}
 
 	close(devfd);
+
+	return true;
 }
 
 static void destruct()
@@ -128,20 +138,23 @@ uint_fast32_t GPIO_read(uint_fast32_t gpio)
  * \param devfd file handle to /dev/mem
  * \param ctrl controller to be initialized
  */
-static void controllerInit(int devfd, struct Controller * ctrl)
+static bool controllerInit(int devfd, struct Controller * ctrl)
 {
 	ctrl->map = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, devfd,
 		ctrl->base);
 
 	if (ctrl->map == (char*)-1) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not mmap /dev/mem for base 0x%08"
-			PRIxPTR, ctrl->base); // TODO: LOG LEVEL
+			PRIxPTR, ctrl->base);
+		return false;
 	}
 
 	ctrl->set = (volatile uint32_t*)(ctrl->map + 0x194);
 	ctrl->clear = (volatile uint32_t*)(ctrl->map + 0x190);
 	ctrl->oe = (volatile uint32_t*)(ctrl->map + 0x134);
 	ctrl->in = (volatile uint32_t*)(ctrl->map + 0x138);
+
+	return true;
 }
 
 static void controllerDestruct(struct Controller * ctrl)

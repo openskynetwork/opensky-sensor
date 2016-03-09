@@ -56,7 +56,7 @@ struct TB_Packet {
 /** argument vector of daemon, needed for restart */
 static char ** daemonArgv;
 
-static void construct(void * argv);
+static bool construct(void * argv);
 static void mainloop();
 
 struct Component TB_comp = {
@@ -98,9 +98,11 @@ static PacketProcessor processors[] = {
 /** Initialize TB.
  * \param argv argument vector of the daemon
  */
-static void construct(void * argv)
+static bool construct(void * argv)
 {
 	daemonArgv = argv;
+
+	return true;
 }
 
 /** Mainloop of the TB. */

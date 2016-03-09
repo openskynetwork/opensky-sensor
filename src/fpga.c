@@ -58,7 +58,7 @@ static const struct FPGApins pins[2] = {
 
 static const struct FPGApins * fpga;
 
-static void construct();
+static bool construct();
 static bool program();
 
 struct Component FPGA_comp = {
@@ -73,7 +73,7 @@ static bool transfer(const uint8_t * rfd, off_t size);
 /** Initialize FPGA configuration.
  * \note: GPIO_init() must be called prior to that function!
  */
-static void construct(const bool * bbwhite)
+static bool construct(const bool * bbwhite)
 {
 	fpga = &pins[*bbwhite ? BB_TYPE_WHITE : BB_TYPE_BLACK];
 
@@ -84,6 +84,8 @@ static void construct(const bool * bbwhite)
 	GPIO_setDirection(fpga->nconf, GPIO_DIRECTION_OUT);
 
 	GPIO_clear(fpga->dclk);
+
+	return true;
 }
 
 /** (Re-)Program the FPGA.
