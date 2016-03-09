@@ -85,10 +85,15 @@ int main(int argc, char * argv[])
 	COMP_register(&RECV_comp, NULL);
 	COMP_register(&RELAY_comp, NULL);
 
-	COMP_initAll();
+	if (!COMP_initAll()) {
+		LOG_log(LOG_LEVEL_EMERG, PFX, "Could not initialize all components, "
+			"quitting");
+	}
 
-	if (!COMP_startAll())
-		return EXIT_FAILURE;
+	if (!COMP_startAll()) {
+		LOG_log(LOG_LEVEL_EMERG, PFX, "Could not start all components, "
+			"quitting");
+	}
 
 	run = true;
 	pthread_mutex_lock(&sigmutex);
