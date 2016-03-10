@@ -56,10 +56,10 @@ START_TEST(test_recv_frame)
 	ck_assert_ptr_ne(frame, NULL);
 	ck_assert_uint_eq(frame->raw_len, len);
 	ck_assert(!memcmp(frame->raw, frm, len));
-	ck_assert_uint_eq(STAT_stats.ADSB_frameType[ADSB_FRAME_TYPE_MODE_S_LONG],
+	ck_assert_uint_eq(STAT_stats.RECV_frameType[ADSB_FRAME_TYPE_MODE_S_LONG],
 		1);
-	ck_assert_uint_eq(STAT_stats.ADSB_longType[('a' >> 3) & 0x1f], 1);
-	ck_assert_uint_eq(STAT_stats.ADSB_framesUnsynchronized, 1);
+	ck_assert_uint_eq(STAT_stats.RECV_modeSType[('a' >> 3) & 0x1f], 1);
+	ck_assert_uint_eq(STAT_stats.RECV_framesUnsynchronized, 1);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -84,7 +84,7 @@ START_TEST(test_filter_unsynchronized)
 
 	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_eq(frame, NULL);
-	ck_assert_uint_eq(STAT_stats.ADSB_framesUnsynchronized, 1);
+	ck_assert_uint_eq(STAT_stats.RECV_framesUnsynchronized, 1);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -114,7 +114,7 @@ START_TEST(test_filter_synchronized)
 	ck_assert_ptr_ne(frame, NULL);
 	ck_assert_uint_eq(frame->raw_len, len2);
 	ck_assert(!memcmp(frame->raw, frm2, len2));
-	ck_assert_uint_eq(STAT_stats.ADSB_framesUnsynchronized, 0);
+	ck_assert_uint_eq(STAT_stats.RECV_framesUnsynchronized, 0);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -137,7 +137,7 @@ START_TEST(test_filter_modeac)
 
 	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_eq(frame, NULL);
-	ck_assert_uint_eq(STAT_stats.ADSB_framesFiltered, 1);
+	ck_assert_uint_eq(STAT_stats.RECV_framesFiltered, 1);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -162,8 +162,8 @@ START_TEST(test_filter_type)
 
 	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_eq(frame, NULL);
-	ck_assert_uint_eq(STAT_stats.ADSB_framesFiltered, 1);
-	ck_assert_uint_eq(STAT_stats.ADSB_framesFilteredLong, 1);
+	ck_assert_uint_eq(STAT_stats.RECV_framesFiltered, 1);
+	ck_assert_uint_eq(STAT_stats.RECV_modeSFilteredLong, 1);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -191,7 +191,7 @@ START_TEST(test_filter_extsquitter)
 	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_ne(frame, NULL);
 
-	ck_assert_uint_eq(STAT_stats.ADSB_longType[_i], 1);
+	ck_assert_uint_eq(STAT_stats.RECV_modeSType[_i], 1);
 
 	COMP_stopAll();
 	COMP_destructAll();

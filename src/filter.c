@@ -42,28 +42,28 @@ void FILTER_setSynchronized(bool synchronized)
 
 bool FILTER_filter(enum ADSB_FRAME_TYPE frameType, uint8_t firstByte)
 {
-	++STAT_stats.ADSB_frameType[frameType];
+	++STAT_stats.RECV_frameType[frameType];
 
 	if (unlikely(!isSynchronized)) {
-		++STAT_stats.ADSB_framesUnsynchronized;
+		++STAT_stats.RECV_framesUnsynchronized;
 		if (CFG_config.recv.syncFilter) {
-			++STAT_stats.ADSB_framesFiltered;
+			++STAT_stats.RECV_framesFiltered;
 			return false;
 		}
 	}
 
 	/* apply filter */
 	if (frameType != ADSB_FRAME_TYPE_MODE_S_LONG) {
-		++STAT_stats.ADSB_framesFiltered;
+		++STAT_stats.RECV_framesFiltered;
 		return false;
 	}
 
 	uint_fast32_t ftype = (firstByte >> 3) & 0x1f;
-	++STAT_stats.ADSB_longType[ftype];
+	++STAT_stats.RECV_modeSType[ftype];
 	/* apply filter */
 	if (!((1 << ftype) & frameFilterLong)) {
-		++STAT_stats.ADSB_framesFiltered;
-		++STAT_stats.ADSB_framesFilteredLong;
+		++STAT_stats.RECV_framesFiltered;
+		++STAT_stats.RECV_modeSFilteredLong;
 		return false;
 	}
 
