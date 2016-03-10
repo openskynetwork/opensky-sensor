@@ -102,7 +102,7 @@ static void mainloop()
 				/* apply filter */
 				if (!((1 << ftype) & modeSFilter)) {
 					++STAT_stats.RECV_framesFiltered;
-					++STAT_stats.RECV_modeSFilteredLong;
+					++STAT_stats.RECV_modeSFiltered;
 					continue;
 				}
 

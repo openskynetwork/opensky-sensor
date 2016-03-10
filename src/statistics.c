@@ -172,7 +172,7 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 	printFrames("unknown", &snapshot, lastSnapshot, RECV_frameTypeUnknown);
 	printFrames("filtered", &snapshot, lastSnapshot, RECV_framesFiltered);
 	printFrames("Mode-S filtered", &snapshot, lastSnapshot,
-		RECV_modeSFilteredLong);
+		RECV_modeSFiltered);
 	printf(" - %27" PRIu64 " unsynchronized frames\n",
 		stats->RECV_framesUnsynchronized);
 	puts("");

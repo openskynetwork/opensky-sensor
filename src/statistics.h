@@ -13,7 +13,7 @@ struct STAT_Statistics {
 	uint_fast64_t RECV_modeSType[32];
 	uint_fast64_t RECV_frameTypeUnknown;
 	uint_fast64_t RECV_framesFiltered;
-	uint_fast64_t RECV_modeSFilteredLong;
+	uint_fast64_t RECV_modeSFiltered;
 	uint_fast64_t RECV_framesUnsynchronized;
 
 	uint_fast64_t BUF_flushes;
