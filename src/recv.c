@@ -91,7 +91,7 @@ static void mainloop()
 				}
 
 				/* apply filter */
-				if (frame->frameType != ADSB_FRAME_TYPE_MODE_S_LONG ||
+				if (frame->frameType != ADSB_FRAME_TYPE_MODE_S_LONG &&
 					frame->frameType != ADSB_FRAME_TYPE_MODE_S_SHORT) {
 					++STAT_stats.RECV_framesFiltered;
 					continue;
