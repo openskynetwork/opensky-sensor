@@ -63,7 +63,7 @@ bool FILTER_filter(enum ADSB_FRAME_TYPE frameType, uint8_t firstByte)
 	/* apply filter */
 	if (!((1 << ftype) & modeSFilter)) {
 		++STAT_stats.RECV_framesFiltered;
-		++STAT_stats.RECV_modeSFilteredLong;
+		++STAT_stats.RECV_modeSFiltered;
 		return false;
 	}
 

@@ -163,7 +163,7 @@ START_TEST(test_filter_type)
 	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_eq(frame, NULL);
 	ck_assert_uint_eq(STAT_stats.RECV_framesFiltered, 1);
-	ck_assert_uint_eq(STAT_stats.RECV_modeSFilteredLong, 1);
+	ck_assert_uint_eq(STAT_stats.RECV_modeSFiltered, 1);
 
 	COMP_stopAll();
 	COMP_destructAll();
