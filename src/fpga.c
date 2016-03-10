@@ -109,14 +109,14 @@ static bool program()
 	int fd = open(file, O_RDONLY | O_CLOEXEC);
 	if (fd < 0) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "could not open '%s'", file);
-		return false; // TODO: log levels
+		return false;
 	}
 
 	/* stat input file for its size */
 	if (fstat(fd, &st) < 0) {
 		close(fd);
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "could not stat '%s'", file);
-		return 0;
+		return false;
 	}
 
 	/* mmap input file */
