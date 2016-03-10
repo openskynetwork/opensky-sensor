@@ -102,7 +102,9 @@ static bool configure()
 	const struct CFG_RECV * cfg = &CFG_config.recv;
 	/* setup ADSB */
 	return setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN) &&
-		setOption(ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY) &&
+		setOption(cfg->modeSLongExtSquitter ?
+			ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
+			ADSB_OPTION_FRAME_FILTER_ALL) &&
 		setOption(ADSB_OPTION_AVR_FORMAT_MLAT) &&
 		setOption(cfg->crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
 			ADSB_OPTION_DF_11_17_18_CRC_DISABLED) &&
@@ -157,7 +159,7 @@ bool ADSB_getFrame(struct ADSB_Frame * frame)
 		if (unlikely(sync != 0x1a)) {
 			NOC_fprintf(stderr, "ADSB: Out of Sync: got 0x%2" PRIx8
 				" instead of 0x1a\n", sync);
-			++STAT_stats.ADSB_outOfSync;
+			++STAT_stats.RECV_outOfSync;
 synchronize:
 			if (unlikely(!synchronize()))
 				return false;
@@ -185,12 +187,12 @@ decode_frame:
 		case '\x1a': /* resynchronize */
 			NOC_puts("ADSB: Out of Sync: got unescaped 0x1a in frame, "
 				"resynchronizing");
-			++STAT_stats.ADSB_outOfSync;
+			++STAT_stats.RECV_outOfSync;
 			goto synchronize;
 		default:
 			NOC_fprintf(stderr, "ADSB: Unknown frame type %c, "
 				"resynchronizing\n", type);
-			++STAT_stats.ADSB_frameTypeUnknown;
+			++STAT_stats.RECV_frameTypeUnknown;
 			goto synchronize;
 		}
 		frame->frameType = type - '1';
@@ -202,7 +204,7 @@ decode_frame:
 		__attribute__((aligned(8))) union { uint8_t u8[7]; uint64_t u64; } hdr;
 		enum DECODE_STATUS rs = decode(hdr.u8, sizeof hdr.u8, frame);
 		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
-			++STAT_stats.ADSB_outOfSync;
+			++STAT_stats.RECV_outOfSync;
 			goto decode_frame;
 		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
@@ -213,7 +215,7 @@ decode_frame:
 		/* read payload */
 		rs = decode(frame->payload, payload_len, frame);
 		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
-			++STAT_stats.ADSB_outOfSync;
+			++STAT_stats.RECV_outOfSync;
 			goto decode_frame;
 		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;

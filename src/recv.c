@@ -73,7 +73,7 @@ static void mainloop()
 		while (true) {
 			bool success = ADSB_getFrame(frame);
 			if (likely(success)) {
-				++STAT_stats.ADSB_frameType[frame->frameType];
+				++STAT_stats.RECV_frameType[frame->frameType];
 
 				if (unlikely(frame->frameType == ADSB_FRAME_TYPE_STATUS)) {
 					if (!isSynchronized)
@@ -83,25 +83,26 @@ static void mainloop()
 
 				/* filter if unsynchronized and filter is enabled */
 				if (unlikely(!isSynchronized)) {
-					++STAT_stats.ADSB_framesUnsynchronized;
+					++STAT_stats.RECV_framesUnsynchronized;
 					if (CFG_config.recv.syncFilter) {
-						++STAT_stats.ADSB_framesFiltered;
+						++STAT_stats.RECV_framesFiltered;
 						continue;
 					}
 				}
 
 				/* apply filter */
-				if (frame->frameType != ADSB_FRAME_TYPE_MODE_S_LONG) {
-					++STAT_stats.ADSB_framesFiltered;
+				if (frame->frameType != ADSB_FRAME_TYPE_MODE_S_LONG ||
+					frame->frameType != ADSB_FRAME_TYPE_MODE_S_SHORT) {
+					++STAT_stats.RECV_framesFiltered;
 					continue;
 				}
 
 				uint_fast32_t ftype = (frame->payload[0] >> 3) & 0x1f;
-				++STAT_stats.ADSB_longType[ftype];
+				++STAT_stats.RECV_modeSType[ftype];
 				/* apply filter */
 				if (!((1 << ftype) & frameFilterLong)) {
-					++STAT_stats.ADSB_framesFiltered;
-					++STAT_stats.ADSB_framesFilteredLong;
+					++STAT_stats.RECV_framesFiltered;
+					++STAT_stats.RECV_modeSFilteredLong;
 					continue;
 				}
 

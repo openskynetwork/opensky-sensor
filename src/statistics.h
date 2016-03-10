@@ -8,13 +8,13 @@
 #include <message.h>
 
 struct STAT_Statistics {
-	uint_fast64_t ADSB_outOfSync;
-	uint_fast64_t ADSB_frameType[4];
-	uint_fast64_t ADSB_longType[32];
-	uint_fast64_t ADSB_frameTypeUnknown;
-	uint_fast64_t ADSB_framesFiltered;
-	uint_fast64_t ADSB_framesFilteredLong;
-	uint_fast64_t ADSB_framesUnsynchronized;
+	uint_fast64_t RECV_outOfSync;
+	uint_fast64_t RECV_frameType[4];
+	uint_fast64_t RECV_modeSType[32];
+	uint_fast64_t RECV_frameTypeUnknown;
+	uint_fast64_t RECV_framesFiltered;
+	uint_fast64_t RECV_modeSFilteredLong;
+	uint_fast64_t RECV_framesUnsynchronized;
 
 	uint_fast64_t BUF_flushes;
 	uint_fast64_t BUF_GCRuns;

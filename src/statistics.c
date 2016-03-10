@@ -102,17 +102,17 @@ static inline void printFrames2(const char * name,
 		!!(lastSnapshot), (lastSnapshot) ? (lastSnapshot)->stats.member : 0)
 
 static inline void printSubFrames(uint_fast32_t type,
-	const struct Snapshot * snapshot, const struct Snapshot * lastSnapshot)
+	const struct Snapshot * snapshot, const struct Snapshot * lastSnapshot,
+	uint64_t modeSFrames)
 {
-	uint_fast64_t n = snapshot->stats.ADSB_longType[type];
+	uint_fast64_t n = snapshot->stats.RECV_modeSType[type];
 	if (n) {
 		printf("   - %27" PRIuFAST64 " [%3.0f%%] type %"
-			PRIuFAST32 " (%.02f /s", n,
-			100. * n / snapshot->stats.ADSB_frameType[2], type,
+			PRIuFAST32 " (%.02f /s", n, 100. * n / modeSFrames, type,
 			(double)n / snapshot->secs);
 		if (lastSnapshot && snapshot->delta) {
 			printf(", %.02f /s)\n",
-				(double)(n - lastSnapshot->stats.ADSB_longType[type])
+				(double)(n - lastSnapshot->stats.RECV_modeSType[type])
 					/ snapshot->delta);
 		} else {
 			puts(")");
@@ -149,10 +149,10 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 	printf(" - %27" PRIu64 " events\n", stats->WD_events);
 	puts("");
 
-	puts(" ADSB");
-	printf(" - %27" PRIu64 " times out of sync\n", stats->ADSB_outOfSync);
-	snapshot.frames = stats->ADSB_frameType[0] + stats->ADSB_frameType[1]
-		+ stats->ADSB_frameType[2] + stats->ADSB_frameTypeUnknown;
+	puts(" Receiver");
+	printf(" - %27" PRIu64 " times out of sync\n", stats->RECV_outOfSync);
+	snapshot.frames = stats->RECV_frameType[0] + stats->RECV_frameType[1]
+		+ stats->RECV_frameType[2] + stats->RECV_frameTypeUnknown;
 	printf(" - %27" PRIu64 " frames received (%.02f /s", snapshot.frames,
 		(double)snapshot.frames / snapshot.secs);
 	if (lastSnapshot) {
@@ -161,19 +161,20 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 	} else {
 		puts(")");
 	}
-	printFrames("Mode-A/C", &snapshot, lastSnapshot, ADSB_frameType[0]);
-	printFrames("Mode-S Short", &snapshot, lastSnapshot, ADSB_frameType[1]);
-	printFrames("Mode-S Long", &snapshot, lastSnapshot, ADSB_frameType[2]);
+	printFrames("Mode-A/C", &snapshot, lastSnapshot, RECV_frameType[0]);
+	uint64_t modeSFrames = stats->RECV_frameType[1] + stats->RECV_frameType[2];
+	printFrames("Mode-S Short", &snapshot, lastSnapshot, RECV_frameType[1]);
+	printFrames("Mode-S Long", &snapshot, lastSnapshot, RECV_frameType[2]);
 	uint_fast32_t i;
 	for (i = 0; i < 32; ++i)
-		printSubFrames(i, &snapshot, lastSnapshot);
-	printFrames("status", &snapshot, lastSnapshot, ADSB_frameType[3]);
-	printFrames("unknown", &snapshot, lastSnapshot, ADSB_frameTypeUnknown);
-	printFrames("filtered", &snapshot, lastSnapshot, ADSB_framesFiltered);
-	printFrames("long filtered", &snapshot, lastSnapshot,
-		ADSB_framesFilteredLong);
+		printSubFrames(i, &snapshot, lastSnapshot, modeSFrames);
+	printFrames("status", &snapshot, lastSnapshot, RECV_frameType[3]);
+	printFrames("unknown", &snapshot, lastSnapshot, RECV_frameTypeUnknown);
+	printFrames("filtered", &snapshot, lastSnapshot, RECV_framesFiltered);
+	printFrames("Mode-S filtered", &snapshot, lastSnapshot,
+		RECV_modeSFilteredLong);
 	printf(" - %27" PRIu64 " unsynchronized frames\n",
-		stats->ADSB_framesUnsynchronized);
+		stats->RECV_framesUnsynchronized);
 	puts("");
 
 	puts(" Buffer");
