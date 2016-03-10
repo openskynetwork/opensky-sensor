@@ -1,3 +1,6 @@
+2016-03-10 Markus Engel <engel@opensky-network.org>
+	* Input Filter: either ADSB only or all Mode-S formats
+
 2016-02-15 Markus Engel <engel@opensky-network.org>
 	* Changed input layer selection
 	* Fixed compiler warnings
