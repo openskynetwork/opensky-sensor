@@ -12,20 +12,20 @@
 #include <threads.h>
 #include <util.h>
 
-enum RECV_LONG_FRAME_TYPE {
-	RECV_LONG_FRAME_TYPE_NONE = 0,
+enum RECV_MODES_TYPE {
+	RECV_MODES_TYPE_NONE = 0,
 
-	RECV_LONG_FRAME_TYPE_EXTENDED_SQUITTER = 1 << 17,
-	RECV_LONG_FRAME_TYPE_EXTENDED_SQUITTER_NON_TRANSPONDER = 1 << 18,
+	RECV_MODES_TYPE_EXTENDED_SQUITTER = 1 << 17,
+	RECV_MODES_TYPE_EXTENDED_SQUITTER_NON_TRANSPONDER = 1 << 18,
 
-	RECV_LONG_FRAME_TYPE_ALL = ~0,
-	RECV_LONG_FRAME_TYPE_EXTENDED_SQUITTER_ALL =
-		RECV_LONG_FRAME_TYPE_EXTENDED_SQUITTER |
-		RECV_LONG_FRAME_TYPE_EXTENDED_SQUITTER_NON_TRANSPONDER
+	RECV_MODES_TYPE_ALL = ~0,
+	RECV_MODES_TYPE_EXTENDED_SQUITTER_ALL =
+		RECV_MODES_TYPE_EXTENDED_SQUITTER |
+		RECV_MODES_TYPE_EXTENDED_SQUITTER_NON_TRANSPONDER
 };
 
-/** frame filter (for long frames) */
-static enum RECV_LONG_FRAME_TYPE frameFilterLong;
+/** frame filter (for Mode-S frames) */
+static enum RECV_MODES_TYPE modeSFilter;
 
 /** synchronization info: true if receiver has a valid GPS timestamp */
 static bool isSynchronized;
@@ -45,8 +45,8 @@ static void construct()
 {
 	ADSB_init();
 
-	frameFilterLong = CFG_config.recv.modeSLongExtSquitter ?
-		RECV_LONG_FRAME_TYPE_EXTENDED_SQUITTER_ALL : RECV_LONG_FRAME_TYPE_ALL;
+	modeSFilter = CFG_config.recv.modeSLongExtSquitter ?
+		RECV_MODES_TYPE_EXTENDED_SQUITTER_ALL : RECV_MODES_TYPE_ALL;
 }
 
 static void destruct()
@@ -73,7 +73,7 @@ static void mainloop()
 		while (true) {
 			bool success = ADSB_getFrame(frame);
 			if (likely(success)) {
-				++STAT_stats.ADSB_frameType[frame->frameType];
+				++STAT_stats.RECV_frameType[frame->frameType];
 
 				if (unlikely(frame->frameType == ADSB_FRAME_TYPE_STATUS)) {
 					if (!isSynchronized)
@@ -83,25 +83,26 @@ static void mainloop()
 
 				/* filter if unsynchronized and filter is enabled */
 				if (unlikely(!isSynchronized)) {
-					++STAT_stats.ADSB_framesUnsynchronized;
+					++STAT_stats.RECV_framesUnsynchronized;
 					if (CFG_config.recv.syncFilter) {
-						++STAT_stats.ADSB_framesFiltered;
+						++STAT_stats.RECV_framesFiltered;
 						continue;
 					}
 				}
 
 				/* apply filter */
-				if (frame->frameType != ADSB_FRAME_TYPE_MODE_S_LONG) {
-					++STAT_stats.ADSB_framesFiltered;
+				if (frame->frameType != ADSB_FRAME_TYPE_MODE_S_LONG ||
+					frame->frameType != ADSB_FRAME_TYPE_MODE_S_SHORT) {
+					++STAT_stats.RECV_framesFiltered;
 					continue;
 				}
 
 				uint_fast32_t ftype = (frame->payload[0] >> 3) & 0x1f;
-				++STAT_stats.ADSB_longType[ftype];
+				++STAT_stats.RECV_modeSType[ftype];
 				/* apply filter */
-				if (!((1 << ftype) & frameFilterLong)) {
-					++STAT_stats.ADSB_framesFiltered;
-					++STAT_stats.ADSB_framesFilteredLong;
+				if (!((1 << ftype) & modeSFilter)) {
+					++STAT_stats.RECV_framesFiltered;
+					++STAT_stats.RECV_modeSFilteredLong;
 					continue;
 				}
 
