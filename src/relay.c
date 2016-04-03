@@ -28,7 +28,7 @@ static void mainloop()
 {
 	while (true) {
 		/* synchronize with the network (i.e. wait for a connection) */
-		NET_sync_send();
+		NET_waitConnected();
 
 		/* Now we have a new connection to the server */
 

@@ -108,7 +108,9 @@ static void mainloop()
 
 	while (true) {
 		/* synchronize with receiver */
-		NET_sync_recv();
+		NET_waitConnected();
+
+		sleep(3);
 
 		/* new connection, reset buffer */
 		bufLen = 0;
