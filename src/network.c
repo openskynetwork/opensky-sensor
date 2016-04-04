@@ -17,7 +17,10 @@
 #include <string.h>
 
 /** Networking socket */
-static int sock;
+static int recvsock;
+
+static int sendsock;
+
 /** Mutex for all shared variables */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Condition for changes in connection status */
@@ -28,19 +31,31 @@ enum CONN_STATE {
 	/** Disconnected */
 	CONN_STATE_DISCONNECTED,
 	/** Connected */
-	CONN_STATE_CONNECTED,
-	/** Connection in transit (from connected -> disconnected) */
-	CONN_STATE_TRANSIENT
+	CONN_STATE_CONNECTED
+};
+
+enum TRANSIT_STATE {
+	TRANSIT_NONE,
+	TRANSIT_SEND,
+	TRANSIT_RECV
+};
+
+enum EMIT_BY {
+	EMIT_BY_RECV = TRANSIT_SEND,
+	EMIT_BY_SEND = TRANSIT_RECV
 };
 
 /** Connection state */
-static enum CONN_STATE connState = CONN_STATE_DISCONNECTED;
+static enum CONN_STATE connState;
+
+static enum TRANSIT_STATE transState;
 
 static void mainloop();
-static bool tryConnect();
-static void emitDisconnect();
+static int tryConnect();
+static void emitDisconnect(enum EMIT_BY by);
+static bool trySendSock(int sock, const void * buf, size_t len);
 static bool trySend(const void * buf, size_t len);
-static bool sendSerial();
+static bool sendSerial(int sock);
 
 struct Component NET_comp = {
 	.description = "NET",
@@ -55,11 +70,15 @@ static void cleanup()
 /** Mainloop for network: (re)established network connection on failure */
 static void mainloop()
 {
+	connState = CONN_STATE_DISCONNECTED;
+	transState = TRANSIT_NONE;
+
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&cleanup, NULL);
 	while (true) {
 		assert (connState == CONN_STATE_DISCONNECTED);
-		while (!tryConnect()) {
+		int sock;
+		while ((sock = tryConnect(&sock)) == -1) {
 			++STAT_stats.NET_connectsFail;
 			sleep(CFG_config.net.reconnectInterval);
 		}
@@ -67,10 +86,22 @@ static void mainloop()
 		/* connection established */
 		++STAT_stats.NET_connectsSuccess;
 
+		switch (transState) {
+		case TRANSIT_NONE:
+			recvsock = sendsock = sock;
+			break;
+		case TRANSIT_RECV:
+			sendsock = sock;
+			break;
+		case TRANSIT_SEND:
+			recvsock = sock;
+			break;
+		}
+
 		connState = CONN_STATE_CONNECTED;
 		pthread_cond_broadcast(&cond);
 
-		sendSerial();
+		sendSerial(sock);
 
 		/* wait for failure */
 		while (connState != CONN_STATE_DISCONNECTED)
@@ -79,30 +110,69 @@ static void mainloop()
 	CLEANUP_POP();
 }
 
-static bool tryConnect()
+static int tryConnect()
 {
-	sock = NETC_connect("NET", CFG_config.net.host, CFG_config.net.port);
+	int sock = NETC_connect("NET", CFG_config.net.host, CFG_config.net.port);
 	if (sock < 0)
 		sock = -1;
-	return sock != -1;
+	return sock;
 }
 
-static void emitDisconnect()
+static void emitDisconnect(enum EMIT_BY by)
 {
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&cleanup, NULL);
-	switch (connState) {
-	case CONN_STATE_DISCONNECTED:
-		break;
-	case CONN_STATE_CONNECTED:
-		shutdown(sock, SHUT_RDWR);
-		connState = CONN_STATE_TRANSIENT;
-		break;
-	case CONN_STATE_TRANSIENT:
-		close(sock);
-		sock = -1;
-		connState = CONN_STATE_DISCONNECTED;
-		pthread_cond_broadcast(&cond);
+
+	int * mysock;
+	int othsock;
+
+	if (by == EMIT_BY_RECV) {
+		mysock = &recvsock;
+		othsock = sendsock;
+	} else {
+		mysock = &sendsock;
+		othsock = recvsock;
+	}
+
+#ifdef DEBUG
+	printf("EMIT: By=%s, Conn=%d, Trans=%s\n",
+		by == EMIT_BY_RECV ? "RECV" : "SEND",
+		connState == CONN_STATE_CONNECTED ? 1 : 0,
+		transState == TRANSIT_NONE ? "None" : transState == TRANSIT_RECV ?
+			"Recv" : "Send");
+#endif
+
+	if (connState == CONN_STATE_CONNECTED) {
+		/* we are connected */
+		if (transState == TRANSIT_NONE) {
+			/* we were normally connected -> we have a new leader */
+			/* shutdown the socket (but leave it open, so the follower can
+			 * see the failure */
+			shutdown(*mysock, SHUT_RDWR);
+			transState = by;
+			connState = CONN_STATE_DISCONNECTED;
+			pthread_cond_broadcast(&cond);
+		} else if (transState == (enum TRANSIT_STATE)by) {
+			/* we were connected, but the leader reported another failure
+			 * while the follower did not recognize the first failure yet
+			 *  -> close the socket */
+			shutdown(*mysock, SHUT_RDWR);
+			close(*mysock);
+			connState = CONN_STATE_DISCONNECTED;
+			pthread_cond_broadcast(&cond);
+		} else {
+			/* we are connected and the follower has seen the failure
+			 * -> close the stale socket and synchronize with the leader */
+			close(*mysock);
+			*mysock = othsock;
+			transState = TRANSIT_NONE;
+		}
+	} else if (transState != (enum TRANSIT_STATE)by) {
+		assert (transState != TRANSIT_NONE);
+		/* we have not been reconnected yet, but the follower has seen the
+		 * failure -> close the stale socket */
+		close(*mysock);
+		transState = TRANSIT_NONE;
 	}
 	CLEANUP_POP();
 }
@@ -121,7 +191,7 @@ void NET_waitConnected()
  * \param len length of data
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
  */
-static bool trySend(const void * buf, size_t len)
+static bool trySendSock(int sock, const void * buf, size_t len)
 {
 	const char * ptr = buf;
 	const char * end = ptr + len;
@@ -133,25 +203,37 @@ static bool trySend(const void * buf, size_t len)
 				rc == 0 || errno == EPIPE ? "Connection lost" :
 				strerror(errno));
 			++STAT_stats.NET_msgsFailed;
-			emitDisconnect();
 			return false;
 		}
 		ptr += rc;
-	} while(ptr != end);
+	} while (ptr != end);
 
 	++STAT_stats.NET_msgsSent;
 
 	return true;
 }
 
+/** Send some data through the socket.
+ * \param data data to be sent
+ * \param len length of data
+ * \return true if sending succeeded, false otherwise (e.g. connection lost)
+ */
+static bool trySend(const void * buf, size_t len)
+{
+	bool rc = trySendSock(sendsock, buf, len);
+	if (!rc)
+		emitDisconnect(EMIT_BY_SEND);
+	return rc;
+}
+
 ssize_t NET_receive(uint8_t * buf, size_t len)
 {
-	ssize_t rc = recv(sock, buf, len, 0);
+	ssize_t rc = recv(recvsock, buf, len, 0);
 	if (rc <= 0) {
 		NOC_fprintf(stderr, "NET: could not receive: %s\n",
 			rc == 0 ? "Connection lost" : strerror(errno));
 		++STAT_stats.NET_msgsRecvFailed;
-		emitDisconnect();
+		emitDisconnect(EMIT_BY_RECV);
 	}
 	return rc;
 }
@@ -177,7 +259,7 @@ bool NET_sendTimeout()
 /** Send the serial number of the device to the server.
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
  */
-static bool sendSerial()
+static bool sendSerial(int sock)
 {
 	char buf[10] = { '\x1a', '\x35' };
 
@@ -194,5 +276,5 @@ static bool sendSerial()
 		if ((*cur++ = serial.ca[n]) == '\x1a')
 			*cur++ = '\x1a';
 
-	return trySend(buf, cur - buf);
+	return trySendSock(sock, buf, cur - buf);
 }
