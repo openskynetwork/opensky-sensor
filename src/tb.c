@@ -110,8 +110,6 @@ static void mainloop()
 		/* synchronize with receiver */
 		NET_waitConnected();
 
-		sleep(3);
-
 		/* new connection, reset buffer */
 		bufLen = 0;
 
