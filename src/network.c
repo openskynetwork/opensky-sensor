@@ -65,15 +65,12 @@ static void mainloop()
 		}
 
 		/* connection established */
-		if (!sendSerial()) {
-			++STAT_stats.NET_connectsFail;
-			continue;
-		}
+		++STAT_stats.NET_connectsSuccess;
 
 		connState = CONN_STATE_CONNECTED;
 		pthread_cond_broadcast(&cond);
 
-		++STAT_stats.NET_connectsSuccess;
+		sendSerial();
 
 		/* wait for failure */
 		while (connState != CONN_STATE_DISCONNECTED)
