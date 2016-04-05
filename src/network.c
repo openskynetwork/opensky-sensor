@@ -101,7 +101,13 @@ static void mainloop()
 		connState = CONN_STATE_CONNECTED;
 		pthread_cond_broadcast(&cond);
 
-		sendSerial(sock);
+		if (!sendSerial(sock)) {
+			/* special case: sending the serial number does not trigger the
+			 * failure handling, so we have to do it manually here */
+			shutdown(sock, SHUT_RDWR);
+			close(sock);
+			connState = CONN_STATE_DISCONNECTED;
+		}
 
 		/* wait for failure */
 		while (connState != CONN_STATE_DISCONNECTED)
@@ -135,15 +141,15 @@ static void emitDisconnect(enum EMIT_BY by)
 	}
 
 #ifdef DEBUG
-	printf("EMIT: By=%s, Conn=%d, Trans=%s\n",
+	NOC_printf("NET: Failure detected by %s, Connected = %d, Transit = %s\n",
 		by == EMIT_BY_RECV ? "RECV" : "SEND",
 		connState == CONN_STATE_CONNECTED ? 1 : 0,
-		transState == TRANSIT_NONE ? "None" : transState == TRANSIT_RECV ?
-			"Recv" : "Send");
+		transState == TRANSIT_NONE ? "NONE" : transState == TRANSIT_RECV ?
+			"RECV" : "SEND");
 #endif
 
 	if (connState == CONN_STATE_CONNECTED) {
-		/* we are connected */
+		/* we were connected */
 		if (transState == TRANSIT_NONE) {
 			/* we were normally connected -> we have a new leader */
 			/* shutdown the socket (but leave it open, so the follower can
