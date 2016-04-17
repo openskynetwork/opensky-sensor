@@ -15,10 +15,12 @@ struct Component {
 	void (*main)();
 
 	bool (*start)(struct Component * c, void * data);
-	void (*stop)(struct Component * c);
+	bool (*stop)(struct Component * c, bool deferred);
 
 	pthread_t thread;
 	void * data;
+
+	bool stopped;
 
 	struct Component * next;
 	struct Component * prev;
@@ -29,7 +31,7 @@ void COMP_setSilent(bool s);
 void COMP_register(struct Component * comp, void * initData);
 
 bool COMP_startThreaded(struct Component * comp, void * data);
-void COMP_stopThreaded(struct Component * comp);
+bool COMP_stopThreaded(struct Component * comp, bool deferred);
 
 void COMP_initAll();
 void COMP_destructAll();

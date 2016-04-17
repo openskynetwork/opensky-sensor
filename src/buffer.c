@@ -90,7 +90,7 @@ static void construct();
 static void destruct();
 static void mainloop();
 static bool start(struct Component * c, void * data);
-static void stop(struct Component * c);
+static bool stop(struct Component * c, bool deferred);
 
 struct Component BUF_comp = {
 	.description = "BUF",
@@ -153,10 +153,11 @@ static bool start(struct Component * c, void * data)
 	return true;
 }
 
-static void stop(struct Component * c)
+static bool stop(struct Component * c, bool deferred)
 {
 	if (CFG_config.buf.gcEnabled)
-		COMP_stopThreaded(c);
+		return COMP_stopThreaded(c, deferred);
+	return true;
 }
 
 /** Gargabe collector mainloop.
