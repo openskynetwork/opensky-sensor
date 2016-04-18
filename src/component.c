@@ -152,10 +152,11 @@ void stopAll(struct Component * tail)
 		if (!silent)
 			printf("Stopping deferred components:");
 		for (c = tail; c; c = c->prev) {
-			if (!c->stopped)
+			if (!c->stopped) {
 				stop(c, true);
-			progress |= c->stopped;
-			deferred |= !c->stopped;
+				progress |= c->stopped;
+				deferred |= !c->stopped;
+			}
 		}
 		if (!silent)
 			putchar('\n');
