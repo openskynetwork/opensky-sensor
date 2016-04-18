@@ -46,7 +46,7 @@ static void configAssert(char testC)
 	ck_assert(test.init);
 	ADSB_connect();
 	ck_assert_uint_eq(test.write, 8);
-	ck_assert(!!test.params[lower - 'c'] == !!expect);
+	ck_assert_int_eq(!!test.params[lower - 'c'], !!expect);
 }
 
 START_TEST(test_config_bin)
@@ -55,9 +55,17 @@ START_TEST(test_config_bin)
 }
 END_TEST
 
-START_TEST(test_config_frameFilter)
+START_TEST(test_config_frameFilter_0)
 {
+	cfg->modeSLongExtSquitter = true;
 	configAssert('D');
+}
+END_TEST
+
+START_TEST(test_config_frameFilter_1)
+{
+	cfg->modeSLongExtSquitter = false;
+	configAssert('d');
 }
 END_TEST
 
@@ -819,7 +827,8 @@ static Suite * adsb_suite()
 	tcase_add_checked_fixture(tc, setup, NULL);
 	tcase_add_test(tc, test_connect);
 	tcase_add_test(tc, test_config_bin);
-	tcase_add_test(tc, test_config_frameFilter);
+	tcase_add_test(tc, test_config_frameFilter_0);
+	tcase_add_test(tc, test_config_frameFilter_1);
 	tcase_add_test(tc, test_config_crc_0);
 	tcase_add_test(tc, test_config_crc_1);
 	tcase_add_test(tc, test_config_gps_0);

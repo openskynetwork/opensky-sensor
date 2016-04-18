@@ -6,11 +6,15 @@
 #include <network.h>
 #include <log.h>
 #include <net_common.h>
-#include <sys/types.h>
+#include <statistics.h>
+#include <cfgfile.h>
+#include <threads.h>
+#include <pthread.h>
 #include <sys/socket.h>
 #include <stdio.h>
+#include <assert.h>
+#include <errno.h>
 #include <string.h>
-#include <inttypes.h>
 #include <unistd.h>
 #include <endian.h>
 #include <statistics.h>
@@ -19,200 +23,185 @@
 #include <cfgfile.h>
 #include <util.h>
 
-//#define DEBUG
+#define DEBUG
 
 static const char PFX[] = "NET";
 
 /** Networking socket */
-static volatile int sock = -1;
+static int recvsock;
 
-/** Flag: is socket connected */
-static volatile bool connected;
-/** Flag: reconnect needed */
-static volatile bool reconnect;
-/** Flag: socket has been reconnected (for receiver) */
-static volatile bool reconnectedRecv;
-/** Flag: socket has been reconnected (for sender) */
-static volatile bool reconnectedSend;
-/** Flag: currently in exclusive region (recv) */
-static volatile bool inRecv;
-/** Flag: currently in exclusive region (send) */
-static volatile bool inSend;
+static int sendsock;
 
 /** Mutex for all shared variables */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-/** Condition for connected flag */
-static pthread_cond_t condConnected = PTHREAD_COND_INITIALIZER;
-/** Condition for reconnect flag */
-static pthread_cond_t condReconnect = PTHREAD_COND_INITIALIZER;
+/** Condition for changes in connection status */
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
+/** Connection status */
+enum CONN_STATE {
+	/** Disconnected */
+	CONN_STATE_DISCONNECTED,
+	/** Connected */
+	CONN_STATE_CONNECTED
+};
+
+enum TRANSIT_STATE {
+	TRANSIT_NONE,
+	TRANSIT_SEND,
+	TRANSIT_RECV
+};
+
+enum EMIT_BY {
+	EMIT_BY_RECV = TRANSIT_SEND,
+	EMIT_BY_SEND = TRANSIT_RECV
+};
+
+/** Connection state */
+static enum CONN_STATE connState;
+
+static enum TRANSIT_STATE transState;
 
 static void mainloop();
+static int tryConnect();
+static void emitDisconnect(enum EMIT_BY by);
+static bool trySendSock(int sock, const void * buf, size_t len);
+static bool trySend(const void * buf, size_t len);
+static bool sendSerial(int sock);
 
 struct Component NET_comp = {
 	.description = PFX,
 	.main = &mainloop
 };
 
-static inline void emitDisconnect();
-static bool doConnect();
-static bool sendSerial();
-static inline bool sendData(const void * data, size_t len);
-
-static void cleanup(bool * locked)
+static void cleanup()
 {
-	if (*locked) {
-		pthread_cond_broadcast(&condReconnect);
-		pthread_mutex_unlock(&mutex);
-	}
+	pthread_mutex_unlock(&mutex);
 }
 
 /** Mainloop for network: (re)established network connection on failure */
 static void mainloop()
 {
-	connected = false;
-	reconnect = true;
-	reconnectedRecv = false;
-	reconnectedSend = false;
-	inRecv = false;
-	inSend = false;
+	connState = CONN_STATE_DISCONNECTED;
+	transState = TRANSIT_NONE;
 
-	bool locked = true;
-	CLEANUP_PUSH(&cleanup, &locked);
 	pthread_mutex_lock(&mutex);
+	CLEANUP_PUSH(&cleanup, NULL);
 	while (true) {
-		/* connect to the server */
-		while (!doConnect()) {
-			/* retry in case of failure */
-			pthread_mutex_unlock(&mutex);
-			locked = false;
-			sleep(CFG_config.net.reconnectInterval);
-			locked = true;
-			pthread_mutex_lock(&mutex);
+		assert (connState == CONN_STATE_DISCONNECTED);
+		int sock;
+		while ((sock = tryConnect(&sock)) == -1) {
 			++STAT_stats.NET_connectsFail;
+			sleep(CFG_config.net.reconnectInterval);
 		}
 
 		/* connection established */
-		if (!sendSerial()) {
-			++STAT_stats.NET_connectsFail;
-			continue;
-		}
-
-		/* signalize sender / receiver */
-		connected = true;
-		reconnectedRecv = true;
-		reconnectedSend = true;
-		reconnect = false;
-		pthread_cond_broadcast(&condConnected);
-
 		++STAT_stats.NET_connectsSuccess;
 
+		switch (transState) {
+		case TRANSIT_NONE:
+			recvsock = sendsock = sock;
+			break;
+		case TRANSIT_RECV:
+			sendsock = sock;
+			break;
+		case TRANSIT_SEND:
+			recvsock = sock;
+			break;
+		}
+
+		connState = CONN_STATE_CONNECTED;
+		pthread_cond_broadcast(&cond);
+
+		if (!sendSerial(sock)) {
+			/* special case: sending the serial number does not trigger the
+			 * failure handling, so we have to do it manually here */
+			shutdown(sock, SHUT_RDWR);
+			close(sock);
+			connState = CONN_STATE_DISCONNECTED;
+		}
+
 		/* wait for failure */
-		while (!reconnect)
-			pthread_cond_wait(&condReconnect, &mutex);
+		while (connState != CONN_STATE_DISCONNECTED)
+			pthread_cond_wait(&cond, &mutex);
 	}
 	CLEANUP_POP();
 }
 
-/** Try to connect to the server.
- * \return true if connection attempt succeeded, false otherwise
- */
-static bool doConnect()
+static int tryConnect()
 {
-	/* close socket first if already opened */
-	if (sock >= 0) {
-		shutdown(sock, SHUT_RDWR);
-		close(sock);
+	int sock = NETC_connect("NET", CFG_config.net.host, CFG_config.net.port);
+	if (sock < 0)
 		sock = -1;
-	}
-
-	sock = NETC_connect(PFX, CFG_config.net.host, CFG_config.net.port);
-	return sock != -1;
+	return sock;
 }
 
-static void unlock()
+static void emitDisconnect(enum EMIT_BY by)
 {
-	pthread_mutex_unlock(&mutex);
-}
-
-static void unlockIfLocked(bool * locked)
-{
-	if (*locked)
-		pthread_mutex_unlock(&mutex);
-}
-
-/** Synchronize sending thread: wait for a connection */
-void NET_sync_send()
-{
-#ifdef DEBUG
-	LOG_log(LOG_LEVEL_DEBUG, PFX, "send synchronizing");
-#endif
 	pthread_mutex_lock(&mutex);
-	CLEANUP_PUSH(&unlock, NULL);
-	while (!connected)
-		pthread_cond_wait(&condConnected, &mutex);
-	reconnectedSend = false;
-#ifdef DEBUG
-	LOG_log(LOG_LEVEL_DEBUG, PFX, "send synchronized");
-#endif
-	CLEANUP_POP();
-}
+	CLEANUP_PUSH(&cleanup, NULL);
 
-/** Synchronize receiving thread: wait for a connection */
-void NET_sync_recv()
-{
-#ifdef DEBUG
-	LOG_log(LOG_LEVEL_DEBUG, PFX, "recv synchronizing");
-#endif
-	pthread_mutex_lock(&mutex);
-	CLEANUP_PUSH(&unlock, NULL);
-	while (!connected)
-		pthread_cond_wait(&condConnected, &mutex);
-	reconnectedRecv = false;
-#ifdef DEBUG
-	LOG_log(LOG_LEVEL_DEBUG, PFX, "recv synchronized");
-#endif
-	CLEANUP_POP();
-}
+	int * mysock;
+	int othsock;
 
-static inline void emitDisconnect()
-{
-	shutdown(sock, SHUT_RDWR);
-	bool doReconnect = !connected || (!inRecv && !inSend);
-#ifdef DEBUG
-	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Disconnect Event. Connected: %d, "
-		"inRecv: %d, inSend: %d -> %s", connected, inRecv, inSend,
-		doReconnect ? "reconnect" : "wait");
-#endif
-	if (doReconnect) {
-		reconnect = true;
-		pthread_cond_signal(&condReconnect);
-	}
-	connected = false;
-}
-
-/** Send some data through the socket without locks or checks.
- * \param data data to be sent
- * \param len length of data
- * \return true if sending succeeded, false otherwise (e.g. connection lost)
- */
-static inline bool sendDataUnlocked(const void * data, size_t len)
-{
-	if (!len)
-		return true;
-
-	ssize_t rc = send(sock, data, len, MSG_NOSIGNAL);
-	if (unlikely(rc <= 0)) {
-		if (rc == 0)
-			LOG_log(LOG_LEVEL_WARN, PFX, "Could not send: Connection lost");
-		else
-			LOG_errno(LOG_LEVEL_WARN, PFX, "Could not send");
-		++STAT_stats.NET_msgsFailed;
-		emitDisconnect();
-		return false;
+	if (by == EMIT_BY_RECV) {
+		mysock = &recvsock;
+		othsock = sendsock;
 	} else {
-		++STAT_stats.NET_msgsSent;
-		return true;
+		mysock = &sendsock;
+		othsock = recvsock;
 	}
+
+#ifdef DEBUG
+	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Failure detected by %s, Connected = %d, "
+		"Transit = %s",
+		by == EMIT_BY_RECV ? "RECV" : "SEND",
+		connState == CONN_STATE_CONNECTED ? 1 : 0,
+		transState == TRANSIT_NONE ? "NONE" : transState == TRANSIT_RECV ?
+			"RECV" : "SEND");
+#endif
+
+	if (connState == CONN_STATE_CONNECTED) {
+		/* we were connected */
+		if (transState == TRANSIT_NONE) {
+			/* we were normally connected -> we have a new leader */
+			/* shutdown the socket (but leave it open, so the follower can
+			 * see the failure */
+			shutdown(*mysock, SHUT_RDWR);
+			transState = by;
+			connState = CONN_STATE_DISCONNECTED;
+			pthread_cond_broadcast(&cond);
+		} else if (transState == (enum TRANSIT_STATE)by) {
+			/* we were connected, but the leader reported another failure
+			 * while the follower did not recognize the first failure yet
+			 *  -> close the socket */
+			shutdown(*mysock, SHUT_RDWR);
+			close(*mysock);
+			connState = CONN_STATE_DISCONNECTED;
+			pthread_cond_broadcast(&cond);
+		} else {
+			/* we are connected and the follower has seen the failure
+			 * -> close the stale socket and synchronize with the leader */
+			close(*mysock);
+			*mysock = othsock;
+			transState = TRANSIT_NONE;
+		}
+	} else if (transState != (enum TRANSIT_STATE)by) {
+		assert (transState != TRANSIT_NONE);
+		/* we have not been reconnected yet, but the follower has seen the
+		 * failure -> close the stale socket */
+		close(*mysock);
+		transState = TRANSIT_NONE;
+	}
+	CLEANUP_POP();
+}
+
+void NET_waitConnected()
+{
+	pthread_mutex_lock(&mutex);
+	CLEANUP_PUSH(&cleanup, NULL);
+	while (connState != CONN_STATE_CONNECTED)
+		pthread_cond_wait(&cond, &mutex);
+	CLEANUP_POP();
 }
 
 /** Send some data through the socket.
@@ -220,57 +209,75 @@ static inline bool sendDataUnlocked(const void * data, size_t len)
  * \param len length of data
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
  */
-static inline bool sendData(const void * data, size_t len)
+static bool trySendSock(int sock, const void * buf, size_t len)
 {
-	bool ret;
-	bool locked;
+	const char * ptr = buf;
+	const char * end = ptr + len;
 
-	if (!len)
-		return true;
-
-	pthread_mutex_lock(&mutex);
-	locked = true;
-	CLEANUP_PUSH(&unlockIfLocked, &locked);
-	if (!connected || reconnectedSend) {
-		LOG_logf(LOG_LEVEL_WARN, PFX, "Could not send: %s",
-			!connected ? "not connected" : "unsynchronized");
-		++STAT_stats.NET_msgsFailed;
-		ret = false;
-	} else {
-		inSend = true;
-		pthread_mutex_unlock(&mutex);
-		locked = false;
-		ssize_t rc = send(sock, data, len, MSG_NOSIGNAL);
-		locked = true;
-		pthread_mutex_lock(&mutex);
-		inSend = false;
+	do {
+		ssize_t rc = send(sock, ptr, len, MSG_NOSIGNAL);
 		if (rc <= 0) {
-			if (rc == 0)
-				LOG_log(LOG_LEVEL_WARN, PFX, "Could not send: Connection lost");
-			else
-				LOG_errno(LOG_LEVEL_WARN, PFX, "Could not send");
+			LOG_logf(LOG_LEVEL_DEBUG, PFX, "could not send: %s",
+				rc == 0 || errno == EPIPE ? "Connection lost" :
+				strerror(errno));
 			++STAT_stats.NET_msgsFailed;
-			emitDisconnect();
-			ret = false;
-		} else {
-			if (!connected) {
-				/* Receiver thread detected connection failure, but send
-				 * was successful. But now, the network thread waits for
-				 * the sender thread to acknowledge the failure, so we do it */
-				emitDisconnect();
-			}
-			++STAT_stats.NET_msgsSent;
-			ret = true;
+			return false;
 		}
+		ptr += rc;
+	} while (ptr != end);
+
+	++STAT_stats.NET_msgsSent;
+
+	return true;
+}
+
+/** Send some data through the socket.
+ * \param data data to be sent
+ * \param len length of data
+ * \return true if sending succeeded, false otherwise (e.g. connection lost)
+ */
+static bool trySend(const void * buf, size_t len)
+{
+	bool rc = trySendSock(sendsock, buf, len);
+	if (!rc)
+		emitDisconnect(EMIT_BY_SEND);
+	return rc;
+}
+
+ssize_t NET_receive(uint8_t * buf, size_t len)
+{
+	ssize_t rc = recv(recvsock, buf, len, 0);
+	if (rc <= 0) {
+		LOG_logf(LOG_LEVEL_DEBUG, PFX, "could not receive: %s",
+			rc == 0 ? "Connection lost" : strerror(errno));
+		++STAT_stats.NET_msgsRecvFailed;
+		emitDisconnect(EMIT_BY_RECV);
 	}
-	CLEANUP_POP();
-	return ret;
+	return rc;
+}
+
+/** Send an ADSB frame to the server.
+ * \return true if sending succeeded, false otherwise (e.g. connection lost)
+ */
+bool NET_sendFrame(const struct ADSB_RawFrame * frame)
+{
+	return trySend(frame->raw, frame->raw_len);
+}
+
+/** Send a timeout message to the server.
+ * \return true if sending succeeded, false otherwise (e.g. connection lost)
+ */
+bool NET_sendTimeout()
+{
+	char buf[] = { '\x1a', '\x36' };
+	++STAT_stats.NET_keepAlives;
+	return trySend(buf, sizeof buf);
 }
 
 /** Send the serial number of the device to the server.
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
  */
-static bool sendSerial()
+static bool sendSerial(int sock)
 {
 	char buf[10] = { '\x1a', '\x35' };
 
@@ -287,71 +294,5 @@ static bool sendSerial()
 		if ((*cur++ = serial.ca[n]) == '\x1a')
 			*cur++ = '\x1a';
 
-	return sendDataUnlocked(buf, cur - buf);
-}
-
-/** Send an ADSB frame to the server.
- * \return true if sending succeeded, false otherwise (e.g. connection lost)
- */
-bool NET_sendFrame(const struct ADSB_RawFrame * frame)
-{
-	/*char buf[250];
-	size_t len = snprintf(buf, 250 - 29,
-		"Mode-S long: mlat %15" PRIu64 ", level %+3" PRIi8 ": ",
-		frame->mlat, frame->siglevel);
-	int i;
-	char * p = buf + len - 2;
-	for (i = 0; i < 14; ++i)
-		snprintf(p += 2, 3, "%02x", frame->payload[i]);
-	len += 28;
-	buf[len++] = '\n';
-	return sendData(buf, len);*/
-	return sendData(frame->raw, frame->raw_len);
-}
-
-/** Send a timeout message to the server.
- * \return true if sending succeeded, false otherwise (e.g. connection lost)
- */
-bool NET_sendTimeout()
-{
-	char buf[] = { '\x1a', '\x36' };
-	++STAT_stats.NET_keepAlives;
-	return sendData(buf, sizeof buf);
-}
-
-ssize_t NET_receive(uint8_t * buf, size_t len)
-{
-	ssize_t ret;
-	bool locked;
-	pthread_mutex_lock(&mutex);
-	locked = true;
-	CLEANUP_PUSH(&unlockIfLocked, &locked);
-	if (!connected || reconnectedRecv) {
-		LOG_logf(LOG_LEVEL_WARN, PFX, "Could not receive: %s",
-			!connected ? "not connected" : "unsynchronized");
-		++STAT_stats.NET_msgsRecvFailed;
-		ret = -1;
-	} else {
-		inRecv = true;
-		pthread_mutex_unlock(&mutex);
-		locked = false;
-		ret = recv(sock, buf, 128, 0);
-		locked = true;
-		pthread_mutex_lock(&mutex);
-		inRecv = false;
-		if (unlikely(ret <= 0)) {
-			if (ret == 0)
-				LOG_log(LOG_LEVEL_WARN, PFX, "Could not receive: Connection "
-					"lost");
-			else
-				LOG_errno(LOG_LEVEL_WARN, PFX, "Could not receive");
-			++STAT_stats.NET_msgsRecvFailed;
-			emitDisconnect();
-		} else if (!connected) {
-			ret = -1;
-			emitDisconnect();
-		}
-	}
-	CLEANUP_POP();
-	return ret;
+	return trySendSock(sock, buf, cur - buf);
 }

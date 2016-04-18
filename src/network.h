@@ -15,11 +15,11 @@ extern struct Component NET_comp;
 extern "C" {
 #endif
 
-void NET_sync_send();
+void NET_waitConnected();
+
 bool NET_sendFrame(const struct ADSB_RawFrame * frame);
 bool NET_sendTimeout();
 
-void NET_sync_recv();
 ssize_t NET_receive(uint8_t * buf, size_t len);
 
 #ifdef __cplusplus
