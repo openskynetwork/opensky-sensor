@@ -7,4 +7,6 @@
 
 extern struct Component RECV_comp;
 
+void RECV_reconfigure(bool reset);
+
 #endif

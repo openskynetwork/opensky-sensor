@@ -29,6 +29,7 @@ static enum RECV_MODES_TYPE modeSFilter;
 
 /** synchronization info: true if receiver has a valid GPS timestamp */
 static bool isSynchronized;
+static bool syncFilter;
 
 static void construct();
 static void destruct();
@@ -45,8 +46,7 @@ static void construct()
 {
 	ADSB_init();
 
-	modeSFilter = CFG_config.recv.modeSLongExtSquitter ?
-		RECV_MODES_TYPE_EXTENDED_SQUITTER_ALL : RECV_MODES_TYPE_ALL;
+	RECV_reconfigure(true);
 }
 
 static void destruct()
@@ -58,6 +58,15 @@ static void cleanup(struct ADSB_Frame ** frame)
 {
 	if (*frame)
 		BUF_abortFrame(*frame);
+}
+
+void RECV_reconfigure(bool reset)
+{
+	syncFilter = CFG_config.recv.syncFilter;
+	modeSFilter = CFG_config.recv.modeSLongExtSquitter ?
+		RECV_MODES_TYPE_EXTENDED_SQUITTER_ALL : RECV_MODES_TYPE_ALL;
+	if (reset)
+		isSynchronized = false;
 }
 
 static void mainloop()
@@ -84,7 +93,7 @@ static void mainloop()
 				/* filter if unsynchronized and filter is enabled */
 				if (unlikely(!isSynchronized)) {
 					++STAT_stats.RECV_framesUnsynchronized;
-					if (CFG_config.recv.syncFilter) {
+					if (syncFilter) {
 						++STAT_stats.RECV_framesFiltered;
 						continue;
 					}
