@@ -1,4 +1,3 @@
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -27,7 +26,6 @@ static const char PFX[] = "OpenSky";
 
 static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len);
 
-static bool initialized = false;
 static bool configured = false;
 static bool running = false;
 
@@ -49,8 +47,6 @@ void init()
 	COMP_setSilent(true);
 
 	COMP_initAll();
-
-	initialized = true;
 }
 
 void configure()
@@ -59,7 +55,7 @@ void configure()
 	strncpy(CFG_config.net.host, "localhost", sizeof CFG_config.net.host);
 #else
 	strncpy(CFG_config.net.host, "collector.opensky-network.org",
-		sizeof CFG_config.net.host);
+	    sizeof CFG_config.net.host);
 #endif
 	CFG_config.net.port = 10004;
 	CFG_config.net.reconnectInterval = 10;
@@ -78,9 +74,9 @@ void configure()
 
 	CFG_config.stats.enabled = false;
 
-	if (!CFG_config.dev.serialSet) {
-		CFG_config.dev.serialSet = UTIL_getSerial("eth0",
-			&CFG_config.dev.serial);
+	if (!CFG_config.dev.serialSet) { // TODO: we need something better here
+		CFG_config.dev.serialSet = UTIL_getSerial("enp0s25",
+		    &CFG_config.dev.serial);
 		if (!CFG_config.dev.serialSet) {
 			// TODO
 		} else {
@@ -94,22 +90,14 @@ void configure()
 
 void enable()
 {
-	if (unlikely(!initialized))
-		LOG_log(LOG_LEVEL_ERROR, PFX, "Call OpenSky::init first");
-
 	if (unlikely(!configured))
-		LOG_log(LOG_LEVEL_ERROR, PFX, "Feeder could not be initialized properly");
+		LOG_log(LOG_LEVEL_ERROR, PFX,
+		    "Feeder could not be initialized properly");
 
 	FILTER_reset();
 	FILTER_setSynchronized(gpsTimeStatus != GpsTimeInvalid);
 
-	COMP_register(&BUF_comp, NULL);
-	COMP_register(&NET_comp, NULL);
-	COMP_register(&RELAY_comp, NULL);
-
-	COMP_setSilent(true);
-
-	COMP_initAll();
+	BUF_flush();
 	COMP_startAll();
 
 	running = true;
@@ -132,7 +120,7 @@ void setGpsTimeStatus(const GpsTimeStatus_t gpsTimeStatus)
 }
 
 void output_message(const unsigned char * const msg,
-	const enum MessageType_T messageType)
+    const enum MessageType_T messageType)
 {
 	if (unlikely(!configured || !running))
 		return;
@@ -152,7 +140,7 @@ void output_message(const unsigned char * const msg,
 		return;
 	}
 
-	enum ADSB_FRAME_TYPE frameType = (enum ADSB_FRAME_TYPE)(messageType - '1');
+	enum ADSB_FRAME_TYPE frameType = (enum ADSB_FRAME_TYPE) (messageType - '1');
 
 	if (!FILTER_filter(frameType, msg[7]))
 		return;
@@ -160,7 +148,7 @@ void output_message(const unsigned char * const msg,
 	struct ADSB_RawFrame * out = BUF_newFrame();
 	assert(out);
 	out->raw[0] = '\x1a';
-	out->raw[1] = (uint8_t)messageType;
+	out->raw[1] = (uint8_t) messageType;
 	out->raw_len = encode(out->raw + 2, msg, msgLen) + 2;
 
 	BUF_commitFrame(out);
@@ -177,7 +165,7 @@ static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len)
 	const uint8_t * end = in + len;
 
 	/* first time: search for escape from in up to len */
-	const uint8_t * esc = (uint8_t*)memchr(in, '\x1a', len);
+	const uint8_t * esc = (uint8_t*) memchr(in, '\x1a', len);
 	while (true) {
 		if (unlikely(esc)) {
 			/* if esc found: copy up to (including) esc */
@@ -190,7 +178,7 @@ static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len)
 			return ptr + (end - in) - out;
 		}
 		if (likely(len)) {
-			esc = (uint8_t*)memchr(in + 1, '\x1a', end - in - 1);
+			esc = (uint8_t*) memchr(in + 1, '\x1a', end - in - 1);
 		} else {
 			/* nothing more to do, but the last \x1a is still to be copied.
 			 * instead of setting esc = NULL and re-iterating, we do things

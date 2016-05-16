@@ -8,6 +8,8 @@
 
 int main()
 {
+	OpenSky::init();
+
 	OpenSky::configure();
 
 	OpenSky::enable();
@@ -18,8 +20,10 @@ int main()
 	sleep(1);
 
 	unsigned char frame[6 + 1 + 14];
+	std::memset(frame, 0x0, sizeof frame);
+
 	uint64_t mlat = htobe64(123456789012345);
-	memcpy(frame, &mlat, 6);
+	std::memcpy(frame, &mlat, 6);
 	frame[6] = 100;
 	frame[7] = 0x8a;
 

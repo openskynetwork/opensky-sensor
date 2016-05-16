@@ -13,6 +13,8 @@ typedef enum {
 
 namespace OpenSky {
 
+void init();
+
 /** Set or change configuration of the OpenSky feeder.
  */
 void configure();
