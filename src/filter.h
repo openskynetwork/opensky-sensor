@@ -12,6 +12,7 @@ extern "C" {
 
 void FILTER_init();
 void FILTER_reset();
+void FILTER_reconfigure(bool reset);
 void FILTER_setSynchronized(bool synchronized);
 bool FILTER_filter(enum ADSB_FRAME_TYPE frameType, uint8_t firstByte);
 

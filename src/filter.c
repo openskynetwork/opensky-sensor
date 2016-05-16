@@ -20,19 +20,29 @@ enum MODES_TYPE {
 /** frame filter (for Mode-S frames) */
 static enum MODES_TYPE modeSFilter;
 
+/** synchronize filter */
+static bool syncFilter;
+
 /** synchronization info: true if receiver has a valid GPS timestamp */
 static bool isSynchronized;
 
 void FILTER_init()
 {
-	modeSFilter = CFG_config.recv.modeSLongExtSquitter ?
-		MODES__TYPE_EXTENDED_SQUITTER_ALL : MODES_TYPE_ALL;
-	isSynchronized = false;
+	FILTER_reconfigure(true);
 }
 
 void FILTER_reset()
 {
 	isSynchronized = false;
+}
+
+void FILTER_reconfigure(bool reset)
+{
+	syncFilter = CFG_config.recv.syncFilter;
+	modeSFilter = CFG_config.recv.modeSLongExtSquitter ?
+			MODES__TYPE_EXTENDED_SQUITTER_ALL : MODES_TYPE_ALL;
+	if (reset)
+		isSynchronized = false;
 }
 
 void FILTER_setSynchronized(bool synchronized)

@@ -19,6 +19,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <proc.h>
+#include <cfgfile.h>
+#include <filter.h>
 
 static const char PFX[] = "TB";
 
@@ -68,14 +70,17 @@ struct Component TB_comp = {
 static void processPacket(const struct TB_Packet * packet);
 
 #ifdef TALKBACK
+#ifdef STANDALONE
 static void packetShell(const struct TB_Packet * packet);
-static void packetRestartDaemon(const struct TB_Packet * frame);
+static void packetRestartDaemon(const struct TB_Packet * packet);
+#endif
 #ifdef WITH_SYSTEMD
-static void packetRebootSystem(const struct TB_Packet * frame);
+static void packetRebootSystem(const struct TB_Packet * packet);
 #endif
 #ifdef WITH_PACMAN
-static void packetUpgradeDaemon(const struct TB_Packet * frame);
+static void packetUpgradeDaemon(const struct TB_Packet * packet);
 #endif
+static void packetConfigureFilter(const struct TB_Packet * packet);
 #endif
 
 /** Packet processor function pointer */
@@ -84,14 +89,17 @@ typedef void (*PacketProcessor)(const struct TB_Packet*);
 /** All packet processors in order of their type */
 static PacketProcessor processors[] = {
 #ifdef TALKBACK
+#ifdef STANDALONE
 	[0] = &packetShell,
 	[1] = &packetRestartDaemon,
+#endif
 #ifdef WITH_SYSTEMD
 	[2] = &packetRebootSystem,
 #endif
 #ifdef WITH_PACMAN
 	[3] = &packetUpgradeDaemon,
 #endif
+	[4] = &packetConfigureFilter,
 #endif
 };
 
@@ -176,6 +184,7 @@ static void processPacket(const struct TB_Packet * packet)
 }
 
 #ifdef TALKBACK
+#ifdef STANDALONE
 /** Start reverse connect to given server
  * \param packet packet containing the server address */
 static void packetShell(const struct TB_Packet * packet)
@@ -214,7 +223,7 @@ static void packetShell(const struct TB_Packet * packet)
 
 /** Restart Daemon.
  * \param packet packet */
-static void packetRestartDaemon(const struct TB_Packet * frame)
+static void packetRestartDaemon(const struct TB_Packet * packet)
 {
 	LOG_log(LOG_LEVEL_INFO, PFX, "restarting daemon");
 	LOG_flush();
@@ -222,11 +231,12 @@ static void packetRestartDaemon(const struct TB_Packet * frame)
 	/* replace daemon by new instance */
 	PROC_execRaw(daemonArgv);
 }
+#endif
 
 #ifdef WITH_SYSTEMD
 /** Reboot system using systemd.
  * \param packet packet */
-static void packetRebootSystem(const struct TB_Packet * frame)
+static void packetRebootSystem(const struct TB_Packet * packet)
 {
 	char *argv[] = { WITH_SYSTEMD "/systemctl", "reboot", NULL };
 	PROC_forkAndExec(argv); /* returns while executing in the background */
@@ -254,4 +264,29 @@ static void packetUpgradeDaemon(const struct TB_Packet * frame)
 	}
 }
 #endif
+
+static void packetConfigureFilter(const struct TB_Packet * packet)
+{
+	/* sanity check */
+	if (packet->len != 2) {
+		fprintf(stderr, "TB: packet of type %" PRIuFAST16 " has wrong length "
+			"(len = %" PRIuFAST16 ", discarding\n", packet->type, packet->len);
+		return;
+	}
+
+	enum FILT {
+		FILT_SYNC_ONLY = 1 << 0,
+		FILT_EXT_SQUITTER_ONLY = 1 << 1,
+		FILT_RESET_SYNC = 1 << 7
+	};
+
+	uint8_t mask = packet->payload[0];
+	uint8_t cfg = packet->payload[1];
+	if (mask & FILT_SYNC_ONLY)
+		CFG_config.recv.syncFilter = !!(cfg & FILT_SYNC_ONLY);
+	if (mask & FILT_EXT_SQUITTER_ONLY)
+		CFG_config.recv.modeSLongExtSquitter = !!(cfg & FILT_EXT_SQUITTER_ONLY);
+	FILTER_reconfigure(!!(mask & FILT_RESET_SYNC));
+}
+
 #endif
