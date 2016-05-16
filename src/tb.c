@@ -262,7 +262,7 @@ static void packetUpgradeDaemon(const struct TB_Packet * frame)
 static void packetConfigureFilter(const struct TB_Packet * packet)
 {
 	/* sanity check */
-	if (packet->len != 2) {
+	if (packet->len != 6) {
 		fprintf(stderr, "TB: packet of type %" PRIuFAST16 " has wrong length "
 			"(len = %" PRIuFAST16 ", discarding\n", packet->type, packet->len);
 		return;
