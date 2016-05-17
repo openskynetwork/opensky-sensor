@@ -1,3 +1,10 @@
+openskyd (1.0.8-1) UNRELEASED; urgency=medium
+
+  * Enabled minimal talkback for debian version for configuring the filter
+  * Added remote controlled filtering
+
+ -- Markus Engel <engel@opensky-network.org>  Tue, 17 May 2016 20:05:03 +0000
+
 openskyd (1.0.7-1) stable; urgency=medium
 
   * New network code.
