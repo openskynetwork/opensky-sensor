@@ -30,6 +30,8 @@ struct ADSB_Frame {
 void ADSB_init();
 void ADSB_destruct();
 
+void ADSB_reconfigure();
+
 void ADSB_connect();
 bool ADSB_getFrame(struct ADSB_Frame * frame);
 

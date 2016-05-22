@@ -65,6 +65,7 @@ void RECV_reconfigure(bool reset)
 	syncFilter = CFG_config.recv.syncFilter;
 	modeSFilter = CFG_config.recv.modeSLongExtSquitter ?
 		RECV_MODES_TYPE_EXTENDED_SQUITTER_ALL : RECV_MODES_TYPE_ALL;
+	ADSB_reconfigure();
 	if (reset)
 		isSynchronized = false;
 }
