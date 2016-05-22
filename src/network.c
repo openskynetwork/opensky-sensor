@@ -7,6 +7,8 @@
 #include <net_common.h>
 #include <statistics.h>
 #include <cfgfile.h>
+#include <util.h>
+#include <gps.h>
 #include <threads.h>
 #include <pthread.h>
 #include <sys/socket.h>
@@ -25,6 +27,8 @@ static int sendsock;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Condition for changes in connection status */
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+/** Mutex for exclusive sending */
+static pthread_mutex_t sendMutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** Connection status */
 enum CONN_STATE {
@@ -55,7 +59,9 @@ static int tryConnect();
 static void emitDisconnect(enum EMIT_BY by);
 static bool trySendSock(int sock, const void * buf, size_t len);
 static bool trySend(const void * buf, size_t len);
+static bool trySendLocked(const void * buf, size_t len);
 static bool sendSerial(int sock);
+static bool sendPosition(int sock);
 
 struct Component NET_comp = {
 	.description = "NET",
@@ -65,6 +71,11 @@ struct Component NET_comp = {
 static void cleanup()
 {
 	pthread_mutex_unlock(&mutex);
+}
+
+static void cleanupSend()
+{
+	pthread_mutex_unlock(&sendMutex);
 }
 
 /** Mainloop for network: (re)established network connection on failure */
@@ -86,6 +97,15 @@ static void mainloop()
 		/* connection established */
 		++STAT_stats.NET_connectsSuccess;
 
+		if (!sendSerial(sock) || !sendPosition(sock)) {
+			/* special case: sending the serial number does not trigger the
+			 * failure handling, so we have to do it manually here */
+			shutdown(sock, SHUT_RDWR);
+			close(sock);
+			connState = CONN_STATE_DISCONNECTED;
+			continue;
+		}
+
 		switch (transState) {
 		case TRANSIT_NONE:
 			recvsock = sendsock = sock;
@@ -100,14 +120,6 @@ static void mainloop()
 
 		connState = CONN_STATE_CONNECTED;
 		pthread_cond_broadcast(&cond);
-
-		if (!sendSerial(sock)) {
-			/* special case: sending the serial number does not trigger the
-			 * failure handling, so we have to do it manually here */
-			shutdown(sock, SHUT_RDWR);
-			close(sock);
-			connState = CONN_STATE_DISCONNECTED;
-		}
 
 		/* wait for failure */
 		while (connState != CONN_STATE_DISCONNECTED)
@@ -232,6 +244,16 @@ static bool trySend(const void * buf, size_t len)
 	return rc;
 }
 
+static bool trySendLocked(const void * buf, size_t len)
+{
+	pthread_mutex_lock(&sendMutex);
+	bool rc;
+	CLEANUP_PUSH(&cleanupSend, NULL);
+	rc = trySend(buf, len);
+	CLEANUP_POP();
+	return rc;
+}
+
 ssize_t NET_receive(uint8_t * buf, size_t len)
 {
 	ssize_t rc = recv(recvsock, buf, len, 0);
@@ -249,7 +271,7 @@ ssize_t NET_receive(uint8_t * buf, size_t len)
  */
 bool NET_sendFrame(const struct ADSB_Frame * frame)
 {
-	return trySend(frame->raw, frame->raw_len);
+	return trySendLocked(frame->raw, frame->raw_len);
 }
 
 /** Send a timeout message to the server.
@@ -259,7 +281,41 @@ bool NET_sendTimeout()
 {
 	char buf[] = { '\x1a', '\x36' };
 	++STAT_stats.NET_keepAlives;
-	return trySend(buf, sizeof buf);
+	return trySendLocked(buf, sizeof buf);
+}
+
+static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len)
+{
+	if (unlikely(!len))
+		return 0;
+
+	uint8_t * ptr = out;
+	const uint8_t * end = in + len;
+
+	/* first time: search for escape from in up to len */
+	const uint8_t * esc = (uint8_t*) memchr(in, '\x1a', len);
+	while (true) {
+		if (unlikely(esc)) {
+			/* if esc found: copy up to (including) esc */
+			memcpy(ptr, in, esc + 1 - in);
+			ptr += esc + 1 - in;
+			in = esc; /* important: in points to the esc now */
+		} else {
+			/* no esc found: copy rest, fast return */
+			memcpy(ptr, in, end - in);
+			return ptr + (end - in) - out;
+		}
+		if (likely(end != in + 1)) {
+			esc = (uint8_t*) memchr(in + 1, '\x1a', end - in - 1);
+		} else {
+			/* nothing more to do, but the last \x1a is still to be copied.
+			 * instead of setting esc = NULL and re-iterating, we do things
+			 * faster here.
+			 */
+			*ptr = '\x1a';
+			return ptr + 1 - out;
+		}
+	}
 }
 
 /** Send the serial number of the device to the server.
@@ -267,7 +323,7 @@ bool NET_sendTimeout()
  */
 static bool sendSerial(int sock)
 {
-	char buf[10] = { '\x1a', '\x35' };
+	uint8_t buf[10] = { '\x1a', '\x35' };
 
 	union {
 		uint8_t ca[4];
@@ -275,12 +331,39 @@ static bool sendSerial(int sock)
 	} serial;
 	serial.serial = htobe32(CFG_config.dev.serial);
 
-	char * cur = buf + 2;
+	size_t len = 2 + encode(buf + 2, serial.ca, sizeof serial.ca);
 
-	uint_fast32_t n;
-	for (n = 0; n < 4; ++n)
-		if ((*cur++ = serial.ca[n]) == '\x1a')
-			*cur++ = '\x1a';
+	return trySendSock(sock, buf, len);
+}
 
-	return trySendSock(sock, buf, cur - buf);
+static size_t positionToPacket(uint8_t * buf,
+	const struct GPS_RawPosition * pos)
+{
+	buf[0] = '\x1a';
+	buf[1] = '\x37';
+	return 2 + encode(buf + 2, (const uint8_t*)pos, sizeof *pos);
+}
+
+bool NET_sendPosition(const struct GPS_RawPosition * position)
+{
+	uint8_t buf[2 + 3 * 2 * 8];
+	size_t len = positionToPacket(buf, position);
+	return trySendLocked(buf, len);
+}
+
+static bool sendPosition(int sock)
+{
+	static_assert(sizeof(struct GPS_RawPosition) == 3 * 8,
+		"GPS_RawPosition has unexpected size");
+
+	uint8_t buf[2 + 3 * 2 * 8];
+	struct GPS_RawPosition pos;
+
+	if (GPS_getRawPosition(&pos)) {
+		size_t len = positionToPacket(buf, &pos);
+		return trySendSock(sock, buf, len);
+	} else {
+		GPS_setNeedPosition();
+		return true;
+	}
 }
