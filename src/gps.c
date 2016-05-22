@@ -279,7 +279,6 @@ static void posFrame(const uint8_t * buf)
 	if (critAlarms || inTestMode || recvMode != GPS_RECV_MODE_ODT_CLK ||
 		discMode != GPS_DISC_MODE_LOCKED) {
 		/* unrecoverable or not automatically solvable by now */
-		NOC_puts("GPS: unsolved");
 		pthread_mutex_unlock(&posMutex);
 		return;
 	}
@@ -287,7 +286,6 @@ static void posFrame(const uint8_t * buf)
 	if (selfSurvey || decodingStatus != GPS_DECODE_STATUS_DOING_FIXES ||
 		discMode != GPS_DISC_MODE_LOCKED) {
 		/* no position -> wait */
-		NOC_puts("GPS: No pos\n");
 		pthread_mutex_unlock(&posMutex);
 		return;
 	}
@@ -304,10 +302,7 @@ static void posFrame(const uint8_t * buf)
 	pthread_mutex_unlock(&posMutex);
 
 	if (hasPosition && needPosition) {
-		NOC_puts("GPS: Sending Position to server");
 		needPosition = !NET_sendPosition(&position);
-		if (needPosition)
-			NOC_puts("GPS: Could not send position to server, retrying");
 	}
 
 #if 0
