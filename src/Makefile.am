@@ -20,7 +20,8 @@ openskyd_SOURCES = main.c \
 openskyd_SOURCES += input_@INPUT_LAYER@.c
 openskyd_SOURCES += gps_input_@INPUT_LAYER@.c
 
-EXTRA_DIST = input_uart.c input_network.c input_dummy.c gps_input_uart.c
+EXTRA_DIST = input_uart.c input_network.c input_dummy.c \
+	gps_input_uart.c gps_input_network.c
 
 # watchdog sources
 wd_SOURCES = gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
