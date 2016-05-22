@@ -15,6 +15,7 @@
 #include <tb.h>
 #include <recv.h>
 #include <relay.h>
+#include <gps.h>
 #include <signal.h>
 #include <pthread.h>
 #include <string.h>
@@ -73,6 +74,7 @@ int main(int argc, char * argv[])
 	COMP_register(&TB_comp, argv);
 	COMP_register(&RECV_comp, NULL);
 	COMP_register(&RELAY_comp, NULL);
+	COMP_register(&GPS_comp, NULL);
 
 	COMP_initAll();
 
