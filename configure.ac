@@ -1,5 +1,5 @@
 dnl initialize autoconf
-AC_INIT(openskyd, 1.0.8)
+AC_INIT(openskyd, 1.1.0)
 
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR([build-aux])
@@ -11,6 +11,8 @@ dnl initialize automake
 AM_INIT_AUTOMAKE([gnu subdir-objects -Wall -Werror])
 AC_CONFIG_HEADERS(config.h)
 AM_MAINTAINER_MODE
+
+CFLAGS="$CFLAGS -std=gnu11"
 
 dnl required programs
 AC_PROG_CC
