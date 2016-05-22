@@ -166,8 +166,6 @@ static void mainloop()
 		GPS_PARSER_connect();
 		hasPosition = false;
 
-		printf("GPS: connected\n");
-
 		while (true) {
 			uint8_t buf[1024];
 			size_t len = GPS_PARSER_getFrame(buf, sizeof buf);
@@ -269,11 +267,16 @@ static void posFrame(const uint8_t * buf)
 	float temperature = GPS_tofloat(buf+ 32);
 	double latitude = GPS_todouble(buf + 36) * R2D;
 	double longitude = GPS_todouble(buf + 44) * R2D;
-	double altitude = todouble(buf + 52);
-	float ppsQuantizationError = tofloat(buf + 60);*/
+	double altitude = GPS_todouble(buf + 52);
+	float ppsQuantizationError = GPS_tofloat(buf + 60);*/
 
 	bool selfSurvey = !!(minorAlarms & GPS_MIN_ALARM_SURVEY_IN_PROGRESS);
 	bool inTestMode = !!(minorAlarms & GPS_MIN_ALARM_IN_TEST_MODE);
+
+	/*NOC_printf("GPS Pos: %d %d ", recvMode == GPS_RECV_MODE_ODT_CLK,
+		decodingStatus == GPS_DECODE_STATUS_DOING_FIXES);
+	NOC_printf("LLA: %+6.2f %+6.2f %+6.2f\n", latitude, longitude,
+		altitude);*/
 
 	pthread_mutex_lock(&posMutex);
 	if (critAlarms || inTestMode || recvMode != GPS_RECV_MODE_ODT_CLK ||
