@@ -156,7 +156,15 @@ void output_message(const unsigned char * const msg,
 
 #pragma GCC visibility pop
 
-static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len)
+/** Escape all \x1a characters in a packet to comply with the beast frame
+ *   format.
+ * \param out output buffer, must be large enough (twice the length)
+ * \param in input buffer
+ * \param len input buffer length
+ * \note input and output buffers may not overlap
+ */
+static inline size_t encode(uint8_t * __restrict out,
+	const uint8_t * __restrict in, size_t len)
 {
 	if (unlikely(!len))
 		return 0;
@@ -177,7 +185,7 @@ static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len)
 			memcpy(ptr, in, end - in);
 			return ptr + (end - in) - out;
 		}
-		if (likely(len)) {
+		if (likely(in + 1 != end)) {
 			esc = (uint8_t*) memchr(in + 1, '\x1a', end - in - 1);
 		} else {
 			/* nothing more to do, but the last \x1a is still to be copied.
