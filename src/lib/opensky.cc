@@ -16,6 +16,7 @@
 #include <MessageTypes.h>
 #include <log.h>
 #include <gps.h>
+#include <tb.h>
 
 extern "C" {
 struct CFG_Config CFG_config;
@@ -60,6 +61,7 @@ void init()
 	COMP_register(&BUF_comp, NULL);
 	COMP_register(&NET_comp, NULL);
 	COMP_register(&RELAY_comp, NULL);
+	COMP_register(&TB_comp, NULL);
 
 	COMP_setSilent(true);
 
