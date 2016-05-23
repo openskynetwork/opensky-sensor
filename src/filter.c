@@ -4,6 +4,7 @@
 #include <statistics.h>
 #include <cfgfile.h>
 #include <util.h>
+#include <adsb.h>
 
 enum MODES_TYPE {
 	MODES_TYPE_NONE = 0,
@@ -12,7 +13,7 @@ enum MODES_TYPE {
 	MODES_TYPE_EXTENDED_SQUITTER_NON_TRANSPONDER = 1 << 18,
 
 	MODES_TYPE_ALL = ~0,
-	MODES__TYPE_EXTENDED_SQUITTER_ALL =
+	MODES_TYPE_EXTENDED_SQUITTER_ALL =
 		MODES_TYPE_EXTENDED_SQUITTER |
 		MODES_TYPE_EXTENDED_SQUITTER_NON_TRANSPONDER
 };
@@ -40,7 +41,8 @@ void FILTER_reconfigure(bool reset)
 {
 	syncFilter = CFG_config.recv.syncFilter;
 	modeSFilter = CFG_config.recv.modeSLongExtSquitter ?
-			MODES__TYPE_EXTENDED_SQUITTER_ALL : MODES_TYPE_ALL;
+		MODES_TYPE_EXTENDED_SQUITTER_ALL : MODES_TYPE_ALL;
+	ADSB_reconfigure();
 	if (reset)
 		isSynchronized = false;
 }

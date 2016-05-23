@@ -14,15 +14,15 @@ openskyd_SOURCES = main.c \
 	statistics.h statistics.c tb.h tb.c recv.h recv.c \
 	input.h net_common.h net_common.c util.h util.c \
 	component.h component.c threads.h relay.h relay.c message.h message.c \
-	filter.h filter.c log.h log_stdio.c
-
-# for now, disable gps
-#	gps.h gps.c gps_input.h gps_input_uart.c gps_parser.h gps_parser.c
+	filter.h filter.c log.h log_stdio.c \
+	gps.h gps.c gps_input.h gps_input_uart.c gps_parser.h gps_parser.c
 
 # input layer
 openskyd_SOURCES += input_@INPUT_LAYER@.c
+openskyd_SOURCES += gps_input_@INPUT_LAYER@.c
 
-EXTRA_DIST = input_uart.c input_network.c input_dummy.c
+EXTRA_DIST = input_uart.c input_network.c input_dummy.c \
+	gps_input_uart.c gps_input_network.c
 
 # watchdog sources
 wd_SOURCES = gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \

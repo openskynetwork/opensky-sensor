@@ -36,6 +36,8 @@ struct ADSB_RawFrame {
 void ADSB_init();
 void ADSB_destruct();
 
+void ADSB_reconfigure();
+
 void ADSB_connect();
 bool ADSB_getFrame(struct ADSB_RawFrame * raw,
 	struct ADSB_DecodedFrame * decoded);

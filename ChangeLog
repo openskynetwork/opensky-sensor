@@ -1,3 +1,7 @@
+2016-05-22 Markus Engel <engel@opensky-network.org>
+	* Talkback: added commands for online filter reconfiguration
+	* GPS: report GPS position to server
+
 2016-04-26 Markus Engel <engel@opensky-network.org>
 	* Network: rewrote network component with a cleaner interface
 	* Component: resolve contention when waiting for locks

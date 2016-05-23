@@ -673,7 +673,7 @@ static void loadDefaults(struct CFG_Config * cfg)
 
 #ifdef INPUT_LAYER_NETWORK
 	strncpy(cfg->gps.host, "localhost", sizeof cfg->gps.host);
-	cfg->gps.port = 30003; /* TODO */
+	cfg->gps.port = 10685; /* TODO */
 #else
 	strncpy(cfg->gps.uart, "/dev/ttyO2", sizeof cfg->gps.uart);
 #endif

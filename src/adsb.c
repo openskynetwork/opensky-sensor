@@ -121,6 +121,15 @@ static bool configure()
 #endif
 }
 
+void ADSB_reconfigure()
+{
+#ifndef INPUT_LAYER_NETWORK
+	setOption(CFG_config.recv.modeSLongExtSquitter ?
+		ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
+		ADSB_OPTION_FRAME_FILTER_ALL);
+#endif
+}
+
 /** Set an option for the ADSB decoder.
  * \param option option to be set
  */

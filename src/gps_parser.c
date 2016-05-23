@@ -97,10 +97,10 @@ decode_frame:
 			//++STAT_stats.ADSB_outOfSync;
 			goto synchronize;
 		}
-		size_t len = bufLen;
-		enum DECODE_STATUS rs = decode(buf, &len);
+		size_t len = bufLen - 1;
+		enum DECODE_STATUS rs = decode(buf + 1, &len);
 		if (likely(rs == DECODE_STATUS_OK)) {
-			return len;
+			return len + 1;
 		} else {
 			switch (rs) {
 			case DECODE_STATUS_RESYNC:

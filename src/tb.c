@@ -172,7 +172,7 @@ static void processPacket(const struct TB_Packet * packet)
 	static const uint_fast32_t n_processors = sizeof(processors)
 		/ sizeof(*processors);
 
-	if (packet->type > n_processors || !processors[packet->type]) {
+	if (packet->type >= n_processors || !processors[packet->type]) {
 		/* packet type unknown */
 		LOG_logf(LOG_LEVEL_WARN, PFX, "Unknown packet type (type=%"
 			PRIuFAST16 ", len=%" PRIuFAST16 ")", packet->type, packet->len);

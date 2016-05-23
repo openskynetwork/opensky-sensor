@@ -24,7 +24,7 @@ export DEB_CFLAGS_MAINT_APPEND  = -Wall -Werror -mtune=native -O3
 override_dh_auto_configure:
 	dh_auto_configure -- --prefix=/usr --sysconfdir=/etc \
 		--libdir=/usr/lib/openskyd --enable-silent-rules \
-		--enable-input=network --disable-standalone --disable-talkback \
+		--enable-input=network --disable-standalone --enable-talkback \
 		--without-systemd --without-pacman --without-check
 
 override_dh_auto_install:
