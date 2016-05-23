@@ -70,14 +70,14 @@ struct Component TB_comp = {
 static void processPacket(const struct TB_Packet * packet);
 
 #ifdef TALKBACK
-#ifdef STANDALONE
+#if defined(STANDALONE) && !defined(LIB)
 static void packetShell(const struct TB_Packet * packet);
 static void packetRestartDaemon(const struct TB_Packet * packet);
 #endif
-#ifdef WITH_SYSTEMD
+#if defined(WITH_SYSTEMD) && !defined(LIB)
 static void packetRebootSystem(const struct TB_Packet * packet);
 #endif
-#ifdef WITH_PACMAN
+#if defined(WITH_PACMAN) && !defined(LIB)
 static void packetUpgradeDaemon(const struct TB_Packet * packet);
 #endif
 static void packetConfigureFilter(const struct TB_Packet * packet);
@@ -89,14 +89,14 @@ typedef void (*PacketProcessor)(const struct TB_Packet*);
 /** All packet processors in order of their type */
 static PacketProcessor processors[] = {
 #ifdef TALKBACK
-#ifdef STANDALONE
+#if defined(STANDALONE) && !defined(LIB)
 	[0] = &packetShell,
 	[1] = &packetRestartDaemon,
 #endif
-#ifdef WITH_SYSTEMD
+#if defined(WITH_SYSTEMD) && !defined(LIB)
 	[2] = &packetRebootSystem,
 #endif
-#ifdef WITH_PACMAN
+#if defined(WITH_PACMAN) && !defined(LIB)
 	[3] = &packetUpgradeDaemon,
 #endif
 	[4] = &packetConfigureFilter,
@@ -184,7 +184,7 @@ static void processPacket(const struct TB_Packet * packet)
 }
 
 #ifdef TALKBACK
-#ifdef STANDALONE
+#if defined(STANDALONE) && !defined(LIB)
 /** Start reverse connect to given server
  * \param packet packet containing the server address */
 static void packetShell(const struct TB_Packet * packet)
@@ -233,7 +233,7 @@ static void packetRestartDaemon(const struct TB_Packet * packet)
 }
 #endif
 
-#ifdef WITH_SYSTEMD
+#if defined(WITH_SYSTEMD) && !defined(LIB)
 /** Reboot system using systemd.
  * \param packet packet */
 static void packetRebootSystem(const struct TB_Packet * packet)
@@ -243,7 +243,7 @@ static void packetRebootSystem(const struct TB_Packet * packet)
 }
 #endif
 
-#ifdef WITH_PACMAN
+#if defined(WITH_PACMAN) && !defined(LIB)
 /** Upgrade daemon using pacman and restart daemon using systemd.
  * \param packet packet */
 static void packetUpgradeDaemon(const struct TB_Packet * frame)

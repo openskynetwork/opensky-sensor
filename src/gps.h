@@ -5,7 +5,6 @@
 
 #include <component.h>
 #include <stdint.h>
-#include <stdatomic.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,12 +34,6 @@ struct GPS_RawPosition {
 bool GPS_getRawPosition(struct GPS_RawPosition * rawPos);
 
 void GPS_setNeedPosition();
-
-inline enum GPS_TIME_FLAGS GPS_getTimeFlags()
-{
-	extern _Atomic enum GPS_TIME_FLAGS GPS_timeFlags;
-	return atomic_load_explicit(&GPS_timeFlags, memory_order_relaxed);
-}
 
 #ifdef __cplusplus
 }

@@ -13,6 +13,7 @@ AC_CONFIG_HEADERS(config.h)
 AM_MAINTAINER_MODE
 
 CFLAGS="$CFLAGS -std=gnu11"
+CXXFLAGS="$CXXFLAGS -std=c++0x"
 
 dnl required programs
 AC_PROG_CC

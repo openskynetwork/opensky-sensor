@@ -15,9 +15,26 @@
 #include <stdlib.h>
 #include <MessageTypes.h>
 #include <log.h>
+#include <gps.h>
 
 extern "C" {
 struct CFG_Config CFG_config;
+
+bool GPS_getRawPosition(struct GPS_RawPosition * pos)
+{
+	return false;
+}
+
+void GPS_setNeedPosition()
+{
+
+}
+
+void ADSB_reconfigure()
+{
+
+}
+
 }
 
 namespace OpenSky {

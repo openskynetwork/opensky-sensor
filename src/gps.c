@@ -14,7 +14,7 @@
 //static void timeFrame(const uint8_t * buf);
 static void posFrame(const uint8_t * buf);
 
-static void construct();
+static bool construct();
 static void destruct();
 static void mainloop();
 
@@ -140,7 +140,7 @@ enum GPS_DISC_ACTIVITY {
 
 #define R2D 57.2957795130823208767981548141051703
 
-//_Atomic enum GPS_TIME_FLAGS GPS_timeFlags = ATOMIC_VAR_INIT(GPS_TIME_FLAG_NONE);
+//static _Atomic enum GPS_TIME_FLAGS GPS_timeFlags = ATOMIC_VAR_INIT(GPS_TIME_FLAG_NONE);
 
 static pthread_mutex_t posMutex = PTHREAD_MUTEX_INITIALIZER;
 static struct GPS_RawPosition position;
@@ -148,9 +148,15 @@ static bool hasPosition;
 
 static bool needPosition;
 
-static void construct()
+/*enum GPS_TIME_FLAGS GPS_getTimeFlags()
+{
+	return atomic_load_explicit(&GPS_timeFlags, memory_order_relaxed);
+}*/
+
+static bool construct()
 {
 	GPS_PARSER_init();
+	return true;
 }
 
 static void destruct()
