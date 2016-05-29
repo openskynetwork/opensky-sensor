@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016 SeRo Systems <contact@sero-systems.de> */
+/* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
 #ifndef _HAVE_UTIL_H
 #define _HAVE_UTIL_H
