@@ -10,7 +10,7 @@ int main()
 {
 	OpenSky::init();
 
-	OpenSky::configure();
+	//OpenSky::configure();
 
 	OpenSky::enable();
 

@@ -94,10 +94,10 @@ void configure()
 	CFG_config.stats.enabled = false;
 
 	if (!CFG_config.dev.serialSet) { // TODO: we need something better here
-		CFG_config.dev.serialSet = UTIL_getSerial("enp0s25",
+		CFG_config.dev.serialSet = UTIL_getSerial("eno1",
 		    &CFG_config.dev.serial);
 		if (!CFG_config.dev.serialSet) {
-			// TODO
+			LOG_log(LOG_LEVEL_ERROR, PFX, "No serial number configured");
 		} else {
 			configured = true;
 		}
@@ -109,9 +109,11 @@ void configure()
 
 void enable()
 {
-	if (unlikely(!configured))
+	if (unlikely(!configured)) {
 		LOG_log(LOG_LEVEL_ERROR, PFX,
 		    "Feeder could not be initialized properly");
+		return;
+	}
 
 	FILTER_reset();
 	FILTER_setSynchronized(gpsTimeStatus != GpsTimeInvalid);
