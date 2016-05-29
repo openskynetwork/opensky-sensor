@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016 SeRo Systems <contact@sero-systems.de> */
+/* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
 #include <filter.h>
 #include <statistics.h>
