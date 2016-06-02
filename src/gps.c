@@ -270,11 +270,11 @@ static void posFrame(const uint8_t * buf)
 	float clockOffset = GPS_tofloat(buf + 20);
 	uint32_t dacValue = GPS_tou32(buf + 24);
 	float dacVoltage = GPS_tofloat(buf + 28);
-	float temperature = GPS_tofloat(buf+ 32);
+	float temperature = GPS_tofloat(buf+ 32);*/
 	double latitude = GPS_todouble(buf + 36) * R2D;
 	double longitude = GPS_todouble(buf + 44) * R2D;
 	double altitude = GPS_todouble(buf + 52);
-	float ppsQuantizationError = GPS_tofloat(buf + 60);*/
+	//float ppsQuantizationError = GPS_tofloat(buf + 60);
 
 	bool selfSurvey = !!(minorAlarms & GPS_MIN_ALARM_SURVEY_IN_PROGRESS);
 	bool inTestMode = !!(minorAlarms & GPS_MIN_ALARM_IN_TEST_MODE);
@@ -299,11 +299,11 @@ static void posFrame(const uint8_t * buf)
 		return;
 	}
 
-	memcpy(&position, buf + 36, sizeof(uint64_t) * 3);
+	GPS_fromdouble(latitude, (uint8_t*)&position.latitude);
+	GPS_fromdouble(longitude, (uint8_t*)&position.longitute);
+	GPS_fromdouble(altitude, (uint8_t*)&position.altitude);
+
 	if (!hasPosition) {
-		double latitude = GPS_todouble(buf + 36) * R2D;
-		double longitude = GPS_todouble(buf + 44) * R2D;
-		double altitude = GPS_todouble(buf + 52);
 		NOC_printf("GPS: Got LLA: %+6.2f %+6.2f %+6.2f\n", latitude, longitude,
 			altitude);
 	}
