@@ -77,4 +77,21 @@ static inline double GPS_todouble(const uint8_t * buf)
 	return c.d;
 }
 
+static inline void GPS_fromu64(uint_fast64_t u, uint8_t * buf)
+{
+	u = be64toh(u);
+	memcpy(buf, &u, sizeof u);
+}
+
+static inline void GPS_fromdouble(double d, uint8_t * buf)
+{
+	union
+	{
+		uint64_t u;
+		double d;
+	} c;
+	c.d = d;
+	GPS_fromu64(c.u, buf);
+}
+
 #endif
