@@ -68,7 +68,10 @@ enum ADSB_OPTION {
 	/** Mode-AC messages: enable decoding */
 	ADSB_OPTION_MODE_AC_DECODING_ENABLED = 'J',
 	/** Mode-AC messages: disable decoding */
-	ADSB_OPTION_MODE_AC_DECODING_DISABLED = 'j'
+	ADSB_OPTION_MODE_AC_DECODING_DISABLED = 'j',
+
+	ADSB_OPTION_Y = 'Y',
+	ADSB_OPTION_R = 'R'
 };
 
 enum DECODE_STATUS {
@@ -114,7 +117,9 @@ static bool configure()
 			ADSB_OPTION_RTS_HANDSHAKE_DISABLED) &&
 		setOption(cfg->fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
 			ADSB_OPTION_DF_17_18_FEC_DISABLED) &&
-		setOption(ADSB_OPTION_MODE_AC_DECODING_DISABLED);
+		setOption(ADSB_OPTION_MODE_AC_DECODING_DISABLED) &&
+		setOption(ADSB_OPTION_Y) &&
+		setOption(ADSB_OPTION_R);
 #else
 	return true;
 #endif
