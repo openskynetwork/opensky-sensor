@@ -1,6 +1,6 @@
 # Maintainer: OpenSky Network <contact@opensky-network.org>
 pkgname=('openskyd' 'openskyd-wd')
-pkgver=1.1.0
+pkgver=1.1.1
 pkgrel=1
 url="http://www.opensky-network.org"
 arch=('armv7h')

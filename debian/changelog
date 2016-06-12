@@ -1,3 +1,9 @@
+openskyd (1.1.1-1) stable; urgency=medium
+
+  * GPS position: latitude and longitude are measured in degrees now
+
+ -- Markus Engel <engel@opensky-network.org>  Mon, 06 Jun 2016 19:22:43 +0000
+
 openskyd (1.1.0-1) stable; urgency=medium
 
   * Fixes in filter
