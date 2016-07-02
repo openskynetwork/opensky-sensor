@@ -19,7 +19,7 @@ struct TEST {
 	uint32_t connect;
 	uint32_t write;
 	uint32_t write_bytes;
-	bool params[8];
+	bool params[26];
 
 	int32_t testAck;
 

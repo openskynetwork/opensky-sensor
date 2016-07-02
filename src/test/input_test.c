@@ -65,7 +65,9 @@ size_t INPUT_write(uint8_t * buf, size_t bufLen)
 		ck_assert_int_eq(buf[off + 0], '\x1a');
 		ck_assert_int_eq(buf[off + 1], '1');
 		uint8_t type = buf[off + 2];
-		ck_assert(('c' <= type && type <= 'j') || ('C' <= type && type <= 'J'));
+		ck_assert(('c' <= type && type <= 'j') ||
+			('C' <= type && type <= 'J') ||
+			(type == 'Y' || type == 'R'));
 		uint8_t lower = tolower(type);
 		test.params[lower - 'c'] = lower == type ? false : true;
 	}

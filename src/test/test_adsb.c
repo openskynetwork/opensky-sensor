@@ -32,7 +32,7 @@ START_TEST(test_connect)
 	ADSB_init();
 	ck_assert(test.init);
 	ADSB_connect();
-	ck_assert_uint_eq(test.write, 8);
+	ck_assert_uint_eq(test.write, 10);
 }
 END_TEST
 
@@ -45,7 +45,7 @@ static void configAssert(char testC)
 	ADSB_init();
 	ck_assert(test.init);
 	ADSB_connect();
-	ck_assert_uint_eq(test.write, 8);
+	ck_assert_uint_eq(test.write, 10);
 	ck_assert_int_eq(!!test.params[lower - 'c'], !!expect);
 }
 
@@ -131,13 +131,25 @@ START_TEST(test_config_modeac)
 }
 END_TEST
 
+START_TEST(test_config_R)
+{
+	configAssert('R');
+}
+END_TEST
+
+START_TEST(test_config_Y)
+{
+	configAssert('Y');
+}
+END_TEST
+
 START_TEST(test_config_fail)
 {
 	test.testAck = 3;
 	ADSB_init();
 	ck_assert(test.init);
 	ADSB_connect();
-	ck_assert_uint_eq(test.write, 8);
+	ck_assert_uint_eq(test.write, 10);
 	ck_assert_uint_eq(test.connect, 4);
 }
 END_TEST
@@ -838,6 +850,8 @@ static Suite * adsb_suite()
 	tcase_add_test(tc, test_config_fec_0);
 	tcase_add_test(tc, test_config_fec_1);
 	tcase_add_test(tc, test_config_modeac);
+	tcase_add_test(tc, test_config_R);
+	tcase_add_test(tc, test_config_Y);
 	tcase_add_test(tc, test_config_fail);
 	suite_add_tcase(s, tc);
 
