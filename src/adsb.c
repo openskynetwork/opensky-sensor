@@ -101,7 +101,7 @@ void ADSB_destruct()
 /** Setup ADSB receiver with some options. */
 static bool configure()
 {
-#ifndef INPUT_LAYER_NETWORK
+#if !defined(INPUT_LAYER_NETWORK) || defined(CHECK)
 	const struct CFG_RECV * cfg = &CFG_config.recv;
 	/* setup ADSB */
 	return setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN) &&

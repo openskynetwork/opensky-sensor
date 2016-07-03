@@ -14,7 +14,7 @@ libtest_a_SOURCES = ../buffer.h ../buffer.c ../cfgfile.h \
 	../recv.h ../recv.c
 libtest_a_CFLAGS = $(AM_CFLAGS)
 
-AM_CFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@
+AM_CFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@ -DCHECK
 LDADD = @CHECK_LIBS@ @PTHREAD_LIBS@ @PTHREAD_CFLAGS@ libtest.a
 
 test_buffer_SOURCES = test_buffer.c
