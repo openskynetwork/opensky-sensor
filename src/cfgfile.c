@@ -639,7 +639,7 @@ static void loadDefaults(struct CFG_Config * cfg)
 
 #ifdef INPUT_LAYER_NETWORK
 	strncpy(cfg->input.host, "localhost", sizeof cfg->input.host);
-	cfg->input.port = 30003;
+	cfg->input.port = 10003;
 #else
 	strncpy(cfg->input.uart, "/dev/ttyO5", sizeof cfg->input.uart);
 	cfg->input.rtscts = true;
