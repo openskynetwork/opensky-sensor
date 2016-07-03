@@ -12,12 +12,13 @@
 #include <component.h>
 #include <endian.h>
 
+struct Component TB_comp = {};
 struct Component NET_comp = {};
 struct Component RELAY_comp = {};
 
 static void setup()
 {
-	OpenSky::configure();
+	OpenSky::init();
 	OpenSky::enable();
 	usleep(100);
 }
