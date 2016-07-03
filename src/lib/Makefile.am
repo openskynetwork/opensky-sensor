@@ -27,7 +27,7 @@ opensky_lib_example_LDADD=libopensky.la
 opensky_lib_test_SOURCES=opensky-test.cc \
 	../adsb.h ../adsb.c ../input.h ../input_@INPUT_LAYER@.c ../statistics.h \
 	../statistics.c ../cfgfile.h ../cfgfile.c ../log.h ../log_stdio.c ../util.h \
-	../util.c
+	../util.c ../net_common.c
 opensky_lib_test_CXXFLAGS=@PTHREAD_CFLAGS@ -I$(srcdir)/..
 opensky_lib_test_CFLAGS=@PTHREAD_CFLAGS@ -I$(srcdir)/..
 opensky_lib_test_LDFLAGS=@PTHREAD_CFLAGS@ @PTHREAD_LIBS@

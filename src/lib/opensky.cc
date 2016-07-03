@@ -94,7 +94,7 @@ void configure()
 	CFG_config.stats.enabled = false;
 
 	if (!CFG_config.dev.serialSet) { // TODO: we need something better here
-		CFG_config.dev.serialSet = UTIL_getSerial("eno1",
+		CFG_config.dev.serialSet = UTIL_getSerial("eth0",
 		    &CFG_config.dev.serial);
 		if (!CFG_config.dev.serialSet) {
 			LOG_log(LOG_LEVEL_ERROR, PFX, "No serial number configured");
