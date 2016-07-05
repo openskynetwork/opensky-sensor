@@ -74,7 +74,7 @@ int main(int argc, char * argv[])
 	COMP_register(&TB_comp, argv);
 	COMP_register(&RECV_comp, NULL);
 	COMP_register(&RELAY_comp, NULL);
-	COMP_register(&GPS_comp, NULL);
+	COMP_register(&GPS_RECV_comp, NULL);
 
 	COMP_initAll();
 

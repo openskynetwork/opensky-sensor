@@ -1,13 +1,13 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
-#ifndef _HAVE_GPS_H
-#define _HAVE_GPS_H
+#ifndef _HAVE_GPS_RECV_H
+#define _HAVE_GPS_RECV_H
 
 #include <component.h>
 #include <stdint.h>
 #include <stdatomic.h>
 
-extern struct Component GPS_comp;
+extern struct Component GPS_RECV_comp;
 
 enum GPS_TIME_FLAGS {
 	GPS_TIME_FLAG_NONE = 0,

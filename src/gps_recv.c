@@ -18,7 +18,7 @@ static void construct();
 static void destruct();
 static void mainloop();
 
-struct Component GPS_comp = {
+struct Component GPS_RECV_comp = {
 	.description = "GPS",
 	.construct = &construct,
 	.destruct = &destruct,
