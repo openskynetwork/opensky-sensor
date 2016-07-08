@@ -30,10 +30,10 @@ void GPS_setPosition(double latitude, double longitude, double altitude)
 	GPS_fromdouble(longitude, (uint8_t*)&position.longitute);
 	GPS_fromdouble(altitude, (uint8_t*)&position.altitude);
 
-	if (!hasPosition) {
+	/*if (!hasPosition) {
 		NOC_printf("GPS: Got LLA: %+6.2f %+6.2f %+6.2f\n", latitude, longitude,
 			altitude);
-	}
+	}*/
 	hasPosition = true;
 
 	if (needPosition) {

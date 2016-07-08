@@ -40,6 +40,12 @@ void disable();
  */
 void setGpsTimeStatus(const GpsTimeStatus_t gpsTimeStatus);
 
+/** Set the GPS position.
+ * \param latitude latitude in degrees, as defined by WGS-84
+ * \param longitude longitude in degrees, as defined by WGS-84
+ * \param alitude altitude in meters */
+void setGpsPosition(double latitude, double longitude, double altitude);
+
 /** Submit a frame to the OpenSky network.
  * \param msg Message, consisting of timestamp (6 byte, big endian),
  *  signal level (1 byte, signed), payload (length depends on messageType)

@@ -17,24 +17,12 @@
 #include <log.h>
 #include <gps.h>
 #include <tb.h>
+#include <gps.h>
 
 extern "C" {
 struct CFG_Config CFG_config;
 
-bool GPS_getRawPosition(struct GPS_RawPosition * pos)
-{
-	return false;
-}
-
-void GPS_setNeedPosition()
-{
-
-}
-
-void ADSB_reconfigure()
-{
-
-}
+void ADSB_reconfigure() {}
 
 }
 
@@ -53,6 +41,8 @@ static GpsTimeStatus_t gpsTimeStatus = GpsTimeInvalid;
 
 void init()
 {
+	GPS_reset();
+
 	CFG_config.dev.serialSet = false;
 	configure();
 
@@ -117,6 +107,7 @@ void enable()
 
 	FILTER_reset();
 	FILTER_setSynchronized(gpsTimeStatus != GpsTimeInvalid);
+	GPS_reset();
 
 	BUF_flush();
 	COMP_startAll();
@@ -173,6 +164,11 @@ void output_message(const unsigned char * const msg,
 	out->raw_len = encode(out->raw + 2, msg, msgLen) + 2;
 
 	BUF_commitFrame(out);
+}
+
+void setGpsPosition(double latitude, double longitude, double altitude)
+{
+	GPS_setPosition(latitude, longitude, altitude);
 }
 
 #pragma GCC visibility pop

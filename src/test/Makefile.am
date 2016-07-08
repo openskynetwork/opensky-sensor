@@ -10,9 +10,9 @@ endif
 
 libtest_a_SOURCES = ../buffer.h ../buffer.c ../cfgfile.h \
 	../statistics.h ../statistics.c ../component.h ../component.c \
-	../util.h ../util.c ../message.h ../message.c ../adsb.h ../adsb.c \
+	../util.h ../message.h ../message.c ../adsb.h ../adsb.c \
 	../recv.h ../recv.c ../gps.h ../gps.c \
-	../filter.h ../filter.c ../log.h ../log_stdio.c
+	../filter.h ../filter.c ../log.h ../log_stdio.c glue.c
 libtest_a_CFLAGS = $(AM_CFLAGS)
 
 AM_CFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@ -DCHECK

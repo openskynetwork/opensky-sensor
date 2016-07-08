@@ -27,9 +27,19 @@ int main()
 	frame[6] = 100;
 	frame[7] = 0x8a;
 
-	uint32_t i = 0;
+	uint32_t i;
 	for (i = 0; i < 10; ++i) {
 		frame[8] = i;
+		OpenSky::output_message(frame, MessageType_ModeSLong);
+	}
+
+	sleep(1);
+	OpenSky::setGpsPosition(4.3, 140.5, 250.);
+
+	sleep(3);
+
+	for (i = 0; i < 10; ++i) {
+		frame[8] = i + 10;
 		OpenSky::output_message(frame, MessageType_ModeSLong);
 	}
 
