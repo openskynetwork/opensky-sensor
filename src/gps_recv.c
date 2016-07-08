@@ -1,6 +1,7 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
 #include <gps.h>
+#include <gps_recv.h>
 #include <error.h>
 #include <errno.h>
 #include <time.h>
@@ -136,17 +137,7 @@ enum GPS_DISC_ACTIVITY {
 	GPS_DISC_ACTIVITY_CALIBRATION = 9
 };
 
-//static const time_t gpsEpoch = 315964800;
-
 #define R2D 57.2957795130823208767981548141051703
-
-//_Atomic enum GPS_TIME_FLAGS GPS_timeFlags = ATOMIC_VAR_INIT(GPS_TIME_FLAG_NONE);
-
-static pthread_mutex_t posMutex = PTHREAD_MUTEX_INITIALIZER;
-static struct GPS_RawPosition position;
-static bool hasPosition;
-
-static bool needPosition;
 
 static void construct()
 {
@@ -160,11 +151,11 @@ static void destruct()
 
 static void mainloop()
 {
-	needPosition = false;
+	GPS_reset();
 
 	while (true) {
 		GPS_PARSER_connect();
-		hasPosition = false;
+		GPS_reset();
 
 		while (true) {
 			uint8_t buf[1024];
@@ -278,35 +269,19 @@ static void posFrame(const uint8_t * buf)
 	NOC_printf("LLA: %+6.2f %+6.2f %+6.2f\n", latitude, longitude,
 		altitude);*/
 
-	pthread_mutex_lock(&posMutex);
 	if (critAlarms || inTestMode || recvMode != GPS_RECV_MODE_ODT_CLK ||
 		discMode != GPS_DISC_MODE_LOCKED) {
 		/* unrecoverable or not automatically solvable by now */
-		pthread_mutex_unlock(&posMutex);
 		return;
 	}
 
 	if (selfSurvey || decodingStatus != GPS_DECODE_STATUS_DOING_FIXES ||
 		discMode != GPS_DISC_MODE_LOCKED) {
 		/* no position -> wait */
-		pthread_mutex_unlock(&posMutex);
 		return;
 	}
 
-	GPS_fromdouble(latitude, (uint8_t*)&position.latitude);
-	GPS_fromdouble(longitude, (uint8_t*)&position.longitute);
-	GPS_fromdouble(altitude, (uint8_t*)&position.altitude);
-
-	if (!hasPosition) {
-		NOC_printf("GPS: Got LLA: %+6.2f %+6.2f %+6.2f\n", latitude, longitude,
-			altitude);
-	}
-	hasPosition = true;
-	pthread_mutex_unlock(&posMutex);
-
-	if (hasPosition && needPosition) {
-		needPosition = !NET_sendPosition(&position);
-	}
+	GPS_setPosition(latitude, longitude, altitude);
 
 #if 0
 	pthread_mutex_lock(&GPS_gps.mutex);
@@ -323,19 +298,3 @@ static void posFrame(const uint8_t * buf)
 #endif
 }
 
-bool GPS_getRawPosition(struct GPS_RawPosition * rawPos)
-{
-	pthread_mutex_lock(&posMutex);
-	if (!hasPosition) {
-		pthread_mutex_unlock(&posMutex);
-		return false;
-	}
-	memcpy(rawPos, &position, sizeof *rawPos);
-	pthread_mutex_unlock(&posMutex);
-	return true;
-}
-
-void GPS_setNeedPosition()
-{
-	needPosition = true;
-}

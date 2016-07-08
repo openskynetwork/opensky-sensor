@@ -22,20 +22,10 @@ enum GPS_TIME_FLAGS {
 		GPS_TIME_FLAG_HAS_WEEK
 };
 
-struct GPS_RawPosition {
-	uint64_t latitude;
-	uint64_t longitute;
-	uint64_t altitude;
-};
-
-bool GPS_getRawPosition(struct GPS_RawPosition * rawPos);
-
-void GPS_setNeedPosition();
-
-inline enum GPS_TIME_FLAGS GPS_getTimeFlags()
+/*inline enum GPS_TIME_FLAGS GPS_getTimeFlags()
 {
 	extern _Atomic enum GPS_TIME_FLAGS GPS_timeFlags;
 	return atomic_load_explicit(&GPS_timeFlags, memory_order_relaxed);
-}
+}*/
 
 #endif
