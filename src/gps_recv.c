@@ -15,7 +15,7 @@
 //static void timeFrame(const uint8_t * buf);
 static void posFrame(const uint8_t * buf);
 
-static void construct();
+static bool construct();
 static void destruct();
 static void mainloop();
 
@@ -139,9 +139,10 @@ enum GPS_DISC_ACTIVITY {
 
 #define R2D 57.2957795130823208767981548141051703
 
-static void construct()
+static bool construct()
 {
 	GPS_PARSER_init();
+	return true;
 }
 
 static void destruct()

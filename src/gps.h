@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern struct Component GPS_RECV_comp;
 
 struct GPS_RawPosition {
@@ -22,5 +26,8 @@ bool GPS_getRawPosition(struct GPS_RawPosition * rawPos);
 
 void GPS_setNeedPosition();
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
