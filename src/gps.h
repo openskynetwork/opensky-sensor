@@ -3,27 +3,10 @@
 #ifndef _HAVE_GPS_H
 #define _HAVE_GPS_H
 
-#include <component.h>
 #include <stdint.h>
+#include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern struct Component GPS_comp;
-
-enum GPS_TIME_FLAGS {
-	GPS_TIME_FLAG_NONE = 0,
-	GPS_TIME_FLAG_NON_TEST_MODE = 1,
-	GPS_TIME_FLAG_HAS_GPS_TIME = 2,
-	GPS_TIME_FLAG_HAS_WEEK = 4,
-	GPS_TIME_FLAG_HAS_OFFSET = 8,
-	GPS_TIME_FLAG_IS_UTC = 16,
-	GPS_TIME_FLAG_HAS_TIME =
-		GPS_TIME_FLAG_NON_TEST_MODE |
-		GPS_TIME_FLAG_HAS_GPS_TIME |
-		GPS_TIME_FLAG_HAS_WEEK
-};
+extern struct Component GPS_RECV_comp;
 
 struct GPS_RawPosition {
 	uint64_t latitude;
@@ -31,12 +14,13 @@ struct GPS_RawPosition {
 	uint64_t altitude;
 };
 
+void GPS_reset();
+
+void GPS_setPosition(double latitude, double longitude, double altitude);
+
 bool GPS_getRawPosition(struct GPS_RawPosition * rawPos);
 
 void GPS_setNeedPosition();
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -15,7 +15,7 @@ openskyd_SOURCES = main.c \
 	input.h net_common.h net_common.c util.h util.c \
 	component.h component.c threads.h relay.h relay.c message.h message.c \
 	filter.h filter.c log.h log_stdio.c \
-	gps.h gps.c gps_input.h gps_parser.h gps_parser.c
+	gps.h gps.c gps_recv.h gps_recv.c gps_parser.c gps_parser.h gps_input.h
 
 # input layer
 openskyd_SOURCES += input_@INPUT_LAYER@.c
