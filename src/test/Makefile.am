@@ -3,7 +3,7 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
   $(top_srcdir)/build-aux/tap-driver.sh
 
 if WITH_CHECK
-TESTS = test_buffer test_adsb test_recv
+TESTS = test_buffer test_adsb test_recv test_gps
 check_PROGRAMS = $(TESTS) perf_adsb perf_buffer
 check_LIBRARIES = libtest.a
 endif
@@ -11,7 +11,7 @@ endif
 libtest_a_SOURCES = ../buffer.h ../buffer.c ../cfgfile.h \
 	../statistics.h ../statistics.c ../component.h ../component.c \
 	../util.h ../util.c ../message.h ../message.c ../adsb.h ../adsb.c \
-	../recv.h ../recv.c
+	../recv.h ../recv.c ../gps.h ../gps.c
 libtest_a_CFLAGS = $(AM_CFLAGS)
 
 AM_CFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@ -DCHECK
@@ -25,6 +25,9 @@ test_adsb_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
 test_recv_SOURCES = test_recv.c input_test.h input_test.c
 test_recv_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
+
+test_gps_SOURCES = test_gps.c
+test_gps_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
 perf_adsb_SOURCES = perf_adsb.c input_perf.h input_perf.c \
 	../statistics.h ../statistics.c ../adsb.h ../adsb.c \
