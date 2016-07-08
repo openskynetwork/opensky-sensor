@@ -25,7 +25,7 @@
 #include <cfgfile.h>
 #include <util.h>
 
-#define DEBUG
+//#define DEBUG
 
 static const char PFX[] = "NET";
 
@@ -147,6 +147,11 @@ static int tryConnect()
 	return sock;
 }
 
+static inline void logDisconnect()
+{
+	LOG_log(LOG_LEVEL_INFO, PFX, "Connection lost");
+}
+
 static void emitDisconnect(enum EMIT_BY by)
 {
 	pthread_mutex_lock(&mutex);
@@ -177,7 +182,8 @@ static void emitDisconnect(enum EMIT_BY by)
 		if (transState == TRANSIT_NONE) {
 			/* we were normally connected -> we have a new leader */
 			/* shutdown the socket (but leave it open, so the follower can
-			 * see the failure */
+			 * see the failure) */
+			logDisconnect();
 			shutdown(*mysock, SHUT_RDWR);
 			transState = by;
 			connState = CONN_STATE_DISCONNECTED;
@@ -186,6 +192,7 @@ static void emitDisconnect(enum EMIT_BY by)
 			/* we were connected, but the leader reported another failure
 			 * while the follower did not recognize the first failure yet
 			 *  -> close the socket */
+			logDisconnect();
 			shutdown(*mysock, SHUT_RDWR);
 			close(*mysock);
 			connState = CONN_STATE_DISCONNECTED;
@@ -229,9 +236,11 @@ static bool trySendSock(int sock, const void * buf, size_t len)
 	do {
 		ssize_t rc = send(sock, ptr, len, MSG_NOSIGNAL);
 		if (rc <= 0) {
+#ifdef DEBUG
 			LOG_logf(LOG_LEVEL_DEBUG, PFX, "could not send: %s",
 				rc == 0 || errno == EPIPE ? "Connection lost" :
 				strerror(errno));
+#endif
 			++STAT_stats.NET_msgsFailed;
 			return false;
 		}
@@ -270,8 +279,10 @@ ssize_t NET_receive(uint8_t * buf, size_t len)
 {
 	ssize_t rc = recv(recvsock, buf, len, 0);
 	if (rc <= 0) {
-		LOG_logf(LOG_LEVEL_DEBUG, PFX, "could not receive: %s",
+#ifdef DEBUG
+		LOG_logf(LOG_LEVEL_INFO, PFX, "could not receive: %s",
 			rc == 0 ? "Connection lost" : strerror(errno));
+#endif
 		++STAT_stats.NET_msgsRecvFailed;
 		emitDisconnect(EMIT_BY_RECV);
 	}
