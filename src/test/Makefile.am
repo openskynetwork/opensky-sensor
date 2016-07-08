@@ -56,6 +56,7 @@ libtest_a_CFLAGS += -fprofile-arcs -ftest-coverage
 test_buffer_LDFLAGS = -fprofile-arcs -ftest-coverage
 test_adsb_LDFLAGS = -fprofile-arcs -ftest-coverage
 test_recv_LDFLAGS = -fprofile-arcs -ftest-coverage
+test_gps_LDFLAGS = -fprofile-arcs -ftest-coverage
 test_lib_CXXFLAGS +=  -fprofile-arcs -ftest-coverage
 test_lib_LDFLAGS =  -fprofile-arcs -ftest-coverage
 
