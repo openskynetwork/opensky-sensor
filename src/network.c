@@ -60,6 +60,11 @@ enum EMIT_BY {
 	EMIT_BY_SEND = TRANSIT_RECV
 };
 
+enum ACTION {
+	ACTION_NONE,
+	ACTION_RETRY
+};
+
 /** Connection state */
 static enum CONN_STATE connState;
 
@@ -67,7 +72,7 @@ static enum TRANSIT_STATE transState;
 
 static void mainloop();
 static int tryConnect();
-static void emitDisconnect(enum EMIT_BY by);
+static enum ACTION emitDisconnect(enum EMIT_BY by);
 static bool trySendSock(int sock, const void * buf, size_t len);
 static bool trySend(const void * buf, size_t len);
 static bool trySendLocked(const void * buf, size_t len);
@@ -152,7 +157,7 @@ static inline void logDisconnect()
 	LOG_log(LOG_LEVEL_INFO, PFX, "Connection lost");
 }
 
-static void emitDisconnect(enum EMIT_BY by)
+static enum ACTION emitDisconnect(enum EMIT_BY by)
 {
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&cleanup, NULL);
@@ -212,6 +217,8 @@ static void emitDisconnect(enum EMIT_BY by)
 		transState = TRANSIT_NONE;
 	}
 	CLEANUP_POP();
+
+	return connState == CONN_STATE_CONNECTED ? ACTION_RETRY : ACTION_NONE;
 }
 
 void NET_waitConnected()
@@ -259,10 +266,11 @@ static bool trySendSock(int sock, const void * buf, size_t len)
  */
 static bool trySend(const void * buf, size_t len)
 {
-	bool rc = trySendSock(sendsock, buf, len);
-	if (!rc)
-		emitDisconnect(EMIT_BY_SEND);
-	return rc;
+	do {
+		if (trySendSock(sendsock, buf, len))
+			return true;
+	} while (emitDisconnect(EMIT_BY_SEND) == ACTION_RETRY);
+	return false;
 }
 
 static bool trySendLocked(const void * buf, size_t len)
@@ -277,16 +285,17 @@ static bool trySendLocked(const void * buf, size_t len)
 
 ssize_t NET_receive(uint8_t * buf, size_t len)
 {
-	ssize_t rc = recv(recvsock, buf, len, 0);
-	if (rc <= 0) {
+	do {
+		ssize_t rc = recv(recvsock, buf, len, 0);
+		if (rc > 0)
+			return rc;
 #ifdef DEBUG
 		LOG_logf(LOG_LEVEL_INFO, PFX, "could not receive: %s",
 			rc == 0 ? "Connection lost" : strerror(errno));
 #endif
 		++STAT_stats.NET_msgsRecvFailed;
-		emitDisconnect(EMIT_BY_RECV);
-	}
-	return rc;
+	} while (emitDisconnect(EMIT_BY_RECV) == ACTION_RETRY);
+	return 0;
 }
 
 /** Send an ADSB frame to the server.
