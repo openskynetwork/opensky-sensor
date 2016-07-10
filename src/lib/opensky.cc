@@ -19,6 +19,12 @@
 #include <tb.h>
 #include <gps.h>
 
+#ifdef DEVELOPMENT
+#define ETHER_DEV "enp1s1"
+#else
+#define ETHER_DEV "eth0"
+#endif
+
 extern "C" {
 struct CFG_Config CFG_config;
 
@@ -84,7 +90,7 @@ void configure()
 	CFG_config.stats.enabled = false;
 
 	if (!CFG_config.dev.serialSet) { // TODO: we need something better here
-		CFG_config.dev.serialSet = UTIL_getSerial("eth0",
+		CFG_config.dev.serialSet = UTIL_getSerial(ETHER_DEV,
 		    &CFG_config.dev.serial);
 		if (!CFG_config.dev.serialSet) {
 			LOG_log(LOG_LEVEL_ERROR, PFX, "No serial number configured");
