@@ -184,6 +184,14 @@ static void processPacket(const struct TB_Packet * packet)
 }
 
 #ifdef TALKBACK
+
+static void warnTooShort(const struct TB_Packet * packet)
+{
+	LOG_logf(LOG_LEVEL_WARN, PFX, "packet of type %" PRIuFAST16 " too "
+		"short (len=%" PRIuFAST16 "), discarding", packet->type,
+		packet->len);
+}
+
 #if defined(STANDALONE) && !defined(LIB)
 /** Start reverse connect to given server
  * \param packet packet containing the server address */
@@ -191,9 +199,7 @@ static void packetShell(const struct TB_Packet * packet)
 {
 	/* sanity check */
 	if (packet->len != 10) {
-		LOG_logf(LOG_LEVEL_WARN, PFX, "packet of type %" PRIuFAST16 " too "
-			"short (len=%" PRIuFAST16 "), discarding", packet->type,
-			packet->len);
+		warnTooShort(packet);
 		return;
 	}
 
@@ -269,8 +275,7 @@ static void packetConfigureFilter(const struct TB_Packet * packet)
 {
 	/* sanity check */
 	if (packet->len != 6) {
-		fprintf(stderr, "TB: packet of type %" PRIuFAST16 " has wrong length "
-			"(len = %" PRIuFAST16 ", discarding\n", packet->type, packet->len);
+		warnTooShort(packet);
 		return;
 	}
 
