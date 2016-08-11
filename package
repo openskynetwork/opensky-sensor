@@ -2,7 +2,7 @@
 
 set -e
 
-git clean -dxf
+git clean -dxi
 ./bootstrap
 ./configure --disable-dependency-tracking
 make distcheck DISTCHECK_CONFIGURE_FLAGS=--disable-dependency-tracking
