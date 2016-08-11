@@ -6,7 +6,7 @@ endif
 
 lib_LTLIBRARIES=libopensky.la
 
-libopensky_la_SOURCES=opensky.hh opensky.cc MessageTypes.h \
+libopensky_la_SOURCES=opensky.hh opensky.cc MessageTypes.h GpsStatus.h \
 	../filter.h ../filter.c ../buffer.h ../buffer.c ../relay.h ../relay.c \
 	../network.h ../network.c ../net_common.h ../net_common.c \
 	../statistics.h ../statistics.c ../component.h ../component.c \

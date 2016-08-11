@@ -4,12 +4,7 @@
 
 #include <ostream>
 #include <MessageTypes.h>
-
-typedef enum {
-	GpsTimeInvalid,
-	UsingCpuTime,
-	UsingGpsTime
-} GpsTimeStatus_t;
+#include <GpsStatus.h>
 
 namespace OpenSky {
 
