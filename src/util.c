@@ -106,7 +106,7 @@ bool UTIL_getSerial(const char * device, uint32_t * serial)
 	LOG_logf(LOG_LEVEL_INFO, PFX, "MAC address: %02" PRIx8 ":%02" PRIx8 ":%02"
 		PRIx8 ":%02" PRIx8 ":%02" PRIx8 ":%02" PRIx8
 		" -> Serial number: %" PRIu32,
-		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], serial_be);
+		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], serialNo);
 
 	cachedSerial = true;
 
