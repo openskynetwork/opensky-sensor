@@ -8,9 +8,14 @@
 
 namespace OpenSky {
 
+/** Call this function prior to any other function. It can be called during
+ * the initialization phase of your application.
+ * \note Do not call this more than once.
+ */
 void init();
 
 /** Set or change configuration of the OpenSky feeder.
+ * \note Not needed, if the default configuration is to be used.
  */
 void configure();
 
