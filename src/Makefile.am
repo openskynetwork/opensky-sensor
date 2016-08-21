@@ -23,11 +23,7 @@ openskyd_sources = main.c \
 	component.h component.c threads.h \
 	log.h log_stdio.c \
 	gps.h gps.c \
-	statistics.h tb.h recv.h fpga.h
-
-# common sources of radarcape input
-radarcape_sources = $(openskyd_sources) \
-	radarcape/rc-input.h radarcape/input.c
+	watchdog.h statistics.h tb.h recv.h fpga.h
 
 # feature sources
 feature_sources =
@@ -38,7 +34,7 @@ if FPGA_COMP
 feature_sources += fpga.c
 endif
 if WATCHDOG_COMP
-feature_sources += wd.c
+feature_sources += watchdog.c
 endif
 if GPIO_COMP
 feature_sources += gpio.h gpio.c
@@ -47,9 +43,13 @@ if STATISTICS_COMP
 feature_sources += statistics.c
 endif
 
+# common sources of radarcape input
+radarcape_sources = $(openskyd_sources) $(feature_sources) \
+	radarcape/rc-input.h radarcape/input.c
+
 EXTRA_sources = tb.c recv.c proc.h proc.c \
 	fpga.c \
-	wd.c \
+	watchdog.c \
 	gpio.h gpio.c \
 	statistics.c
 
