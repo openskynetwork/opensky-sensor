@@ -7,7 +7,7 @@
 #include <cstring>
 #include <check.h>
 #include <buffer.h>
-#include <adsb.h>
+#include <openskytypes.h>
 #include <unistd.h>
 #include <component.h>
 #include <endian.h>
@@ -28,15 +28,15 @@ static void teardown()
 	OpenSky::disable();
 }
 
-static const struct ADSB_DecodedFrame frame = {
-	/*.frameType =*/ ADSB_FRAME_TYPE_MODE_S_LONG,
+static const struct OPENSKY_DecodedFrame frame = {
+	/*.frameType =*/ OPENSKY_FRAME_TYPE_MODE_S_LONG,
 	/*.mlat =*/ 123456789012345,
 	/*.siglevel =*/ 100,
 	/*.payloadLen =*/ 14,
 	/*.payload =*/ { 0x8a }
 };
 
-static void fillFrame(struct ADSB_DecodedFrame * copy)
+static void fillFrame(struct OPENSKY_DecodedFrame * copy)
 {
 	memcpy(copy, &frame, sizeof frame);
 }
@@ -46,7 +46,7 @@ static void syncFrame()
 	OpenSky::setGpsTimeStatus(UsingGpsTime);
 }
 
-static void sendFrame(const struct ADSB_DecodedFrame * frame)
+static void sendFrame(const struct OPENSKY_DecodedFrame * frame)
 {
 	uint8_t msg[21];
 	uint64_t mlat = htobe64(frame->mlat) >> 16;
@@ -74,8 +74,8 @@ static void unraw(uint8_t * buf, size_t len, const uint8_t ** raw,
 	}
 }
 
-static void checkRaw(const struct ADSB_RawFrame * raw,
-	const struct ADSB_DecodedFrame * frame)
+static void checkRaw(const struct OPENSKY_RawFrame * raw,
+	const struct OPENSKY_DecodedFrame * frame)
 {
 	/* must be at least the header */
 	ck_assert_uint_ge(raw->raw_len, 9);
@@ -84,9 +84,9 @@ static void checkRaw(const struct ADSB_RawFrame * raw,
 	ck_assert_uint_eq(raw->raw[0], '\x1a');
 
 	/* frame type */
-	enum ADSB_FRAME_TYPE frameType = (enum ADSB_FRAME_TYPE)(raw->raw[1] - '1');
-	ck_assert_uint_ge(frameType, ADSB_FRAME_TYPE_MODE_AC);
-	ck_assert_uint_le(frameType, ADSB_FRAME_TYPE_STATUS);
+	enum OPENSKY_FRAME_TYPE frameType = (enum OPENSKY_FRAME_TYPE)(raw->raw[1] - '1');
+	ck_assert_uint_ge(frameType, OPENSKY_FRAME_TYPE_MODE_AC);
+	ck_assert_uint_le(frameType, OPENSKY_FRAME_TYPE_STATUS);
 
 	const uint8_t * rawptr = &raw->raw[2];
 	size_t rawLen = raw->raw_len - 2;
@@ -133,7 +133,7 @@ START_TEST(test_frame)
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_ne(r, NULL);
 	checkRaw(r, &frame);
 }
@@ -143,14 +143,14 @@ START_TEST(test_frame_siglevel)
 {
 	syncFrame();
 
-	struct ADSB_DecodedFrame frame;
+	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
 	frame.siglevel = '\x1a';
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_ne(r, NULL);
 	checkRaw(r, &frame);
 }
@@ -160,7 +160,7 @@ START_TEST(test_frame_mlat_begin)
 {
 	syncFrame();
 
-	struct ADSB_DecodedFrame frame;
+	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
 	const uint8_t mlat[] = { '1', 'x', 3, 2, 4, '\x1a' };
@@ -168,7 +168,7 @@ START_TEST(test_frame_mlat_begin)
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_ne(r, NULL);
 	checkRaw(r, &frame);
 }
@@ -178,7 +178,7 @@ START_TEST(test_frame_mlat_begin2)
 {
 	syncFrame();
 
-	struct ADSB_DecodedFrame frame;
+	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
 	const uint8_t mlat[] = { '1', 'x', 3, 2, '\x1a', '\x1a' };
@@ -186,7 +186,7 @@ START_TEST(test_frame_mlat_begin2)
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_ne(r, NULL);
 	checkRaw(r, &frame);
 }
@@ -196,7 +196,7 @@ START_TEST(test_frame_mlat_middle)
 {
 	syncFrame();
 
-	struct ADSB_DecodedFrame frame;
+	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
 	const uint8_t mlat[] = { '1', 'x', 3, '\x1a', 1, 2 };
@@ -204,7 +204,7 @@ START_TEST(test_frame_mlat_middle)
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_ne(r, NULL);
 	checkRaw(r, &frame);
 }
@@ -214,7 +214,7 @@ START_TEST(test_frame_mlat_middle3)
 {
 	syncFrame();
 
-	struct ADSB_DecodedFrame frame;
+	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
 	const uint8_t mlat[] = { 'x', '\x1a', '\x1a', '\x1a', 3, 0 };
@@ -222,7 +222,7 @@ START_TEST(test_frame_mlat_middle3)
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_ne(r, NULL);
 	checkRaw(r, &frame);
 }
@@ -232,7 +232,7 @@ START_TEST(test_frame_mlat_end)
 {
 	syncFrame();
 
-	struct ADSB_DecodedFrame frame;
+	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
 	const uint8_t mlat[] = { '\x1a', 'x', 3, 0, 2, 1 };
@@ -240,7 +240,7 @@ START_TEST(test_frame_mlat_end)
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_ne(r, NULL);
 	checkRaw(r, &frame);
 }
@@ -250,7 +250,7 @@ START_TEST(test_frame_mlat_end2)
 {
 	syncFrame();
 
-	struct ADSB_DecodedFrame frame;
+	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
 	const uint8_t mlat[] = { '\x1a', '\x1a', 'x', 3, 0, 2 };
@@ -258,7 +258,7 @@ START_TEST(test_frame_mlat_end2)
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_ne(r, NULL);
 	checkRaw(r, &frame);
 }
@@ -268,7 +268,7 @@ START_TEST(test_frame_mlat_begin_middle_end)
 {
 	syncFrame();
 
-	struct ADSB_DecodedFrame frame;
+	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
 	const uint8_t mlat[] = { '\x1a', 'x', '\x1a', 1, 0, '\x1a' };
@@ -276,7 +276,7 @@ START_TEST(test_frame_mlat_begin_middle_end)
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_ne(r, NULL);
 	checkRaw(r, &frame);
 }
@@ -286,14 +286,14 @@ START_TEST(test_frame_payload)
 {
 	syncFrame();
 
-	struct ADSB_DecodedFrame frame;
+	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
 	frame.payload[_i] = '\x1a';
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_ne(r, NULL);
 	checkRaw(r, &frame);
 }
@@ -303,7 +303,7 @@ START_TEST(test_filter_unsync)
 {
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_eq(r, NULL);
 
 	/* TODO: check statistics */
@@ -314,14 +314,14 @@ START_TEST(test_filter_nosquitter)
 {
 	syncFrame();
 
-	struct ADSB_DecodedFrame frame;
+	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
 	frame.payload[0] = 3;
 
 	sendFrame(&frame);
 
-	const struct ADSB_RawFrame * r = BUF_getFrameTimeout(0);
+	const struct OPENSKY_RawFrame * r = BUF_getFrameTimeout(0);
 	ck_assert_ptr_eq(r, NULL);
 
 	/* TODO: check statistics */

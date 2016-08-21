@@ -4,7 +4,7 @@
 #include <config.h>
 #endif
 #include <check.h>
-#include <adsb.h>
+#include <openskytypes.h>
 #include <input_perf.h>
 #include <statistics.h>
 #include <cfgfile.h>
@@ -15,21 +15,21 @@ struct CFG_Config CFG_config;
 
 int main()
 {
-	struct ADSB_RawFrame raw;
-	struct ADSB_DecodedFrame decoded;
+	struct OPENSKY_RawFrame raw;
+	struct OPENSKY_DecodedFrame decoded;
 	uint8_t buf[46];
-	size_t len = INPUT_buildFrame(buf, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
+	size_t len = INPUT_buildFrame(buf, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
 		-10, "abcdefghijklmn", 14);
 	INPUT_setBuffer(buf, len);
 
-	ADSB_init(NULL);
-	ADSB_connect();
+	INPUT_init(NULL);
+	INPUT_connect();
 
 	struct timespec start, end;
 	clock_gettime(CLOCK_REALTIME, &start);
 	size_t i;
 	for (i = 0; i < 10000000; ++i) {
-		ADSB_getFrame(&raw, &decoded);
+		OPENSKY_getFrame(&raw, &decoded);
 	}
 	clock_gettime(CLOCK_REALTIME, &end);
 

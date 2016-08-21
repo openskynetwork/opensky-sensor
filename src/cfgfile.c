@@ -14,7 +14,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <inttypes.h>
-#include <adsb.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>

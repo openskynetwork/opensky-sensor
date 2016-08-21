@@ -4,7 +4,7 @@
 #include <config.h>
 #endif
 #include <check.h>
-#include <adsb.h>
+#include <openskytypes.h>
 #include <recv.h>
 #include <buffer.h>
 #include <input_test.h>
@@ -42,7 +42,7 @@ START_TEST(test_recv_frame)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
+	size_t len = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
 		"abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
@@ -52,11 +52,11 @@ START_TEST(test_recv_frame)
 	COMP_initAll();
 	COMP_startAll();
 
-	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
+	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_ne(frame, NULL);
 	ck_assert_uint_eq(frame->raw_len, len);
 	ck_assert(!memcmp(frame->raw, frm, len));
-	ck_assert_uint_eq(STAT_stats.RECV_frameType[ADSB_FRAME_TYPE_MODE_S_LONG],
+	ck_assert_uint_eq(STAT_stats.RECV_frameType[OPENSKY_FRAME_TYPE_MODE_S_LONG],
 		1);
 	ck_assert_uint_eq(STAT_stats.RECV_modeSType[('a' >> 3) & 0x1f], 1);
 	ck_assert_uint_eq(STAT_stats.RECV_framesUnsynchronized, 1);
@@ -72,7 +72,7 @@ START_TEST(test_filter_unsynchronized)
 
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
+	size_t len = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
 		"abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
@@ -82,7 +82,7 @@ START_TEST(test_filter_unsynchronized)
 	COMP_initAll();
 	COMP_startAll();
 
-	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
+	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_eq(frame, NULL);
 	ck_assert_uint_eq(STAT_stats.RECV_framesUnsynchronized, 1);
 
@@ -97,10 +97,10 @@ START_TEST(test_filter_synchronized)
 
 	uint8_t frm[46], frm2[46];
 	struct TEST_Buffer buf[2] = { { .payload = frm }, { .payload = frm2  } };
-	size_t len1 = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_STATUS, 0x123456, 0,
+	size_t len1 = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_STATUS, 0x123456, 0,
 		"abcdefghijklmn", 14);
 	buf[0].length = len1;
-	size_t len2 = INPUT_buildFrame(frm2, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
+	size_t len2 = INPUT_buildFrame(frm2, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
 		0, "abcdefghijklmn", 14);
 	buf[1].length = len2;
 	test.buffers = buf;
@@ -110,7 +110,7 @@ START_TEST(test_filter_synchronized)
 	COMP_initAll();
 	COMP_startAll();
 
-	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
+	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_ne(frame, NULL);
 	ck_assert_uint_eq(frame->raw_len, len2);
 	ck_assert(!memcmp(frame->raw, frm2, len2));
@@ -125,7 +125,7 @@ START_TEST(test_filter_modeac)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_AC, 0xdeadbe, 0,
+	size_t len = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, 0xdeadbe, 0,
 		"ab", 2);
 	buf.length = len;
 	test.buffers = &buf;
@@ -135,7 +135,7 @@ START_TEST(test_filter_modeac)
 	COMP_initAll();
 	COMP_startAll();
 
-	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
+	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_eq(frame, NULL);
 	ck_assert_uint_eq(STAT_stats.RECV_framesFiltered, 1);
 
@@ -150,7 +150,7 @@ START_TEST(test_filter_type)
 
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
+	size_t len = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
 		"abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
@@ -160,7 +160,7 @@ START_TEST(test_filter_type)
 	COMP_initAll();
 	COMP_startAll();
 
-	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
+	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_eq(frame, NULL);
 	ck_assert_uint_eq(STAT_stats.RECV_framesFiltered, 1);
 	ck_assert_uint_eq(STAT_stats.RECV_modeSFiltered, 1);
@@ -178,7 +178,7 @@ START_TEST(test_filter_extsquitter)
 	struct TEST_Buffer buf = { .payload = frm };
 	char payload[14] = "abcdefghijklmn";
 	payload[0] = _i << 3;
-	size_t len = INPUT_buildFrame(frm, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
+	size_t len = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
 		payload, 14);
 	buf.length = len;
 	test.buffers = &buf;
@@ -188,7 +188,7 @@ START_TEST(test_filter_extsquitter)
 	COMP_initAll();
 	COMP_startAll();
 
-	const struct ADSB_RawFrame * frame = BUF_getFrameTimeout(250);
+	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_ne(frame, NULL);
 
 	ck_assert_uint_eq(STAT_stats.RECV_modeSType[_i], 1);

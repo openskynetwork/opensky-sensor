@@ -1,9 +1,10 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
 #ifndef _HAVE_MESSAGE_H
+
 #define _HAVE_MESSAGE_H
 
-#include <adsb.h>
+#include <openskytypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,7 +26,7 @@ struct MSG_Message {
 	enum MSG_TYPE type;
 
 	union {
-		struct ADSB_RawFrame adsb;
+		struct OPENSKY_RawFrame adsb;
 
 	};
 };

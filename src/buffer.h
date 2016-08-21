@@ -5,8 +5,8 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <adsb.h>
 #include <component.h>
+#include <openskytypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,14 +20,14 @@ void BUF_runGC();
 
 void BUF_fillStatistics();
 
-struct ADSB_RawFrame * BUF_newFrame();
-void BUF_commitFrame(struct ADSB_RawFrame * frame);
-void BUF_abortFrame(struct ADSB_RawFrame * frame);
+struct OPENSKY_RawFrame * BUF_newFrame();
+void BUF_commitFrame(struct OPENSKY_RawFrame * frame);
+void BUF_abortFrame(struct OPENSKY_RawFrame * frame);
 
-const struct ADSB_RawFrame * BUF_getFrame();
-const struct ADSB_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms);
-void BUF_releaseFrame(const struct ADSB_RawFrame * frame);
-void BUF_putFrame(const struct ADSB_RawFrame * frame);
+const struct OPENSKY_RawFrame * BUF_getFrame();
+const struct OPENSKY_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms);
+void BUF_releaseFrame(const struct OPENSKY_RawFrame * frame);
+void BUF_putFrame(const struct OPENSKY_RawFrame * frame);
 
 #ifdef __cplusplus
 }

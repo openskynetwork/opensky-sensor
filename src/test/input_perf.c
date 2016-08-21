@@ -76,8 +76,8 @@ static inline void encode(uint8_t ** buf, const uint8_t * src, size_t len)
 		append(buf, *src++);
 }
 
-size_t INPUT_buildFrame(uint8_t * buf, enum ADSB_FRAME_TYPE type, uint64_t mlat,
-	int8_t siglevel, const char * payload, size_t payloadLen)
+size_t INPUT_buildFrame(uint8_t * buf, enum OPENSKY_FRAME_TYPE type,
+	uint64_t mlat, int8_t siglevel, const char * payload, size_t payloadLen)
 {
 	buf[0] = '\x1a';
 	buf[1] = type + '1';

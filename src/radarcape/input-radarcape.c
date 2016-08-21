@@ -12,7 +12,7 @@
 #include <endian.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include <adsb.h>
+#include "radarcape.h"
 #include <statistics.h>
 #include <unistd.h>
 #include <input.h>

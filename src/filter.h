@@ -4,7 +4,8 @@
 #define _HAVE_FILTER_H
 
 #include <stdbool.h>
-#include <adsb.h>
+
+#include <openskytypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,7 +15,7 @@ void FILTER_init();
 void FILTER_reset();
 void FILTER_reconfigure(bool reset);
 void FILTER_setSynchronized(bool synchronized);
-bool FILTER_filter(enum ADSB_FRAME_TYPE frameType, uint8_t firstByte);
+bool FILTER_filter(enum OPENSKY_FRAME_TYPE frameType, uint8_t firstByte);
 
 #ifdef __cplusplus
 }

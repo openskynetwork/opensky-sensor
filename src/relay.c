@@ -5,7 +5,7 @@
 #endif
 #include <relay.h>
 #include <stdbool.h>
-#include <adsb.h>
+#include <openskytypes.h>
 #include <buffer.h>
 #include <network.h>
 #include <cfgfile.h>
@@ -19,7 +19,7 @@ struct Component RELAY_comp = {
 	.main = &mainloop
 };
 
-static void cleanup(struct ADSB_RawFrame * frame)
+static void cleanup(struct OPENSKY_RawFrame * frame)
 {
 	BUF_putFrame(frame);
 }
@@ -38,7 +38,7 @@ static void mainloop()
 		bool success;
 		do {
 			/* read a frame from the buffer */
-			const struct ADSB_RawFrame * frame =
+			const struct OPENSKY_RawFrame * frame =
 				BUF_getFrameTimeout(CFG_config.net.timeout);
 			if (!frame) {
 				/* timeout */

@@ -28,7 +28,7 @@ struct Pool;
 /** Linked Frame List */
 struct FrameLink {
 	/** Frame */
-	struct ADSB_RawFrame frame;
+	struct OPENSKY_RawFrame frame;
 	/** Next Element */
 	struct FrameLink * next;
 	/** Previous Element */
@@ -265,7 +265,7 @@ static inline struct FrameLink * getFrameFromPool()
 /** Get a frame from the unused frame pool for the producer in order to fill it.
  * \return new frame
  */
-struct ADSB_RawFrame * BUF_newFrame()
+struct OPENSKY_RawFrame * BUF_newFrame()
 {
 	assert(!newFrame);
 	pthread_mutex_lock(&mutex);
@@ -278,7 +278,7 @@ struct ADSB_RawFrame * BUF_newFrame()
 /** Commit a produced frame to the consumer queue.
  * \param frame filled frame to be delivered to the consumer
  */
-void BUF_commitFrame(struct ADSB_RawFrame * frame)
+void BUF_commitFrame(struct OPENSKY_RawFrame * frame)
 {
 	assert(frame);
 	assert(&newFrame->frame == frame);
@@ -297,7 +297,7 @@ void BUF_commitFrame(struct ADSB_RawFrame * frame)
 /** Abort producing a frame and return it to the pool.
  * \param frame aborted frame
  */
-void BUF_abortFrame(struct ADSB_RawFrame * frame)
+void BUF_abortFrame(struct OPENSKY_RawFrame * frame)
 {
 	assert(frame);
 	assert(&newFrame->frame == frame);
@@ -317,7 +317,7 @@ static void cleanup(void * dummy)
 /** Get a frame from the queue.
  * \return frame
  */
-const struct ADSB_RawFrame * BUF_getFrame()
+const struct OPENSKY_RawFrame * BUF_getFrame()
 {
 	assert(!currentFrame);
 	CLEANUP_PUSH(&cleanup, NULL);
@@ -336,10 +336,10 @@ const struct ADSB_RawFrame * BUF_getFrame()
  * \param timeout_ms timeout in milliseconds
  * \return frame or NULL on timeout
  */
-const struct ADSB_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms)
+const struct OPENSKY_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms)
 {
 	struct timespec ts;
-	struct ADSB_RawFrame * ret;
+	struct OPENSKY_RawFrame * ret;
 
 	clock_gettime(CLOCK_REALTIME, &ts);
 	ts.tv_sec += timeout_ms / 1000;
@@ -378,7 +378,7 @@ const struct ADSB_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms)
  * \param frame frame to be put, must be the last one returned by one of
  *  BUF_getFrame() or BUF_getFrameTimeout()
  */
-void BUF_releaseFrame(const struct ADSB_RawFrame * frame)
+void BUF_releaseFrame(const struct OPENSKY_RawFrame * frame)
 {
 	assert(frame);
 	assert(frame == &currentFrame->frame);
@@ -396,7 +396,7 @@ void BUF_releaseFrame(const struct ADSB_RawFrame * frame)
  * \param frame frame to be put, must be the last one returned by one of
  *  BUF_getFrame() or BUF_getFrameTimeout()
  */
-void BUF_putFrame(const struct ADSB_RawFrame * frame)
+void BUF_putFrame(const struct OPENSKY_RawFrame * frame)
 {
 	assert(frame);
 	assert(frame == &currentFrame->frame);

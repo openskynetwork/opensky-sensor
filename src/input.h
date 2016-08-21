@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <openskytypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,8 +15,9 @@ extern "C" {
 void INPUT_init();
 void INPUT_destruct();
 void INPUT_connect();
-size_t INPUT_read(uint8_t * buf, size_t bufLen);
-size_t INPUT_write(uint8_t * buf, size_t bufLen);
+void INPUT_reconfigure();
+bool INPUT_getFrame(struct OPENSKY_RawFrame * raw,
+	struct OPENSKY_DecodedFrame * decoded);
 
 #ifdef __cplusplus
 }

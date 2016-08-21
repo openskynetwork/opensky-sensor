@@ -298,10 +298,10 @@ ssize_t NET_receive(uint8_t * buf, size_t len)
 	return 0;
 }
 
-/** Send an ADSB frame to the server.
+/** Send a raw frame to the server.
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
  */
-bool NET_sendFrame(const struct ADSB_RawFrame * frame)
+bool NET_sendFrame(const struct OPENSKY_RawFrame * frame)
 {
 	return trySendLocked(frame->raw, frame->raw_len);
 }

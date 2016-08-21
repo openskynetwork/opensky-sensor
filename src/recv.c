@@ -5,7 +5,7 @@
 #endif
 #include <recv.h>
 #include <message.h>
-#include <adsb.h>
+#include <openskytypes.h>
 #include <buffer.h>
 #include <threads.h>
 #include <util.h>
@@ -24,7 +24,7 @@ struct Component RECV_comp = {
 
 static bool construct()
 {
-	ADSB_init();
+	INPUT_init();
 
 	FILTER_init();
 
@@ -33,10 +33,10 @@ static bool construct()
 
 static void destruct()
 {
-	ADSB_destruct();
+	INPUT_destruct();
 }
 
-static void cleanup(struct ADSB_RawFrame ** frame)
+static void cleanup(struct OPENSKY_RawFrame ** frame)
 {
 	if (*frame)
 		BUF_abortFrame(*frame);
@@ -44,20 +44,20 @@ static void cleanup(struct ADSB_RawFrame ** frame)
 
 static void mainloop()
 {
-	struct ADSB_RawFrame * frame = NULL;
-	struct ADSB_DecodedFrame decoded;
+	struct OPENSKY_RawFrame * frame = NULL;
+	struct OPENSKY_DecodedFrame decoded;
 
 	CLEANUP_PUSH(&cleanup, &frame);
 	while (true) {
-		ADSB_connect();
+		INPUT_connect();
 
 		FILTER_reset();
 
 		frame = BUF_newFrame();
 		while (true) {
-			bool success = ADSB_getFrame(frame, &decoded);
+			bool success = INPUT_getFrame(frame, &decoded);
 			if (likely(success)) {
-				if (decoded.frameType == ADSB_FRAME_TYPE_STATUS &&
+				if (decoded.frameType == OPENSKY_FRAME_TYPE_STATUS &&
 					decoded.mlat != 0)
 					FILTER_setSynchronized(true);
 

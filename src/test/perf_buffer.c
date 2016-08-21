@@ -4,7 +4,7 @@
 #include <config.h>
 #endif
 #include <check.h>
-#include <adsb.h>
+#include <openskytypes.h>
 #include <buffer.h>
 #include <recv.h>
 #include <input_perf.h>
@@ -18,7 +18,7 @@ struct CFG_Config CFG_config;
 int main()
 {
 	uint8_t buf[46];
-	size_t len = INPUT_buildFrame(buf, ADSB_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
+	size_t len = INPUT_buildFrame(buf, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
 		-10, "abcdefghijklmn", 14);
 	INPUT_setBuffer(buf, len);
 

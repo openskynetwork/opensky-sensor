@@ -5,8 +5,8 @@
 #include <unistd.h>
 #include <endian.h>
 #include <stdint.h>
-#include <adsb.h>
 #include <cfgfile.h>
+#include "../openskytypes.h"
 
 extern "C" {
 

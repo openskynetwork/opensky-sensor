@@ -4,7 +4,7 @@
 #include <statistics.h>
 #include <cfgfile.h>
 #include <util.h>
-#include <adsb.h>
+#include <input.h>
 
 enum MODES_TYPE {
 	MODES_TYPE_NONE = 0,
@@ -42,7 +42,7 @@ void FILTER_reconfigure(bool reset)
 	syncFilter = CFG_config.recv.syncFilter;
 	modeSFilter = CFG_config.recv.modeSLongExtSquitter ?
 		MODES_TYPE_EXTENDED_SQUITTER_ALL : MODES_TYPE_ALL;
-	ADSB_reconfigure();
+	INPUT_reconfigure();
 	if (reset)
 		isSynchronized = false;
 }
@@ -52,7 +52,7 @@ void FILTER_setSynchronized(bool synchronized)
 	isSynchronized = synchronized;
 }
 
-bool FILTER_filter(enum ADSB_FRAME_TYPE frameType, uint8_t firstByte)
+bool FILTER_filter(enum OPENSKY_FRAME_TYPE frameType, uint8_t firstByte)
 {
 	++STAT_stats.RECV_frameType[frameType];
 
@@ -65,8 +65,8 @@ bool FILTER_filter(enum ADSB_FRAME_TYPE frameType, uint8_t firstByte)
 	}
 
 	/* apply filter */
-	if (frameType != ADSB_FRAME_TYPE_MODE_S_LONG &&
-		frameType != ADSB_FRAME_TYPE_MODE_S_SHORT) {
+	if (frameType != OPENSKY_FRAME_TYPE_MODE_S_LONG &&
+		frameType != OPENSKY_FRAME_TYPE_MODE_S_SHORT) {
 		++STAT_stats.RECV_framesFiltered;
 		return false;
 	}
