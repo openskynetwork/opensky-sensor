@@ -17,7 +17,7 @@ endif
 # common sources of opensky sensor
 openskyd_sources = main.c \
 	relay.h relay.c filter.h filter.c message.h message.c buffer.h buffer.c \
-	network.h network.c \
+	network.h network.c endec.h \
 	cfgfile.h cfgfile.c \
 	net_common.h net_common.c util.h util.c \
 	component.h component.c threads.h \

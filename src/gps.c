@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <threads.h>
 #include <inttypes.h>
-#include <gps_parser.h>
+#include <endec.h>
 #include <network.h>
 #include <stdio.h>
 
@@ -26,14 +26,10 @@ void GPS_setPosition(double latitude, double longitude, double altitude)
 {
 	pthread_mutex_lock(&posMutex);
 
-	GPS_fromdouble(latitude, (uint8_t*)&position.latitude);
-	GPS_fromdouble(longitude, (uint8_t*)&position.longitute);
-	GPS_fromdouble(altitude, (uint8_t*)&position.altitude);
+	ENDEC_fromdouble(latitude, (uint8_t*)&position.latitude);
+	ENDEC_fromdouble(longitude, (uint8_t*)&position.longitute);
+	ENDEC_fromdouble(altitude, (uint8_t*)&position.altitude);
 
-	/*if (!hasPosition) {
-		NOC_printf("GPS: Got LLA: %+6.2f %+6.2f %+6.2f\n", latitude, longitude,
-			altitude);
-	}*/
 	hasPosition = true;
 
 	if (needPosition) {
