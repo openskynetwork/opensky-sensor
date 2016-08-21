@@ -4,6 +4,7 @@
 #include <config.h>
 #endif
 #include <recv.h>
+#include <input.h>
 #include <message.h>
 #include <openskytypes.h>
 #include <buffer.h>
