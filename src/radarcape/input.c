@@ -12,15 +12,15 @@
 #include <endian.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include "radarcape.h"
+#include <radarcape/rc-input.h>
+#include <openskytypes.h>
 #include <statistics.h>
 #include <unistd.h>
-#include <input.h>
 #include <cfgfile.h>
 #include <threads.h>
 #include <util.h>
 
-static const char PFX[] = "ADSB";
+static const char PFX[] = "RC";
 
 /** receive buffer */
 static uint8_t buf[128];
@@ -29,50 +29,50 @@ static uint8_t * bufCur;
 /** buffer end */
 static uint8_t * bufEnd;
 
-/** ADSB Options */
-enum ADSB_OPTION {
+/** Radarcape Options */
+enum RADARCAPE_OPTION {
 	/** Output Format: AVR */
-	ADSB_OPTION_OUTPUT_FORMAT_AVR = 'c',
+	RADARCAPE_OPTION_OUTPUT_FORMAT_AVR = 'c',
 	/** Output Format: Binary */
-	ADSB_OPTION_OUTPUT_FORMAT_BIN = 'C',
+	RADARCAPE_OPTION_OUTPUT_FORMAT_BIN = 'C',
 
 	/** Filter: output DF-11/17/18 frames only */
-	ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY = 'D',
+	RADARCAPE_OPTION_FRAME_FILTER_DF_11_17_18_ONLY = 'D',
 	/** Filter: output all frames */
-	ADSB_OPTION_FRAME_FILTER_ALL = 'd',
+	RADARCAPE_OPTION_FRAME_FILTER_ALL = 'd',
 
 	/** MLAT Information: include MLAT when using AVR Output format */
-	ADSB_OPTION_AVR_FORMAT_MLAT = 'E',
+	RADARCAPE_OPTION_AVR_FORMAT_MLAT = 'E',
 	/** MLAT Information: don't include MLAT when using AVR Output format */
-	ADSB_OPTION_AVR_FORMAT_NO_MLAT = 'e',
+	RADARCAPE_OPTION_AVR_FORMAT_NO_MLAT = 'e',
 
 	/** CRC: check DF-11/17/18 frames */
-	ADSB_OPTION_DF_11_17_18_CRC_ENABLED = 'f',
+	RADARCAPE_OPTION_DF_11_17_18_CRC_ENABLED = 'f',
 	/** CRC: don't check DF-11/17/18 frames */
-	ADSB_OPTION_DF_11_17_18_CRC_DISABLED = 'F',
+	RADARCAPE_OPTION_DF_11_17_18_CRC_DISABLED = 'F',
 
 	/** Timestamp Source: GPS */
-	ADSB_OPTION_TIMESTAMP_SOURCE_GPS = 'G',
+	RADARCAPE_OPTION_TIMESTAMP_SOURCE_GPS = 'G',
 	/** Timestamp Source: Legacy 12 MHz Clock */
-	ADSB_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ = 'g',
+	RADARCAPE_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ = 'g',
 
 	/** RTS Handshake: enabled */
-	ADSB_OPTION_RTS_HANDSHAKE_ENABLED = 'H',
+	RADARCAPE_OPTION_RTS_HANDSHAKE_ENABLED = 'H',
 	/** RTS Handshake: disabled */
-	ADSB_OPTION_RTS_HANDSHAKE_DISABLED = 'h',
+	RADARCAPE_OPTION_RTS_HANDSHAKE_DISABLED = 'h',
 
 	/** FEC: enable error correction on DF-11/17/18 frames */
-	ADSB_OPTION_DF_17_18_FEC_ENABLED = 'i',
+	RADARCAPE_OPTION_DF_17_18_FEC_ENABLED = 'i',
 	/** FEC: disable error correction on DF-11/17/18 frames */
-	ADSB_OPTION_DF_17_18_FEC_DISABLED = 'I',
+	RADARCAPE_OPTION_DF_17_18_FEC_DISABLED = 'I',
 
 	/** Mode-AC messages: enable decoding */
-	ADSB_OPTION_MODE_AC_DECODING_ENABLED = 'J',
+	RADARCAPE_OPTION_MODE_AC_DECODING_ENABLED = 'J',
 	/** Mode-AC messages: disable decoding */
-	ADSB_OPTION_MODE_AC_DECODING_DISABLED = 'j',
+	RADARCAPE_OPTION_MODE_AC_DECODING_DISABLED = 'j',
 
-	ADSB_OPTION_Y = 'Y',
-	ADSB_OPTION_R = 'R'
+	RADARCAPE_OPTION_Y = 'Y',
+	RADARCAPE_OPTION_R = 'R'
 };
 
 enum DECODE_STATUS {
@@ -85,18 +85,18 @@ static bool configure();
 static inline bool discardAndFill();
 static inline bool next(uint8_t * ch);
 static inline bool synchronize();
-static inline bool setOption(enum ADSB_OPTION option);
+static inline bool setOption(enum RADARCAPE_OPTION option);
 static inline enum DECODE_STATUS decode(uint8_t * buf, size_t len,
-	struct ADSB_RawFrame * raw);
+	struct OPENSKY_RawFrame * raw);
 
-void ADSB_init()
+void INPUT_init()
 {
-	INPUT_init();
+	RC_INPUT_init();
 }
 
-void ADSB_destruct()
+void INPUT_destruct()
 {
-	INPUT_destruct();
+	RC_INPUT_destruct();
 }
 
 /** Setup ADSB receiver with some options. */
@@ -105,33 +105,33 @@ static bool configure()
 #if !defined(INPUT_LAYER_NETWORK) || defined(CHECK)
 	const struct CFG_RECV * cfg = &CFG_config.recv;
 	/* setup ADSB */
-	return setOption(ADSB_OPTION_OUTPUT_FORMAT_BIN) &&
+	return setOption(RADARCAPE_OPTION_OUTPUT_FORMAT_BIN) &&
 		setOption(cfg->modeSLongExtSquitter ?
-			ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
-			ADSB_OPTION_FRAME_FILTER_ALL) &&
-		setOption(ADSB_OPTION_AVR_FORMAT_MLAT) &&
-		setOption(cfg->crc ? ADSB_OPTION_DF_11_17_18_CRC_ENABLED :
-			ADSB_OPTION_DF_11_17_18_CRC_DISABLED) &&
-		setOption(cfg->gps ? ADSB_OPTION_TIMESTAMP_SOURCE_GPS :
-			ADSB_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ) &&
-		setOption(CFG_config.input.rtscts ? ADSB_OPTION_RTS_HANDSHAKE_ENABLED :
-			ADSB_OPTION_RTS_HANDSHAKE_DISABLED) &&
-		setOption(cfg->fec ? ADSB_OPTION_DF_17_18_FEC_ENABLED :
-			ADSB_OPTION_DF_17_18_FEC_DISABLED) &&
-		setOption(ADSB_OPTION_MODE_AC_DECODING_DISABLED) &&
-		setOption(ADSB_OPTION_Y) &&
-		setOption(ADSB_OPTION_R);
+			RADARCAPE_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
+			RADARCAPE_OPTION_FRAME_FILTER_ALL) &&
+		setOption(RADARCAPE_OPTION_AVR_FORMAT_MLAT) &&
+		setOption(cfg->crc ? RADARCAPE_OPTION_DF_11_17_18_CRC_ENABLED :
+			RADARCAPE_OPTION_DF_11_17_18_CRC_DISABLED) &&
+		setOption(cfg->gps ? RADARCAPE_OPTION_TIMESTAMP_SOURCE_GPS :
+			RADARCAPE_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ) &&
+		setOption(CFG_config.input.rtscts ? RADARCAPE_OPTION_RTS_HANDSHAKE_ENABLED :
+			RADARCAPE_OPTION_RTS_HANDSHAKE_DISABLED) &&
+		setOption(cfg->fec ? RADARCAPE_OPTION_DF_17_18_FEC_ENABLED :
+			RADARCAPE_OPTION_DF_17_18_FEC_DISABLED) &&
+		setOption(RADARCAPE_OPTION_MODE_AC_DECODING_DISABLED) &&
+		setOption(RADARCAPE_OPTION_Y) &&
+		setOption(RADARCAPE_OPTION_R);
 #else
 	return true;
 #endif
 }
 
-void ADSB_reconfigure()
+void INPUT_reconfigure()
 {
-#ifndef INPUT_LAYER_NETWORK
+#ifndef INPUT_RADARCAPE_NETWORK
 	setOption(CFG_config.recv.modeSLongExtSquitter ?
-		ADSB_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
-		ADSB_OPTION_FRAME_FILTER_ALL);
+		RADARCAPE_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
+		RADARCAPE_OPTION_FRAME_FILTER_ALL);
 #endif
 }
 
@@ -139,18 +139,17 @@ void ADSB_reconfigure()
  * \param option option to be set
  */
 __attribute__((unused))
-static inline bool setOption(enum ADSB_OPTION option)
+static inline bool setOption(enum RADARCAPE_OPTION option)
 {
 	uint8_t w[3] = { '\x1a', '1', (uint8_t)option };
-	return INPUT_write(w, sizeof w) == sizeof w;
+	return RC_INPUT_write(w, sizeof w) == sizeof w;
 }
 
-/** ADSB */
-void ADSB_connect()
+void INPUT_connect()
 {
 	while (true) {
 		/* connect with input */
-		INPUT_connect();
+		RC_INPUT_connect();
 
 		/* configure input */
 		if (configure())
@@ -162,8 +161,8 @@ void ADSB_connect()
 	bufEnd = bufCur;
 }
 
-bool ADSB_getFrame(struct ADSB_RawFrame * raw,
-	struct ADSB_DecodedFrame * decoded)
+bool INPUT_getFrame(struct OPENSKY_RawFrame * raw,
+	struct OPENSKY_DecodedFrame * decoded)
 {
 	raw->raw[0] = 0x1a;
 
@@ -247,7 +246,7 @@ decode_frame:
  * \param frame frame to be decoded, used for raw decoding
  */
 static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
-	struct ADSB_RawFrame * raw)
+	struct OPENSKY_RawFrame * raw)
 {
 	/* get current raw ptr */
 	uint8_t * rawPtr = raw->raw + raw->raw_len;
@@ -310,7 +309,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 /** Discard buffer content and fill it again. */
 static inline bool discardAndFill()
 {
-	size_t rc = INPUT_read(buf, sizeof buf);
+	size_t rc = RC_INPUT_read(buf, sizeof buf);
 	if (unlikely(rc == 0)) {
 		return false;
 	} else {

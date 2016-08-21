@@ -3,7 +3,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <input.h>
+#include <radarcape/rc-input.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -25,12 +25,12 @@ static struct pollfd fds;
 static bool doConnect();
 static void closeUart();
 
-void INPUT_init()
+void RC_INPUT_init()
 {
 	fd = -1;
 }
 
-void INPUT_destruct()
+void RC_INPUT_destruct()
 {
 	closeUart();
 }
@@ -43,7 +43,7 @@ static void closeUart()
 	}
 }
 
-void INPUT_connect()
+void RC_INPUT_connect()
 {
 	while (!doConnect())
 		sleep(CFG_config.input.reconnectInterval);
@@ -94,7 +94,7 @@ static bool doConnect()
 	return true;
 }
 
-size_t INPUT_read(uint8_t * buf, size_t bufLen)
+size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	while (true) {
 		ssize_t rc = read(fd, buf, bufLen);
@@ -114,7 +114,7 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 	}
 }
 
-size_t INPUT_write(uint8_t * buf, size_t bufLen)
+size_t RC_INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = write(fd, buf, bufLen);
 	if (unlikely(rc <= 0))

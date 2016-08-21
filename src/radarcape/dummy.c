@@ -3,7 +3,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <input.h>
+#include <radarcape/rc-input.h>
 #include <sys/types.h>
 #include <time.h>
 #include <string.h>
@@ -11,20 +11,21 @@
 #include <math.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <stdbool.h>
 
 static bool first;
 static uint_fast32_t x, x2;
 
-void INPUT_init()
+void RC_INPUT_init()
 {
 	srandom(time(NULL));
 	first = true;
 	x = x2 = 0;
 }
 
-void INPUT_destruct() {}
+void RC_INPUT_destruct() {}
 
-void INPUT_connect() {}
+void RC_INPUT_connect() {}
 
 static void inline append(uint8_t ** buf, uint8_t c)
 {
@@ -48,7 +49,7 @@ static double s2(double x)
 	return s(s(s(s(x))) * 2.);
 }
 
-size_t INPUT_read(uint8_t * buf, size_t bufLen)
+size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	uint8_t mbuf[46] = { 0x1a };
 
@@ -85,7 +86,7 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 	return l;
 }
 
-size_t INPUT_write(uint8_t * buf, size_t bufLen)
+size_t RC_INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	return bufLen;
 }

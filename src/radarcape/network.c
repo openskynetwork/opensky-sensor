@@ -3,7 +3,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <input.h>
+#include <radarcape/rc-input.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -23,12 +23,12 @@ static int sock;
 static bool doConnect();
 static void closeConn();
 
-void INPUT_init()
+void RC_INPUT_init()
 {
 	sock = -1;
 }
 
-void INPUT_destruct()
+void RC_INPUT_destruct()
 {
 	closeConn();
 }
@@ -42,7 +42,7 @@ static void closeConn()
 	}
 }
 
-void INPUT_connect()
+void RC_INPUT_connect()
 {
 	while (!doConnect())
 		sleep(CFG_config.input.reconnectInterval);
@@ -56,7 +56,7 @@ static bool doConnect()
 	return sock != -1;
 }
 
-size_t INPUT_read(uint8_t * buf, size_t bufLen)
+size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = recv(sock, buf, bufLen, 0);
 	if (unlikely(rc < 0)) {
@@ -68,7 +68,7 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 	}
 }
 
-size_t INPUT_write(uint8_t * buf, size_t bufLen)
+size_t RC_INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = send(sock, buf, bufLen, MSG_NOSIGNAL);
 	if (unlikely(rc <= 0)) {

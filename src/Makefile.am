@@ -27,7 +27,7 @@ openskyd_sources = main.c \
 
 # common sources of radarcape input
 radarcape_sources = $(openskyd_sources) \
-	radarcape.h radarcape.c rc-input.h
+	radarcape/rc-input.h radarcape/input.c
 
 # feature sources
 feature_sources =
@@ -54,9 +54,9 @@ EXTRA_sources = tb.c recv.c proc.h proc.c \
 	statistics.c
 
 # sources for binaries
-openskyd_rc_uart_SOURCES = $(radarcape_sources) rc-input-uart.c
-openskyd_rc_net_SOURCES = $(radarcape_sources) rc-input-network.c
-openskyd_rc_dummy_SOURCES = $(radarcape_sources) rc-input-dummy.c
+openskyd_rc_uart_SOURCES = $(radarcape_sources) radarcape/uart.c
+openskyd_rc_net_SOURCES = $(radarcape_sources) radarcape/network.c
+openskyd_rc_dummy_SOURCES = $(radarcape_sources) radarcape/dummy.c
 
 wd_SOURCES = wd-main.c \
 	gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \

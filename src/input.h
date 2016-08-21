@@ -4,7 +4,6 @@
 #define _HAVE_INPUT_H
 
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdint.h>
 #include <openskytypes.h>
 
