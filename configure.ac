@@ -61,7 +61,8 @@ AC_CHECK_FUNCS([strerror strncasecmp strtoul])
 AX_PTHREAD
 
 AC_ARG_WITH([check],
-  [AS_HELP_STRING([--with-check], [Add test cases using libcheck @<:@check@:>@])],
+  [AS_HELP_STRING([--with-check],
+    [Add test cases using libcheck @<:@check@:>@])],
   [:],[with_check=check])
 AS_IF([test x"$with_check" != x"no"],
   [PKG_CHECK_MODULES([CHECK], [check >= 0.9.6],
@@ -71,90 +72,130 @@ AS_IF([test x"$with_check" != x"no"],
       [with_check=no])])])
 AM_CONDITIONAL([WITH_CHECK], [test x$with_check = xyes])
 
-AC_ARG_ENABLE([development],
-  [AS_HELP_STRING([--enable-development], [Use local files @<:@no@:>@])],
-  [case "${enableval}" in
-    yes) development=true ;;
-    no)  development=false ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-development]) ;;
-   esac], [development=false])
-AM_CONDITIONAL([DEVELOPMENT], [test x$development = xtrue])
-
 AC_ARG_ENABLE([test-coverage],
   [AS_HELP_STRING([--enable-test-coverage], [Enable Test Coverage @<:@no@:>@])],
   [case "${enableval}" in
-    yes) test_coverage=true ;;
-    no)  test_coverage=false ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-test-coverage]) ;;
-   esac], [test_coveraget=false])
-AM_CONDITIONAL([TEST_COVERAGE], [test x$test_coverage = xtrue])
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-test-coverage]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([TEST_COVERAGE], [test x$enableval = xyes])
 
-AC_ARG_ENABLE([input],
-  [AS_HELP_STRING([--enable-input],
-    [Select input layer (one of none, uart, network, dummy) @<:@uart@:>@])],
+AC_ARG_ENABLE([cleanup-routines],
+  [AS_HELP_STRING([--enable-cleanup-routines],
+    [Add cleanup routines (disable for valgrind maybe) @<:@yes@:>@])],
   [case "${enableval}" in
-    none) input=; daemon=false;;
-    uart|network|dummy) input=$enableval; daemon=true;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-input]) ;;
-   esac], [input=uart;daemon=true])
-INPUT_LAYER=$input
-AC_SUBST([INPUT_LAYER])
-DEF_INPUT_LAYER=INPUT_LAYER_`echo $INPUT_LAYER | tr '[[:lower:]]' '[[:upper:]]'`
-AM_CONDITIONAL([WANT_DAEMON], [test x$daemon = xtrue])
-AS_IF([test x$input = xuart], [AC_DEFINE([INPUT_LAYER_UART], [1], [Input Layer: UART])])
-AS_IF([test x$input = xnetwork], [AC_DEFINE([INPUT_LAYER_NETWORK], [1], [Input Layer: Network])])
-AS_IF([test x$input = xdummy], [AC_DEFINE([INPUT_LAYER_DUMMY], [1], [Input Layer: Dummy])])
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-cleanup]) ;;
+   esac], [enableval=yes])
+AS_IF([test x$enableval = xyes],
+  [AC_DEFINE([CLEANUP_ROUTINES], [1], [Add cleanup routines])])
 
-AC_ARG_ENABLE([wd],
-  [AS_HELP_STRING([--enable-wd], [Build Watchdog Daemon @<:@no@:>@])],
+AC_ARG_ENABLE([local-files],
+  [AS_HELP_STRING([--enable-local-files], [Use local files @<:@no@:>@])],
   [case "${enableval}" in
-    yes) wd=true ;;
-    no)  wd=false ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-wd]) ;;
-   esac], [wd=false])
-AM_CONDITIONAL([WANT_WD], [test x$wd = xtrue])
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-local-files]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([LOCAL_FILES], [test x$enableval = xyes])
 
-AC_ARG_ENABLE([examples],
-  [AS_HELP_STRING([--enable-examples], [Build Library Examples @<:@no@:>@])],
+AC_ARG_ENABLE([radarcape-uart],
+  [AS_HELP_STRING([--enable-radarcape-uart],
+    [Build Daemon with radarcape uart input layer @<:@no@:>@])],
   [case "${enableval}" in
-    yes) libexamples=true ;;
-    no)  libexamples=false ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-examples]) ;;
-   esac], [libexamples=false])
-AM_CONDITIONAL([WANT_EXAMPLES], [test x$libexamples = xtrue])
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-uart]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([RADARCAPE_UART], [test x$enableval = xyes])
+
+AC_ARG_ENABLE([radarcape-network],
+  [AS_HELP_STRING([--enable-radarcape-network],
+    [Build Daemon with radarcape network input layer @<:@no@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-network]) ;;
+   esac], [enableval=yes])
+AM_CONDITIONAL([RADARCAPE_NETWORK], [test x$enableval = xyes])
+
+AC_ARG_ENABLE([radarcape-dummy],
+  [AS_HELP_STRING([--enable-radarcape-dummy],
+    [Build Daemon with radarcape dummy input layer @<:@yes@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-dummy]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([RADARCAPE_DUMMY], [test x$enableval = xyes])
+    
+AC_ARG_ENABLE([watchdog-daemon],
+  [AS_HELP_STRING([--enable-watchdog-daemon],
+    [Build Watchdog Daemon @<:@no@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-watchdog-daemon]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([WATCHDOG_DAEMON], [test x$enableval = xyes])
+
+AC_ARG_ENABLE([library],
+  [AS_HELP_STRING([--enable-library], [Build Library @<:@yes@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-library]) ;;
+   esac], [enableval=yes])
+AM_CONDITIONAL([LIBRARY], [test x$enableval = xyes])
+
+AC_ARG_ENABLE([library-examples],
+  [AS_HELP_STRING([--enable-library-examples],
+    [Build Library Examples @<:@no@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-library-examples]) ;;
+   esac], [enableval=false])
+AM_CONDITIONAL([LIBRARY_EXAMPLES], [test x$enableval = xyes])
 
 AC_ARG_ENABLE([talkback],
-  [AS_HELP_STRING([--enable-talkback], [Enable talkback @<:@yes@:>@])],
+  [AS_HELP_STRING([--enable-talkback],
+    [Enable talkback component @<:@yes@:>@])],
   [case "${enableval}" in
-    yes) talkback=true ;;
-    no)  talkback=false ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-talkback]) ;;
-   esac], [talkback=true])
-AM_CONDITIONAL([TALKBACK], [test x$talkback = xtrue])
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-talkback]) ;;
+   esac], [enableval=yes])
+AM_CONDITIONAL([TALKBACK_COMP], [test x$enableval = xyes])
 
-AC_ARG_ENABLE([cleanup],
-  [AS_HELP_STRING([--enable-cleanup], [Add cleanup routines @<:@yes@:>@])],
+AC_ARG_ENABLE([fpga],
+  [AS_HELP_STRING([--enable-fpga],
+    [Enable FPGA component @<:@no@:>@])],
   [case "${enableval}" in
-    yes) cleanup=yes ;;
-    no)  cleanup=no ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-cleanup]) ;;
-   esac], [cleanup=yes])
-AS_IF([test x"$cleanup" = x"yes"],
-  [AC_DEFINE([CLEANUP], [1], [Add cleanup routines])])
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-fpga]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([FPGA_COMP], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes],
+  [AC_DEFINE([FPGA_COMP], [1], [Add fpga component])])
 
-AC_ARG_ENABLE([standalone],
-  [AS_HELP_STRING([--enable-standalone], [Enable standalone features @<:@yes@:>@])],
+AC_ARG_ENABLE([watchdog],
+  [AS_HELP_STRING([--enable-watchdog],
+    [Enable watchdog component @<:@no@:>@])],
   [case "${enableval}" in
-    yes) standalone=true ;;
-    no)  standalone=false ;;
-     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-standalone]) ;;
-   esac], [standalone=true])
-AM_CONDITIONAL([STANDALONE], [test x$standalone = xtrue])
-AS_IF([test x$standalone = xtrue],
-  [AC_DEFINE([STANDALONE], [1], [Add standalone components])])
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-watchdog]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([WATCHDOG_COMP], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes],
+  [AC_DEFINE([WATCHDOG_COMP], [1], [Add watchdog component])])
+
+AC_ARG_ENABLE([statistics],
+  [AS_HELP_STRING([--enable-statistics],
+    [Enable statistics component @<:@yes@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-statistics]) ;;
+   esac], [enableval=yes])
+AM_CONDITIONAL([STATISTICS_COMP], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes],
+  [AC_DEFINE([STATISTICS_COMP], [1], [Add statistics component])])
 
 AC_ARG_WITH([systemd],
-  [AS_HELP_STRING([--with-systemd], [Compile with systemd integration @<:@check@:>@])],
+  [AS_HELP_STRING([--with-systemd],
+    [Compile with systemd integration @<:@check@:>@])],
   [:],[with_systemd=check])
 AS_IF([test x"$with_systemd" != x"no"],
   [PKG_CHECK_MODULES([systemd],
@@ -170,10 +211,12 @@ AS_IF([test x"$with_systemd" = x"yes" -o x"$with_systemd" = x"check"],
   [systemd_PREFIX=$with_systemd])
 AS_IF([test x"$with_systemd" != x"no"],
   [AC_MSG_RESULT($systemd_PREFIX);
-   AC_DEFINE_UNQUOTED([WITH_SYSTEMD], ["$systemd_PREFIX"], [Enable systemd integration])])
+   AC_DEFINE_UNQUOTED([WITH_SYSTEMD], ["$systemd_PREFIX"],
+     [Enable systemd integration])])
 
 AC_ARG_WITH([pacman],
-  [AS_HELP_STRING([--with-pacman], [Compile with pacman integration @<:@check@:>@])],
+  [AS_HELP_STRING([--with-pacman],
+    [Compile with pacman integration @<:@check@:>@])],
   [:],[with_pacman=check])
 AS_IF([test x"$with_pacman" != x"no"],
   [AC_MSG_CHECKING(for pacman);
@@ -184,12 +227,6 @@ AS_IF([test x"$with_pacman" != x"no"],
      [AC_MSG_ERROR([pacman required, but not found.])])])])
 AS_IF([test x"$with_pacman" != x"no"],
   [AC_DEFINE([WITH_PACMAN], [1], [Enable pacman integration])])
-
-AS_IF([test x$development = xtrue],
-  [AC_DEFINE([DEVELOPMENT], [], [Enable development features])])
-
-AS_IF([test x$talkback = xtrue],
-  [AC_DEFINE([TALKBACK], [], [Enable talkback component])])
 
 dnl output directive
 AC_OUTPUT([Makefile src/Makefile src/lib/Makefile src/test/Makefile])

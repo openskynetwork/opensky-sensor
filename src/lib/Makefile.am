@@ -1,10 +1,11 @@
 
-# binary programs
-if WANT_EXAMPLES
+# binary programs and libraries
+if LIBRARY_EXAMPLES
 bin_PROGRAMS = opensky-lib-example opensky-lib-test
 endif
-
+if LIBRARY
 lib_LTLIBRARIES=libopensky.la
+endif
 
 libopensky_la_SOURCES=opensky.hh opensky.cc MessageTypes.h GpsStatus.h \
 	../filter.h ../filter.c ../buffer.h ../buffer.c ../relay.h ../relay.c \

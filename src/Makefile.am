@@ -1,62 +1,94 @@
 
 # binary programs
 bin_PROGRAMS =
-if WANT_DAEMON
-bin_PROGRAMS += openskyd
+if RADARCAPE_UART
+bin_PROGRAMS += openskyd-rc-uart
 endif
-if WANT_WD
+if RADARCAPE_NETWORK
+bin_PROGRAMS += openskyd-rc-net
+endif
+if RADARCAPE_DUMMY
+bin_PROGRAMS += openskyd-rc-dummy
+endif
+if WATCHDOG_DAEMON
 bin_PROGRAMS += wd
 endif
 
-# common sources of openskyd
-openskyd_SOURCES = main.c \
-	adsb.c adsb.h buffer.h buffer.c network.h network.c cfgfile.h cfgfile.c \
-	statistics.h statistics.c tb.h tb.c recv.h recv.c \
-	input.h net_common.h net_common.c util.h util.c \
-	component.h component.c threads.h relay.h relay.c message.h message.c \
-	filter.h filter.c log.h log_stdio.c \
-	gps.h gps.c gps_recv.h gps_recv.c gps_parser.c gps_parser.h gps_input.h
+# common sources of opensky sensor
+openskyd_sources = main.c \
+	relay.h relay.c filter.h filter.c message.h message.c buffer.h buffer.c \
+	network.h network.c \
+	cfgfile.h cfgfile.c \
+	net_common.h net_common.c util.h util.c \
+	component.h component.c threads.h \
+	log.h log_stdio.c \
+	gps.h gps.c \
+	statistics.h tb.h recv.h fpga.h
 
-# input layer
-openskyd_SOURCES += input_@INPUT_LAYER@.c
-openskyd_SOURCES += gps_input_@INPUT_LAYER@.c
+# common sources of radarcape input
+radarcape_sources = $(openskyd_sources) \
+	radarcape.h radarcape.c rc-input.h
 
-EXTRA_DIST = input_uart.c input_network.c input_dummy.c \
-	gps_input_uart.c gps_input_network.c
-
-# watchdog sources
-wd_SOURCES = gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
-	cfgfile.h cfgfile.c util.h util.c wd-main.c log.h log_stdio.c
-
-# sources for standalone
-if STANDALONE
-openskyd_SOURCES += gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c
+# feature sources
+feature_sources =
+if TALKBACK_COMP
+feature_sources += tb.c recv.c proc.h proc.c
+endif
+if FPGA_COMP
+feature_sources += fpga.c gpio.h gpio.c
+endif
+if STATISTICS_COMP
+feature_sources += statistics.c
 endif
 
-# sources for talkback
-if TALKBACK
-openskyd_SOURCES += proc.h proc.c
-endif
+EXTRA_sources = tb.c recv.c proc.h proc.c \
+	fpga.c gpio.h gpio.c \
+	statistics.c
 
-# libs and cflags
-openskyd_LIBS = @PTHREAD_LIBS@
-openskyd_LDADD = -lm
+# sources for binaries
+openskyd_rc_uart_SOURCES = $(radarcape_sources) rc-input-uart.c
+openskyd_rc_net_SOURCES = $(radarcape_sources) rc-input-network.c
+openskyd_rc_dummy_SOURCES = $(radarcape_sources) rc-input-dummy.c
+
+wd_SOURCES = wd-main.c \
+	gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
+	cfgfile.h cfgfile.c util.h util.c log.h log_stdio.c
+
+# compiler libs
+openskyd_rc_uart_LIBS = @PTHREAD_LIBS@
+openskyd_rc_net_LIBS = @PTHREAD_LIBS@
+openskyd_rc_dummy_LIBSS = @PTHREAD_LIBS@
+openskyd_rc_uart_LDADD = -lm
+openskyd_rc_net_LDADD = -lm
+openskyd_rc_dummy_LDADD = -lm
+
+# common compile flags
 AM_CFLAGS = @PTHREAD_CFLAGS@
 
-# flags for development
-if !DEVELOPMENT
+# compile flags for development
+if !LOCAL_FILES
 AM_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"' -DFWDIR='"$(libdir)"'
 endif
 
-# WD needs other flags
+# compile flags
+openskyd_rc_uart_AM_CFLAGS = $(AM_CPPFLAGS) -DINPUT_RADARCAPE \
+	-DINPUT_RADARCAPE_UART
+openskyd_rc_net_AM_CFLAGS = $(AM_CPPFLAGS) -DINPUT_RADARCAPE \
+	-DINPUT_RADARCAPE_NETWORK
+openskyd_rc_dummy_AM_CFLAGS = $(AM_CPPFLAGS) -DINPUT_RADARCAPE \
+	-DINPUT_RADARCAPE_DUMMY
 wd_CPPFLAGS = -DWD_ONLY $(AM_CPPFLAGS)
 
 # data files
-openskyd_DATA = openskyd.conf
-EXTRA_DIST += openskyd.conf
+openskyd_rc_uart_DATA = openskyd.conf
+openskyd_rc_net_DATA = openskyd.conf
+openskyd_rc_dummy_DATA = openskyd.conf
+EXTRA_DIST = openskyd.conf
 
 # configuration directory
-openskyddir = $(sysconfdir)
+openskyd_rc_uartdir = $(sysconfdir)
+openskyd_rc_netdir = $(sysconfdir)
+openskyd_rc_dummydir = $(sysconfdir)
 
 clean-local:
 	-rm -f *.gcno *.gcda
