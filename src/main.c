@@ -25,7 +25,7 @@
 
 static const char PFX[] = "MAIN";
 
-#if (defined(ECLIPSE) || defined(DEVELOPMENT)) && !defined(SYSCONFDIR)
+#if (defined(ECLIPSE) || defined(LOCAL_FILES)) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
 #endif
 
@@ -44,7 +44,7 @@ int main(int argc, char * argv[])
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_sec + tv.tv_usec);
 
-#ifdef STANDALONE
+#ifdef FPGA_COMP
 	bool bbwhite = true;
 	if (argc == 2) {
 		if (!strcmp(argv[1], "--black")) {
@@ -66,17 +66,19 @@ int main(int argc, char * argv[])
 			"Configuration inconsistent, quitting");
 	}
 
-#ifdef STANDALONE
+#if (defined FPGA_COMP || defined WATCHDOG_COMP)
 	if (CFG_config.wd.enabled || CFG_config.fpga.configure)
 		COMP_register(&GPIO_comp, NULL);
 #endif
+#ifdef STATISTICS_COMP
 	if (CFG_config.stats.enabled)
 		COMP_register(&STAT_comp, NULL);
-#ifdef STANDALONE
+#endif
+#ifdef WATCHDOG_COMP
 	if (CFG_config.wd.enabled)
 		COMP_register(&WD_comp, NULL);
 #endif
-#ifdef STANDALONE
+#ifdef FPGA_COMP
 	if (CFG_config.fpga.configure)
 		COMP_register(&FPGA_comp, &bbwhite);
 #endif
