@@ -97,6 +97,8 @@ AC_ARG_ENABLE([local-files],
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-local-files]) ;;
    esac], [enableval=no])
 AM_CONDITIONAL([LOCAL_FILES], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes],
+  [AC_DEFINE([LOCAL_FILES], [1], [Add watchdog component])])
 
 AC_ARG_ENABLE([radarcape-uart],
   [AS_HELP_STRING([--enable-radarcape-uart],
@@ -113,7 +115,7 @@ AC_ARG_ENABLE([radarcape-network],
   [case "${enableval}" in
     yes|no) ;;
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-network]) ;;
-   esac], [enableval=yes])
+   esac], [enableval=no])
 AM_CONDITIONAL([RADARCAPE_NETWORK], [test x$enableval = xyes])
 
 AC_ARG_ENABLE([radarcape-dummy],
@@ -170,6 +172,7 @@ AC_ARG_ENABLE([fpga],
 AM_CONDITIONAL([FPGA_COMP], [test x$enableval = xyes])
 AS_IF([test x$enableval = xyes],
   [AC_DEFINE([FPGA_COMP], [1], [Add fpga component])])
+fpga=${enableval}
 
 AC_ARG_ENABLE([watchdog],
   [AS_HELP_STRING([--enable-watchdog],
@@ -181,6 +184,7 @@ AC_ARG_ENABLE([watchdog],
 AM_CONDITIONAL([WATCHDOG_COMP], [test x$enableval = xyes])
 AS_IF([test x$enableval = xyes],
   [AC_DEFINE([WATCHDOG_COMP], [1], [Add watchdog component])])
+AM_CONDITIONAL([GPIO_COMP], [test x$fpga = xyes -o x$enableval = xyes])
 
 AC_ARG_ENABLE([statistics],
   [AS_HELP_STRING([--enable-statistics],

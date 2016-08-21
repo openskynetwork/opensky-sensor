@@ -1,7 +1,7 @@
 
 # binary programs
 bin_PROGRAMS =
-if RADARCAPE_UART
+if RADARCAPE_NETWORK
 bin_PROGRAMS += openskyd-rc-uart
 endif
 if RADARCAPE_NETWORK
@@ -35,14 +35,22 @@ if TALKBACK_COMP
 feature_sources += tb.c recv.c proc.h proc.c
 endif
 if FPGA_COMP
-feature_sources += fpga.c gpio.h gpio.c
+feature_sources += fpga.c
+endif
+if WATCHDOG_COMP
+feature_sources += wd.c
+endif
+if GPIO_COMP
+feature_sources += gpio.h gpio.c
 endif
 if STATISTICS_COMP
 feature_sources += statistics.c
 endif
 
 EXTRA_sources = tb.c recv.c proc.h proc.c \
-	fpga.c gpio.h gpio.c \
+	fpga.c \
+	wd.c \
+	gpio.h gpio.c \
 	statistics.c
 
 # sources for binaries
@@ -57,7 +65,7 @@ wd_SOURCES = wd-main.c \
 # compiler libs
 openskyd_rc_uart_LIBS = @PTHREAD_LIBS@
 openskyd_rc_net_LIBS = @PTHREAD_LIBS@
-openskyd_rc_dummy_LIBSS = @PTHREAD_LIBS@
+openskyd_rc_dummy_LIBS = @PTHREAD_LIBS@
 openskyd_rc_uart_LDADD = -lm
 openskyd_rc_net_LDADD = -lm
 openskyd_rc_dummy_LDADD = -lm
@@ -67,15 +75,14 @@ AM_CFLAGS = @PTHREAD_CFLAGS@
 
 # compile flags for development
 if !LOCAL_FILES
-AM_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"' -DFWDIR='"$(libdir)"'
+AM_CFLAGS += -DSYSCONFDIR='"$(sysconfdir)"' -DFWDIR='"$(libdir)"'
 endif
 
 # compile flags
-openskyd_rc_uart_AM_CFLAGS = $(AM_CPPFLAGS) -DINPUT_RADARCAPE \
-	-DINPUT_RADARCAPE_UART
-openskyd_rc_net_AM_CFLAGS = $(AM_CPPFLAGS) -DINPUT_RADARCAPE \
+openskyd_rc_uart_CFLAGS = $(AM_CFLAGS) -DINPUT_RADARCAPE -DINPUT_RADARCAPE_UART
+openskyd_rc_net_CFLAGS = $(AM_CFLAGS) -DINPUT_RADARCAPE \
 	-DINPUT_RADARCAPE_NETWORK
-openskyd_rc_dummy_AM_CFLAGS = $(AM_CPPFLAGS) -DINPUT_RADARCAPE \
+openskyd_rc_dummy_CFLAGS = $(AM_CFLAGS) -DINPUT_RADARCAPE \
 	-DINPUT_RADARCAPE_DUMMY
 wd_CPPFLAGS = -DWD_ONLY $(AM_CPPFLAGS)
 
