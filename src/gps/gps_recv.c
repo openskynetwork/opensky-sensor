@@ -1,14 +1,15 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
 #include <gps.h>
-#include <gps_recv.h>
+#include <gps/gps_recv.h>
+#include <gps/gps_parser.h>
+#include <endec.h>
 #include <error.h>
 #include <errno.h>
 #include <time.h>
 #include <pthread.h>
 #include <threads.h>
 #include <inttypes.h>
-#include <gps_parser.h>
 #include <network.h>
 #include <stdio.h>
 
@@ -248,8 +249,8 @@ static void posFrame(const uint8_t * buf)
 	enum GPS_DISC_MODE discMode = buf[2];
 	//uint8_t selfSurveyProgress = buf[3];
 	//uint32_t holdOverDuration = GPS_tou32(buf + 4);
-	uint16_t critAlarms = GPS_tou16(buf + 8);
-	uint16_t minorAlarms = GPS_tou16(buf + 10);
+	uint16_t critAlarms = ENDEC_tou16(buf + 8);
+	uint16_t minorAlarms = ENDEC_tou16(buf + 10);
 	enum GPS_DECODE_STATUS decodingStatus = buf[12];
 	//enum GPS_DISC_ACTIVITY discActivity = buf[13];
 	/*float ppsOffset = GPS_tofloat(buf + 16);
@@ -257,9 +258,9 @@ static void posFrame(const uint8_t * buf)
 	uint32_t dacValue = GPS_tou32(buf + 24);
 	float dacVoltage = GPS_tofloat(buf + 28);
 	float temperature = GPS_tofloat(buf+ 32);*/
-	double latitude = GPS_todouble(buf + 36) * R2D;
-	double longitude = GPS_todouble(buf + 44) * R2D;
-	double altitude = GPS_todouble(buf + 52);
+	double latitude = ENDEC_todouble(buf + 36) * R2D;
+	double longitude = ENDEC_todouble(buf + 44) * R2D;
+	double altitude = ENDEC_todouble(buf + 52);
 	//float ppsQuantizationError = GPS_tofloat(buf + 60);
 
 	bool selfSurvey = !!(minorAlarms & GPS_MIN_ALARM_SURVEY_IN_PROGRESS);

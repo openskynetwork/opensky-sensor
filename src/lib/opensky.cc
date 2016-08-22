@@ -18,6 +18,7 @@
 #include <gps.h>
 #include <tb.h>
 #include <gps.h>
+#include <openskytypes.h>
 
 #ifdef DEVELOPMENT
 #define ETHER_DEV "enp1s1"
@@ -158,12 +159,12 @@ void output_message(const unsigned char * const msg,
 		return;
 	}
 
-	enum ADSB_FRAME_TYPE frameType = (enum ADSB_FRAME_TYPE) (messageType - '1');
+	enum OPENSKY_FRAME_TYPE frameType = (enum OPENSKY_FRAME_TYPE) (messageType - '1');
 
 	if (!FILTER_filter(frameType, msg[7]))
 		return;
 
-	struct ADSB_RawFrame * out = BUF_newFrame();
+	struct OPENSKY_RawFrame * out = BUF_newFrame();
 	assert(out);
 	out->raw[0] = '\x1a';
 	out->raw[1] = (uint8_t) messageType;

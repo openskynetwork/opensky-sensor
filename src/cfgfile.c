@@ -387,19 +387,19 @@ static void parseOptionFPGA(const struct Option * opt, struct CFG_Config * cfg)
 static void parseOptionINPUT(const struct Option * opt, struct CFG_Config * cfg)
 {
 	if (isOption(opt, "uart")) {
-#ifndef INPUT_LAYER_NETWORK
+#ifdef INPUT_RADARCAPE_UART
 		parseString(opt, cfg->input.uart, sizeof cfg->input.uart);
 #endif
 	} else if (isOption(opt, "host")) {
-#ifdef INPUT_LAYER_NETWORK
+#ifdef INPUT_RADARCAPE_NETWORK
 		parseString(opt, cfg->input.host, sizeof cfg->input.host);
 #endif
 	} else if (isOption(opt, "port")) {
-#ifdef INPUT_LAYER_NETWORK
+#ifdef INPUT_RADARCAPE_NETWORK
 		parsePort(opt, &cfg->input.port);
 #endif
 	} else if (isOption(opt, "rtscts")) {
-#ifndef INPUT_LAYER_NETWORK
+#ifdef INPUT_RADARCAPE_UART
 		parseBool(opt, &cfg->input.rtscts);
 #endif
 	} else if (isOption(opt, "reconnectInterval"))
@@ -506,15 +506,15 @@ static void parseOptionGPS(const struct Option * opt, struct CFG_Config * cfg)
 {
 	/* TODO: use gps specific compilation flags? */
 	if (isOption(opt, "uart")) {
-#ifndef INPUT_LAYER_NETWORK
+#ifndef INPUT_RADARCAPE_NETWORK
 		parseString(opt, cfg->gps.uart, sizeof cfg->gps.uart);
 #endif
 	} else if (isOption(opt, "host")) {
-#ifdef INPUT_LAYER_NETWORK
+#ifdef INPUT_RADARCAPE_NETWORK
 		parseString(opt, cfg->gps.host, sizeof cfg->gps.host);
 #endif
 	} else if (isOption(opt, "port")) {
-#ifdef INPUT_LAYER_NETWORK
+#ifdef INPUT_RADARCAPE_NETWORK
 		parsePort(opt, &cfg->gps.port);
 #endif
 	} else if (isOption(opt, "reconnectInterval"))
@@ -636,10 +636,10 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->fpga.retries = 2;
 	cfg->fpga.timeout = 10;
 
-#ifdef INPUT_LAYER_NETWORK
+#ifdef INPUT_RADARCAPE_NETWORK
 	strncpy(cfg->input.host, "localhost", sizeof cfg->input.host);
 	cfg->input.port = 10003;
-#else
+#elif defined(INPUT_RADARCAPE_UART)
 	strncpy(cfg->input.uart, "/dev/ttyO5", sizeof cfg->input.uart);
 	cfg->input.rtscts = true;
 #endif
@@ -670,10 +670,10 @@ static void loadDefaults(struct CFG_Config * cfg)
 	cfg->stats.enabled = true;
 	cfg->stats.interval = 600;
 
-#ifdef INPUT_LAYER_NETWORK
+#ifdef INPUT_RADARCAPE_NETWORK
 	strncpy(cfg->gps.host, "localhost", sizeof cfg->gps.host);
 	cfg->gps.port = 10685;
-#else
+#elif defined(INPUT_RADARCAPE_UART)
 	strncpy(cfg->gps.uart, "/dev/ttyO2", sizeof cfg->gps.uart);
 #endif
 	cfg->gps.reconnectInterval = 10;
@@ -743,7 +743,7 @@ static bool check(const struct CFG_Config * cfg)
 		return false;
 	}
 
-#ifdef INPUT_LAYER_NETWORK
+#ifdef INPUT_RADARCAPE_NETWORK
 	if (cfg->input.host[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "INPUT.host is missing");
 		return false;
@@ -752,7 +752,7 @@ static bool check(const struct CFG_Config * cfg)
 		LOG_log(LOG_LEVEL_ERROR, PFX, "INPUT.port = 0");
 		return false;
 	}
-#else
+#elif defined(INPUT_RADARCAPE_UART)
 	if (cfg->input.uart[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "INPUT.uart is missing");
 		return false;
@@ -769,7 +769,7 @@ static bool check(const struct CFG_Config * cfg)
 		return false;
 	}
 
-#ifdef INPUT_LAYER_NETWORK
+#ifdef INPUT_RADARCAPE_NETWORK
 	if (cfg->gps.host[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "GPS.host is missing");
 		return false;
@@ -778,7 +778,7 @@ static bool check(const struct CFG_Config * cfg)
 		LOG_log(LOG_LEVEL_ERROR, PFX, "GPS.port = 0");
 		return false;
 	}
-#else
+#elif defined(INPUT_RADARCAPE_UART)
 	if (cfg->gps.uart[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "GPS.uart is missing");
 		return false;

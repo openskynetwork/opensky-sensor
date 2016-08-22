@@ -102,7 +102,7 @@ void INPUT_destruct()
 /** Setup ADSB receiver with some options. */
 static bool configure()
 {
-#if !defined(INPUT_LAYER_NETWORK) || defined(CHECK)
+#if defined(INPUT_RADARCAPE_UART) || defined(CHECK)
 	const struct CFG_RECV * cfg = &CFG_config.recv;
 	/* setup ADSB */
 	return setOption(RADARCAPE_OPTION_OUTPUT_FORMAT_BIN) &&
@@ -128,7 +128,7 @@ static bool configure()
 
 void INPUT_reconfigure()
 {
-#ifndef INPUT_RADARCAPE_NETWORK
+#ifdef INPUT_RADARCAPE_UART
 	setOption(CFG_config.recv.modeSLongExtSquitter ?
 		RADARCAPE_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
 		RADARCAPE_OPTION_FRAME_FILTER_ALL);

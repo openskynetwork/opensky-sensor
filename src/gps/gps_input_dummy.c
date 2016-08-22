@@ -3,7 +3,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <gps_input.h>
+#include <gps/gps_input.h>
 #include <unistd.h>
 
 void GPS_INPUT_init()

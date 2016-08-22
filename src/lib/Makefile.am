@@ -1,11 +1,12 @@
 
-# binary programs and libraries
-if LIBRARY_EXAMPLES
-bin_PROGRAMS = opensky-lib-example opensky-lib-test
-endif
-if LIBRARY
+# libraries and binary programs
+if RADARCAPE_LIBRARY
 lib_LTLIBRARIES=libopensky.la
 endif
+if RADARCAPE_LIBRARY_EXAMPLES
+bin_PROGRAMS = opensky-lib-example opensky-lib-test
+endif
+
 
 libopensky_la_SOURCES=opensky.hh opensky.cc MessageTypes.h GpsStatus.h \
 	../filter.h ../filter.c ../buffer.h ../buffer.c ../relay.h ../relay.c \

@@ -100,18 +100,18 @@ AM_CONDITIONAL([LOCAL_FILES], [test x$enableval = xyes])
 AS_IF([test x$enableval = xyes],
   [AC_DEFINE([LOCAL_FILES], [1], [Add watchdog component])])
 
-AC_ARG_ENABLE([radarcape-uart],
-  [AS_HELP_STRING([--enable-radarcape-uart],
-    [Build Daemon with radarcape uart input layer @<:@no@:>@])],
+AC_ARG_ENABLE([radarcape-standalone],
+  [AS_HELP_STRING([--enable-radarcape-standalone],
+    [Build daemon for standalone radarcape @<:@no@:>@])],
   [case "${enableval}" in
     yes|no) ;;
-    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-uart]) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-standalone]) ;;
    esac], [enableval=no])
-AM_CONDITIONAL([RADARCAPE_UART], [test x$enableval = xyes])
+AM_CONDITIONAL([RADARCAPE_STANDALONE], [test x$enableval = xyes])
 
 AC_ARG_ENABLE([radarcape-network],
   [AS_HELP_STRING([--enable-radarcape-network],
-    [Build Daemon with radarcape network input layer @<:@no@:>@])],
+    [Build daemon to connect to rcd @<:@no@:>@])],
   [case "${enableval}" in
     yes|no) ;;
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-network]) ;;
@@ -120,82 +120,39 @@ AM_CONDITIONAL([RADARCAPE_NETWORK], [test x$enableval = xyes])
 
 AC_ARG_ENABLE([radarcape-dummy],
   [AS_HELP_STRING([--enable-radarcape-dummy],
-    [Build Daemon with radarcape dummy input layer @<:@yes@:>@])],
+    [Build daemon with radarcape dummy input layer @<:@no@:>@])],
   [case "${enableval}" in
     yes|no) ;;
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-dummy]) ;;
    esac], [enableval=no])
 AM_CONDITIONAL([RADARCAPE_DUMMY], [test x$enableval = xyes])
-    
+
 AC_ARG_ENABLE([watchdog-daemon],
   [AS_HELP_STRING([--enable-watchdog-daemon],
-    [Build Watchdog Daemon @<:@no@:>@])],
+    [Build Watchdog daemon for standalone radarcape @<:@no@:>@])],
   [case "${enableval}" in
     yes|no) ;;
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-watchdog-daemon]) ;;
    esac], [enableval=no])
-AM_CONDITIONAL([WATCHDOG_DAEMON], [test x$enableval = xyes])
+AM_CONDITIONAL([RADARCAPE_WATCHDOG], [test x$enableval = xyes])
 
-AC_ARG_ENABLE([library],
-  [AS_HELP_STRING([--enable-library], [Build Library @<:@yes@:>@])],
+AC_ARG_ENABLE([radarcape-library],
+  [AS_HELP_STRING([--enable-radarcape-library],
+  [Build library for rcd integration @<:@yes@:>@])],
   [case "${enableval}" in
     yes|no) ;;
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-library]) ;;
    esac], [enableval=yes])
-AM_CONDITIONAL([LIBRARY], [test x$enableval = xyes])
+AM_CONDITIONAL([RADARCAPE_LIBRARY], [test x$enableval = xyes])
 
-AC_ARG_ENABLE([library-examples],
+AC_ARG_ENABLE([radarcape-library-examples],
   [AS_HELP_STRING([--enable-library-examples],
-    [Build Library Examples @<:@no@:>@])],
+    [Build rcd integration library Examples @<:@no@:>@])],
   [case "${enableval}" in
     yes|no) ;;
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-library-examples]) ;;
    esac], [enableval=false])
-AM_CONDITIONAL([LIBRARY_EXAMPLES], [test x$enableval = xyes])
-
-AC_ARG_ENABLE([talkback],
-  [AS_HELP_STRING([--enable-talkback],
-    [Enable talkback component @<:@yes@:>@])],
-  [case "${enableval}" in
-    yes|no) ;;
-    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-talkback]) ;;
-   esac], [enableval=yes])
-AM_CONDITIONAL([TALKBACK_COMP], [test x$enableval = xyes])
-
-AC_ARG_ENABLE([fpga],
-  [AS_HELP_STRING([--enable-fpga],
-    [Enable FPGA component @<:@no@:>@])],
-  [case "${enableval}" in
-    yes|no) ;;
-    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-fpga]) ;;
-   esac], [enableval=no])
-AM_CONDITIONAL([FPGA_COMP], [test x$enableval = xyes])
-AS_IF([test x$enableval = xyes],
-  [AC_DEFINE([FPGA_COMP], [1], [Add fpga component])])
-fpga=${enableval}
-
-AC_ARG_ENABLE([watchdog],
-  [AS_HELP_STRING([--enable-watchdog],
-    [Enable watchdog component @<:@no@:>@])],
-  [case "${enableval}" in
-    yes|no) ;;
-    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-watchdog]) ;;
-   esac], [enableval=no])
-AM_CONDITIONAL([WATCHDOG_COMP], [test x$enableval = xyes])
-AS_IF([test x$enableval = xyes],
-  [AC_DEFINE([WATCHDOG_COMP], [1], [Add watchdog component])])
-AM_CONDITIONAL([GPIO_COMP], [test x$fpga = xyes -o x$enableval = xyes])
-
-AC_ARG_ENABLE([statistics],
-  [AS_HELP_STRING([--enable-statistics],
-    [Enable statistics component @<:@yes@:>@])],
-  [case "${enableval}" in
-    yes|no) ;;
-    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-statistics]) ;;
-   esac], [enableval=yes])
-AM_CONDITIONAL([STATISTICS_COMP], [test x$enableval = xyes])
-AS_IF([test x$enableval = xyes],
-  [AC_DEFINE([STATISTICS_COMP], [1], [Add statistics component])])
+AM_CONDITIONAL([RADARCAPE_LIBRARY_EXAMPLES], [test x$enableval = xyes])
 
 AC_ARG_WITH([systemd],
   [AS_HELP_STRING([--with-systemd],

@@ -15,7 +15,7 @@
 #include <string.h>
 #include <log.h>
 
-#if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
+#if defined(LOCAL_FILES) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
 #endif
 
@@ -60,7 +60,7 @@ int main(int argc, char * argv[])
 			CFG_config.fpga.timeout = 10;
 		} else {
 			/* read & check configuration */
-			CFG_read(SYSCONFDIR "/openskyd.conf");
+			CFG_readFile(SYSCONFDIR "/openskyd.conf");
 		}
 
 		/* overwrite cfg */
