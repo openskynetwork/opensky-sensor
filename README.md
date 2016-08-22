@@ -1,8 +1,8 @@
 # OpenSky Daemon
-This is the OpenSky Daemon (OpenSkyD), a program running on a radarcape,
-relaying ADS-B frames to the OpenSky collector server.
-It is meant as a replacement for rcd, although there is a possiblity for
-interwork with rcd.
+This is the OpenSky Daemon (OpenSkyD), which serves as an intermediate
+component between an ADSB receiver and the OpenSky Network, relaying ADS-B
+frames to the OpenSky collector server.
+It is supposed to run on the user side.
 
 OpenSkyD has the following features:
 * Read ADS-B frames from the radarcape cape and relay them to the server

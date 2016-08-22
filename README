@@ -1,31 +1,49 @@
-This is the OpenSky Daemon (OpenSkyD), a program running on a radarcape,
-relaying ADS-B frames to the OpenSky collector server.
-It is meant as a replacement for rcd, although there is a possiblity for
-interwork with rcd.
+This is the OpenSky Daemon (OpenSkyD), which serves as an intermediate
+component between an ADSB receiver and the OpenSky Network, relaying ADS-B
+frames to the OpenSky collector server.
+It is supposed to run on the user side.
 
-See README.md for more information on the features.
+There are several products which are built from this common code basis:
+ * radarcape-standalone: builds a binary which is a replacement for rcd (the
+    radarcape daemon), originally running on radarcapes.
+    It makes sure, that the FPGA is configured, the watchdog is triggered and
+    receives frames directly from the receiver running on the FPGA via UART.
+    It also features administrative commands in the talkback channel to open a
+    reverse shell.
+ * radarcape-network: builds a binary which connects to rcd (running on a stock
+    radarcape) over network.
+ * radarcape-dummy: builds a binary which creates random frames for testing
+    purposes.
+ * radarcape-library: builds a library which is intended to be integrated into
+    stock rcd. There is also the possibility to build some examples using that
+    library for testing purposes.
 
 Configuration
 The project is a standard autotools project.
-For configure, there are several flags to specify the flavors to be built and
-the features to be included.
-* --enable-input[=uart]       select input layer. One of uart, network, dummy or
-                              none.
-* --enable-standalone[=yes]   build features needed only for standalone daemon
-                              (i.e. not needed for interacting with rcd).
-* --enable-wd[=no]            build the watchdog flavor. It will not read any
-                              frames but only trigger the watchdog.
-* --enable-development[=no]   enables building for development. This means, that
-                              configuration files are expected within the
-                              current directory.
-* --enable-test-coverage[=no] Build tests for using them with gcov.
-* --enable-cleanup[=yes]      Add cleanup routines when exiting the daemon.
-                              Especially meant for testing with valgrind etc.
-* --enable-talkback[=yes]     Add interpreting commands from the server.
-* --with-systemd[=auto]       Enable systemd specific code when forking.
-* --with-pacman[=auto]        Enable pacman specific commands.
+For configure, there are several flags to specify the binaries and libraries to be built and the features to be included.
+* --enable-radarcape-standalone[=no]
+                                  build the standalone opensky daemon
+* --enable-radarcape-network[=no]
+                                  build the opensky daemon for connecting to rcd
+                                  over network
+* --enable-radarcape-dummy[=no]   build the opensky daemon with dummy input
+* --enable-watchdog-daemon[=no]   build a standalone watchdog daemon for the
+                                  radarcape
+* --enable-radarcape-library[=no]
+                                  build the radarcape library for rcd
+                                  integration
+* --enable-library-examples[=no]  build rcd integration
+* --enable-local-files[=no]       enables building for development. This means,
+                                  that configuration files are expected within
+                                  the current working directory
+* --enable-test-coverage[=no]     build tests for using them with gcov
+* --enable-cleanup-routines[=yes]
+                                  Add cleanup routines when exiting the daemon.
+                                  Especially meant for testing with valgrind etc
+* --with-systemd[=auto]           Enable systemd specific code when forking
+* --with-pacman[=auto]            Enable pacman specific commands
 
 Requirements
-* check (optional)            Needed for make test.
-* pacman (optional)           Needed for upgrading itself.
+* check (optional)                Needed for make test
+* pacman (optional)               Needed for upgrading itself
 
