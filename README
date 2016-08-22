@@ -20,7 +20,8 @@ There are several products which are built from this common code basis:
 
 Configuration
 The project is a standard autotools project.
-For configure, there are several flags to specify the binaries and libraries to be built and the features to be included.
+For configure, there are several flags to specify the binaries and libraries to
+be built and the features to be included.
 * --enable-radarcape-standalone[=no]
                                   build the standalone opensky daemon
 * --enable-radarcape-network[=no]
