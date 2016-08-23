@@ -29,7 +29,7 @@
 extern "C" {
 struct CFG_Config CFG_config;
 
-void ADSB_reconfigure() {}
+void INPUT_reconfigure() {}
 
 }
 

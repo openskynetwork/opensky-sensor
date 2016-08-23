@@ -146,11 +146,11 @@ AC_ARG_ENABLE([radarcape-library],
 AM_CONDITIONAL([RADARCAPE_LIBRARY], [test x$enableval = xyes])
 
 AC_ARG_ENABLE([radarcape-library-examples],
-  [AS_HELP_STRING([--enable-library-examples],
+  [AS_HELP_STRING([--enable-radarcape-library-examples],
     [Build rcd integration library examples @<:@no@:>@])],
   [case "${enableval}" in
     yes|no) ;;
-    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-library-examples]) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-library-examples]) ;;
    esac], [enableval=false])
 AM_CONDITIONAL([RADARCAPE_LIBRARY_EXAMPLES], [test x$enableval = xyes])
 

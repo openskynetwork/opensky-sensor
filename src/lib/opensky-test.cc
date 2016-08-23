@@ -6,7 +6,8 @@
 #include <endian.h>
 #include <stdint.h>
 #include <cfgfile.h>
-#include "../openskytypes.h"
+#include <openskytypes.h>
+#include <input.h>
 
 extern "C" {
 
@@ -25,17 +26,17 @@ int main()
 
 	OpenSky::enable();
 
-	ADSB_init();
+	INPUT_init();
 	while (true) {
-		ADSB_connect();
+		INPUT_connect();
 
-		struct ADSB_RawFrame rawFrame;
-		struct ADSB_DecodedFrame frame;
+		struct OPENSKY_RawFrame rawFrame;
+		struct OPENSKY_DecodedFrame frame;
 
-		while (ADSB_getFrame(&rawFrame, &frame)) {
+		while (INPUT_getFrame(&rawFrame, &frame)) {
 			unsigned char serialFrame[6 + 1 + 14];
 
-			if (frame.frameType == ADSB_FRAME_TYPE_STATUS) {
+			if (frame.frameType == OPENSKY_FRAME_TYPE_STATUS) {
 				if (frame.mlat != 0)
 					OpenSky::setGpsTimeStatus(UsingGpsTime);
 				continue;
