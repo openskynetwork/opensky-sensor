@@ -32,7 +32,7 @@ struct TEST {
 
 extern struct TEST test;
 
-size_t INPUT_buildFrame(uint8_t * buf, enum OPENSKY_FRAME_TYPE type,
+size_t RC_INPUT_buildFrame(uint8_t * buf, enum OPENSKY_FRAME_TYPE type,
 	uint64_t mlat, int8_t siglevel, const char * payload, size_t payloadLen);
 
 #endif

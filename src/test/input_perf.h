@@ -9,9 +9,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-size_t INPUT_buildFrame(uint8_t * buf, enum OPENSKY_FRAME_TYPE type,
+size_t RC_INPUT_buildFrame(uint8_t * buf, enum OPENSKY_FRAME_TYPE type,
 	uint64_t mlat, int8_t siglevel, const char * payload, size_t payloadLen);
 
-void INPUT_setBuffer(uint8_t * buf, size_t length);
+void RC_INPUT_setBuffer(uint8_t * buf, size_t length);
 
 #endif

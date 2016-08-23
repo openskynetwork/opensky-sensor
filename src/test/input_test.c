@@ -4,6 +4,8 @@
 #include <config.h>
 #endif
 #include <input_test.h>
+#include <openskytypes.h>
+#include <radarcape/rc-input.h>
 #include <check.h>
 #include <input.h>
 #include <stdlib.h>
@@ -15,22 +17,22 @@
 
 struct TEST test;
 
-void INPUT_init()
+void RC_INPUT_init()
 {
 	test.init = true;
 }
 
-void INPUT_destruct()
+void RC_INPUT_destruct()
 {
 	test.destruct = true;
 }
 
-void INPUT_connect()
+void RC_INPUT_connect()
 {
 	++test.connect;
 }
 
-size_t INPUT_read(uint8_t * buf, size_t bufLen)
+size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	if (!test.buffers)
 		return 0;
@@ -52,7 +54,7 @@ size_t INPUT_read(uint8_t * buf, size_t bufLen)
 	return l;
 }
 
-size_t INPUT_write(uint8_t * buf, size_t bufLen)
+size_t RC_INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	if (test.testAck != -1) {
 		if (test.testAck--)
@@ -88,7 +90,7 @@ static inline void encode(uint8_t ** buf, const uint8_t * src, size_t len)
 		append(buf, *src++);
 }
 
-size_t INPUT_buildFrame(uint8_t * buf, enum OPENSKY_FRAME_TYPE type,
+size_t RC_INPUT_buildFrame(uint8_t * buf, enum OPENSKY_FRAME_TYPE type,
 	uint64_t mlat, int8_t siglevel, const char * payload, size_t payloadLen)
 {
 	buf[0] = '\x1a';

@@ -42,7 +42,7 @@ START_TEST(test_recv_frame)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
 		"abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
@@ -72,7 +72,7 @@ START_TEST(test_filter_unsynchronized)
 
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
 		"abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
@@ -97,10 +97,10 @@ START_TEST(test_filter_synchronized)
 
 	uint8_t frm[46], frm2[46];
 	struct TEST_Buffer buf[2] = { { .payload = frm }, { .payload = frm2  } };
-	size_t len1 = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_STATUS, 0x123456, 0,
+	size_t len1 = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_STATUS, 0x123456, 0,
 		"abcdefghijklmn", 14);
 	buf[0].length = len1;
-	size_t len2 = INPUT_buildFrame(frm2, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
+	size_t len2 = RC_INPUT_buildFrame(frm2, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
 		0, "abcdefghijklmn", 14);
 	buf[1].length = len2;
 	test.buffers = buf;
@@ -125,7 +125,7 @@ START_TEST(test_filter_modeac)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, 0xdeadbe, 0,
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, 0xdeadbe, 0,
 		"ab", 2);
 	buf.length = len;
 	test.buffers = &buf;
@@ -150,7 +150,7 @@ START_TEST(test_filter_type)
 
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
 		"abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
@@ -178,7 +178,7 @@ START_TEST(test_filter_extsquitter)
 	struct TEST_Buffer buf = { .payload = frm };
 	char payload[14] = "abcdefghijklmn";
 	payload[0] = _i << 3;
-	size_t len = INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
 		payload, 14);
 	buf.length = len;
 	test.buffers = &buf;

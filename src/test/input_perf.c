@@ -16,22 +16,22 @@ static uint8_t * buffer;
 static size_t bufLen;
 static uint8_t * curPtr;
 
-void INPUT_init() {}
+void RC_INPUT_init() {}
 
-void INPUT_destruct() {}
+void RC_INPUT_destruct() {}
 
-void INPUT_connect()
+void RC_INPUT_connect()
 {
 	curPtr = buffer;
 }
 
-void INPUT_setBuffer(uint8_t * buf, size_t len)
+void RC_INPUT_setBuffer(uint8_t * buf, size_t len)
 {
 	buffer = buf;
 	bufLen = len;
 }
 
-size_t INPUT_read(uint8_t * buf, size_t len)
+size_t RC_INPUT_read(uint8_t * buf, size_t len)
 {
 	size_t lenIn = len;
 
@@ -59,7 +59,7 @@ size_t INPUT_read(uint8_t * buf, size_t len)
 	return lenIn;
 }
 
-size_t INPUT_write(uint8_t * buf, size_t bufLen)
+size_t RC_INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	return bufLen;
 }
@@ -76,7 +76,7 @@ static inline void encode(uint8_t ** buf, const uint8_t * src, size_t len)
 		append(buf, *src++);
 }
 
-size_t INPUT_buildFrame(uint8_t * buf, enum OPENSKY_FRAME_TYPE type,
+size_t RC_INPUT_buildFrame(uint8_t * buf, enum OPENSKY_FRAME_TYPE type,
 	uint64_t mlat, int8_t siglevel, const char * payload, size_t payloadLen)
 {
 	buf[0] = '\x1a';

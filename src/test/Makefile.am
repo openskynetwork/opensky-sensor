@@ -10,7 +10,7 @@ endif
 
 libtest_a_SOURCES = ../buffer.h ../buffer.c ../cfgfile.h \
 	../statistics.h ../statistics.c ../component.h ../component.c \
-	../util.h ../message.h ../message.c ../adsb.h ../adsb.c \
+	../util.h ../message.h ../message.c ../input.h ../radarcape/radarcape.c \
 	../recv.h ../recv.c ../gps.h ../gps.c \
 	../filter.h ../filter.c ../log.h ../log_stdio.c glue.c
 libtest_a_CFLAGS = $(AM_CFLAGS)
@@ -35,7 +35,7 @@ test_lib_SOURCES = test_lib.cc ../lib/opensky.hh ../lib/opensky.cc
 test_lib_CXXFLAGS = @CHECK_CFLAGS@ $(AM_CXXFLAGS) -I$(srcdir)/../lib
 
 perf_adsb_SOURCES = perf_adsb.c input_perf.h input_perf.c \
-	../statistics.h ../statistics.c ../adsb.h ../adsb.c \
+	../statistics.h ../statistics.c ../input.h ../radarcape/radarcape.c \
 	../buffer.h ../buffer.c ../component.h ../component.c \
 	../log.h ../log_stdio.c
 perf_adsb_CFLAGS = $(AM_CFLAGS)
@@ -43,7 +43,7 @@ perf_adsb_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@
 perf_adsb_LDFLAGS =
 
 perf_buffer_SOURCES = perf_buffer.c input_perf.h input_perf.c \
-	../statistics.h ../statistics.c ../adsb.h ../adsb.c \
+	../statistics.h ../statistics.c ../input.h ../radarcape/radarcape.c \
 	../buffer.h ../buffer.c ../component.h ../component.c \
 	../recv.h ../recv.c ../filter.h ../filter.c \
 	../log.h ../log_stdio.c

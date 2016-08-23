@@ -18,9 +18,9 @@ struct CFG_Config CFG_config;
 int main()
 {
 	uint8_t buf[46];
-	size_t len = INPUT_buildFrame(buf, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
+	size_t len = RC_INPUT_buildFrame(buf, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
 		-10, "abcdefghijklmn", 14);
-	INPUT_setBuffer(buf, len);
+	RC_INPUT_setBuffer(buf, len);
 
 	COMP_register(&BUF_comp, NULL);
 	COMP_register(&RECV_comp, NULL);

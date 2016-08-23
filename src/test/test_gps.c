@@ -5,7 +5,8 @@
 #endif
 #include <check.h>
 #include <gps.h>
-#include <gps_parser.h>
+#include <gps/gps_parser.h>
+#include <endec.h>
 #include <stdlib.h>
 
 static bool sendPositionCalled;
@@ -29,9 +30,9 @@ bool NET_sendPosition(const struct GPS_RawPosition * pos)
 static void getRawPos(double latitude, double longitude, double altitude,
 	struct GPS_RawPosition * pos)
 {
-	GPS_fromdouble(latitude, (uint8_t*)&pos->latitude);
-	GPS_fromdouble(longitude, (uint8_t*)&pos->longitute);
-	GPS_fromdouble(altitude, (uint8_t*)&pos->altitude);
+	ENDEC_fromdouble(latitude, (uint8_t*)&pos->latitude);
+	ENDEC_fromdouble(longitude, (uint8_t*)&pos->longitute);
+	ENDEC_fromdouble(altitude, (uint8_t*)&pos->altitude);
 }
 
 static void setAndGetRawPos(double latitude, double longitude, double altitude,

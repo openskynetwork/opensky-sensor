@@ -6,6 +6,7 @@
 #include <check.h>
 #include <openskytypes.h>
 #include <input_perf.h>
+#include <input.h>
 #include <statistics.h>
 #include <cfgfile.h>
 #include <inttypes.h>
@@ -18,9 +19,9 @@ int main()
 	struct OPENSKY_RawFrame raw;
 	struct OPENSKY_DecodedFrame decoded;
 	uint8_t buf[46];
-	size_t len = INPUT_buildFrame(buf, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
+	size_t len = RC_INPUT_buildFrame(buf, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
 		-10, "abcdefghijklmn", 14);
-	INPUT_setBuffer(buf, len);
+	RC_INPUT_setBuffer(buf, len);
 
 	INPUT_init(NULL);
 	INPUT_connect();
@@ -29,7 +30,7 @@ int main()
 	clock_gettime(CLOCK_REALTIME, &start);
 	size_t i;
 	for (i = 0; i < 10000000; ++i) {
-		OPENSKY_getFrame(&raw, &decoded);
+		INPUT_getFrame(&raw, &decoded);
 	}
 	clock_gettime(CLOCK_REALTIME, &end);
 
