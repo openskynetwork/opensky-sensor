@@ -3,8 +3,8 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
   $(top_srcdir)/build-aux/tap-driver.sh
 
 if WITH_CHECK
-TESTS = test_buffer test_adsb test_recv test_gps test_lib
-check_PROGRAMS = $(TESTS) perf_adsb perf_buffer
+TESTS = test_buffer test_radarcape test_recv test_gps test_lib
+check_PROGRAMS = $(TESTS) perf_radarcape perf_buffer
 check_LIBRARIES = libtest.a
 endif
 
@@ -22,8 +22,8 @@ LDADD = @CHECK_LIBS@ @PTHREAD_LIBS@ @PTHREAD_CFLAGS@ libtest.a
 test_buffer_SOURCES = test_buffer.c
 test_buffer_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
-test_adsb_SOURCES = test_adsb.c input_test.h input_test.c
-test_adsb_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
+test_radarcape_SOURCES = test_radarcape.c input_test.h input_test.c
+test_radarcape_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
 test_recv_SOURCES = test_recv.c input_test.h input_test.c
 test_recv_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
@@ -34,13 +34,13 @@ test_gps_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 test_lib_SOURCES = test_lib.cc ../lib/opensky.hh ../lib/opensky.cc
 test_lib_CXXFLAGS = @CHECK_CFLAGS@ $(AM_CXXFLAGS) -I$(srcdir)/../lib
 
-perf_adsb_SOURCES = perf_adsb.c input_perf.h input_perf.c \
+perf_radarcape_SOURCES = perf_radarcape.c input_perf.h input_perf.c \
 	../statistics.h ../statistics.c ../input.h ../radarcape/radarcape.c \
 	../buffer.h ../buffer.c ../component.h ../component.c \
 	../log.h ../log_stdio.c
-perf_adsb_CFLAGS = $(AM_CFLAGS)
-perf_adsb_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@
-perf_adsb_LDFLAGS =
+perf_radarcape_CFLAGS = $(AM_CFLAGS)
+perf_radarcape_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@
+perf_radarcape_LDFLAGS =
 
 perf_buffer_SOURCES = perf_buffer.c input_perf.h input_perf.c \
 	../statistics.h ../statistics.c ../input.h ../radarcape/radarcape.c \
@@ -54,7 +54,7 @@ perf_buffer_LDFLAGS =
 if TEST_COVERAGE
 libtest_a_CFLAGS += -fprofile-arcs -ftest-coverage
 test_buffer_LDFLAGS = -fprofile-arcs -ftest-coverage
-test_adsb_LDFLAGS = -fprofile-arcs -ftest-coverage
+test_radarcape_LDFLAGS = -fprofile-arcs -ftest-coverage
 test_recv_LDFLAGS = -fprofile-arcs -ftest-coverage
 test_gps_LDFLAGS = -fprofile-arcs -ftest-coverage
 test_lib_CXXFLAGS +=  -fprofile-arcs -ftest-coverage

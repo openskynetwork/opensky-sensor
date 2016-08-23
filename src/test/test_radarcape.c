@@ -159,8 +159,8 @@ START_TEST(test_decode_modeac)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
-		2);
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf.length = len;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -186,8 +186,8 @@ START_TEST(test_decode_modesshort)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_SHORT, UINT64_C(0xcafebabedead), 127,
-		"abcdefg", 7);
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_SHORT,
+			UINT64_C(0xcafebabedead), 127, "abcdefg", 7);
 	buf.length = len;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -213,8 +213,8 @@ START_TEST(test_decode_modeslong)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xdeadbeefbabe), 0,
-		"abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+			UINT64_C(0xdeadbeefbabe), 0, "abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -240,8 +240,8 @@ START_TEST(test_decode_status)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_STATUS, UINT64_C(0xdeadbeefbabe), 0,
-		"abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_STATUS,
+			UINT64_C(0xdeadbeefbabe), 0, "abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -267,7 +267,8 @@ START_TEST(test_decode_unknown)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = RC_INPUT_buildFrame(frm, '5', UINT64_C(0xcafebabedead), 0, "abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(frm, '5', UINT64_C(0xcafebabedead), 0,
+			"abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -286,9 +287,11 @@ START_TEST(test_decode_unknown_next)
 {
 	uint8_t frm[46 * 2];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len1 = RC_INPUT_buildFrame(frm, '5', 0xcafeba, 0, "abcdefghijklmn", 14);
-	size_t len2 = RC_INPUT_buildFrame(frm + len1, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), 0,
-		"ab", 2);
+	size_t len1 = RC_INPUT_buildFrame(frm, '5', 0xcafeba, 0,
+			"abcdefghijklmn", 14);
+	size_t len2 = RC_INPUT_buildFrame(frm + len1,
+			OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), 0, "ab",
+			2);
 	buf.length = len1 + len2;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -313,11 +316,11 @@ END_TEST
 START_TEST(test_decode_escape)
 {
 	uint8_t frm[46];
-		struct TEST_Buffer buf = { .payload = frm };
+	struct TEST_Buffer buf = { .payload = frm };
 	const char msg[] =
-		"\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a";
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0x1a1a1a1a1a1a),
-		0x1a, msg, 14);
+			"\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a";
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+			UINT64_C(0x1a1a1a1a1a1a), 0x1a, msg, 14);
 	buf.length = len;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -343,8 +346,8 @@ START_TEST(test_decode_unsynchronized_start)
 {
 	uint8_t frm[48] = { 'a', 'b' };
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = RC_INPUT_buildFrame(frm + 2, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
-		"ab", 2);
+	size_t len = RC_INPUT_buildFrame(frm + 2, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf.length = len + 2;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -373,8 +376,8 @@ START_TEST(test_decode_unsynchronized_type)
 	struct TEST_Buffer buf = { .payload = frm };
 	size_t len = 5;
 	memcpy(frm, "\x1a\x1a" "ABC", 5);
-	len = RC_INPUT_buildFrame(frm + len, OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
-		"abcdefghijklmn", 14);
+	len = RC_INPUT_buildFrame(frm + len, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+			UINT64_C(0xcafebabedead), -128, "abcdefghijklmn", 14);
 	buf.length = len + 5;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -401,10 +404,10 @@ START_TEST(test_decode_unsynchronized_header)
 {
 	uint8_t frm[46 + 4];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
-		"ab", 2);
-	len = RC_INPUT_buildFrame(frm + 4, OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
-		"abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
+	len = RC_INPUT_buildFrame(frm + 4, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+			UINT64_C(0xcafebabedead), -128, "abcdefghijklmn", 14);
 	buf.length = len + 4;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -431,10 +434,10 @@ START_TEST(test_decode_unsynchronized_payload)
 {
 	uint8_t frm[46 + 9];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
-		"ab", 2);
-	len = RC_INPUT_buildFrame(frm + 9, OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
-		"abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
+	len = RC_INPUT_buildFrame(frm + 9, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+			UINT64_C(0xcafebabedead), -128, "abcdefghijklmn", 14);
 	buf.length = len + 9;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -461,10 +464,11 @@ START_TEST(test_buffer_two_frames)
 {
 	uint8_t frm[46 * 2];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len1 = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
-		"ab", 2);
-	size_t len2 = RC_INPUT_buildFrame(frm + len1, OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead),
-		127, "abcdefghijklmn", 14);
+	size_t len1 = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
+	size_t len2 = RC_INPUT_buildFrame(frm + len1,
+			OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), 127,
+			"abcdefghijklmn", 14);
 	buf.length = len1 + len2;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -500,7 +504,8 @@ START_TEST(test_buffer_fail_start)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab", 2);
+	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf.length = 0;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -519,7 +524,8 @@ START_TEST(test_buffer_fail_type)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab", 2);
+	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf.length = 1;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -538,7 +544,8 @@ START_TEST(test_buffer_fail_header)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab", 2);
+	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf.length = 4;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -557,7 +564,8 @@ START_TEST(test_buffer_fail_payload)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab", 2);
+	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf.length = 10;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -576,7 +584,8 @@ START_TEST(test_buffer_fail_escape)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "\x1a" "b", 2);
+	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "\x1a" "b", 2);
 	buf.length = 9;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -596,10 +605,10 @@ START_TEST(test_buffer_end_start)
 	uint8_t frm[46];
 	uint8_t frm2[46];
 	struct TEST_Buffer buf[2] = { { .payload = frm }, { .payload = frm2 } };
-	size_t len1 = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
-		2);
-	size_t len2 = RC_INPUT_buildFrame(frm2, OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), 26,
-		"abcdefghijklmn", 14);
+	size_t len1 = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
+	size_t len2 = RC_INPUT_buildFrame(frm2, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+			UINT64_C(0xcafebabedead), 26, "abcdefghijklmn", 14);
 	buf[0].length = len1;
 	buf[1].length = len2;
 	test.buffers = buf;
@@ -636,8 +645,8 @@ START_TEST(test_buffer_end)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf[2];
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50, "ab",
-		2);
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "ab", 2);
 	buf[0].payload = frm;
 	buf[0].length = _i;
 	buf[1].payload = frm + _i;
@@ -666,8 +675,8 @@ START_TEST(test_buffer_end_escape)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf[2];
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
-		"\x1a" "b", 2);
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "\x1a" "b", 2);
 	buf[0].payload = frm;
 	buf[0].length = 10;
 	buf[1].payload = frm + 10;
@@ -696,8 +705,8 @@ START_TEST(test_buffer_end_escape_fail)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf;
-	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC, UINT64_C(0x1234567890ab), -50,
-		"\x1a" "b", 2);
+	RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_AC,
+			UINT64_C(0x1234567890ab), -50, "\x1a" "b", 2);
 	buf.payload = frm;
 	buf.length = 10;
 	test.buffers = &buf;
@@ -721,8 +730,9 @@ START_TEST(test_synchronize_peek_unsync)
 	frm[1] = '\x1a';
 	frm[2] = '\x1a';
 	frm[3] = 'b';
-	size_t len = RC_INPUT_buildFrame(frm + 4, OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
-		"abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(frm + 4,
+			OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
+			"abcdefghijklmn", 14);
 	buf.length = len + 4;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -752,8 +762,9 @@ START_TEST(test_synchronize_peek_unsync_at_end)
 	struct TEST_Buffer buf[2] = { { .payload = frm }, { .payload = frm2 } };
 	frm[0] = 'a';
 	frm[1] = '\x1a';
-	size_t len = RC_INPUT_buildFrame(frm2 + 1, OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
-		"abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(frm2 + 1,
+			OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
+			"abcdefghijklmn", 14);
 	frm2[0] = '\x1a';
 	buf[0].length = sizeof frm;
 	buf[1].length = len + 1;
@@ -782,11 +793,12 @@ START_TEST(test_synchronize_peek_sync_at_end)
 {
 	uint8_t frm[2];
 	uint8_t frm2[46];
-	struct TEST_Buffer buf[2] = { { .payload = frm }, { .payload = frm2 + 1} };
+	struct TEST_Buffer buf[2] = { { .payload = frm },
+			{ .payload = frm2 + 1 } };
 	frm[0] = 'a';
 	frm[1] = '\x1a';
-	size_t len = RC_INPUT_buildFrame(frm2, OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
-		"abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(frm2, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+			UINT64_C(0xcafebabedead), -128, "abcdefghijklmn", 14);
 	buf[0].length = sizeof frm;
 	buf[1].length = len - 1;
 	test.buffers = buf;
@@ -827,9 +839,9 @@ START_TEST(test_synchronize_fail)
 }
 END_TEST
 
-static Suite * ADSB_suite()
+static Suite * RADARCAPE_suite()
 {
-	Suite * s = suite_create("ADSB");
+	Suite * s = suite_create("Radarcape");
 
 	TCase * tc = tcase_create("InitDestruct");
 	tcase_add_checked_fixture(tc, setup, NULL);
@@ -897,7 +909,7 @@ static Suite * ADSB_suite()
 
 int main()
 {
-	SRunner * sr = srunner_create(ADSB_suite());
+	SRunner * sr = srunner_create(RADARCAPE_suite());
 	//srunner_set_fork_status(sr, CK_NOFORK);
 	srunner_set_tap(sr, "-");
 	srunner_run_all(sr, CK_NORMAL);
