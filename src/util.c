@@ -89,6 +89,14 @@ bool UTIL_getSerial(const char * device, uint32_t * serial)
 	_Static_assert(IFHWADDRLEN == 6,
 		"Length Ethernet MAC address is not 6 bytes");
 
+#ifdef LOCAL_FILES
+	const char * dev = getenv("OPENSKY_ETHER_DEV");
+	if (dev != NULL) {
+		LOG_logf(LOG_LEVEL_INFO, PFX, "Using %s as ethernet device", dev);
+		device = dev;
+	}
+#endif
+
 	uint8_t mac[IFHWADDRLEN];
 	if (!getMacBySocket(device, mac)) {
 		LOG_log(LOG_LEVEL_WARN, PFX, "Could not get MAC by Socket API");

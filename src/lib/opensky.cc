@@ -19,9 +19,7 @@
 #include <tb.h>
 #include <gps.h>
 
-#ifdef DEVELOPMENT
-#define ETHER_DEV "enp1s1"
-#else
+#ifndef ETHER_DEV
 #define ETHER_DEV "eth0"
 #endif
 
@@ -66,7 +64,7 @@ void init()
 
 void configure()
 {
-#ifdef DEVELOPMENT
+#ifdef LOCAL_FILES
 	strncpy(CFG_config.net.host, "localhost", sizeof CFG_config.net.host);
 #else
 	strncpy(CFG_config.net.host, "collector.opensky-network.org",
@@ -89,9 +87,9 @@ void configure()
 
 	CFG_config.stats.enabled = false;
 
-	if (!CFG_config.dev.serialSet) { // TODO: we need something better here
+	if (!CFG_config.dev.serialSet) {
 		CFG_config.dev.serialSet = UTIL_getSerial(ETHER_DEV,
-		    &CFG_config.dev.serial);
+			&CFG_config.dev.serial);
 		if (!CFG_config.dev.serialSet) {
 			LOG_log(LOG_LEVEL_ERROR, PFX, "No serial number configured");
 		} else {

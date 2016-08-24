@@ -153,6 +153,11 @@ AM_CONDITIONAL([STANDALONE], [test x$standalone = xtrue])
 AS_IF([test x$standalone = xtrue],
   [AC_DEFINE([STANDALONE], [1], [Add standalone components])])
 
+AC_ARG_VAR([ETHER_DEV], [Set the name of the ethernet device @<:@eth0@:>@])
+AS_IF([test x${ETHER_DEV} != x],
+  [AC_DEFINE_UNQUOTED([ETHER_DEV], ["${ETHER_DEV}"],
+    [Override ethernet device])])
+  
 AC_ARG_WITH([systemd],
   [AS_HELP_STRING([--with-systemd], [Compile with systemd integration @<:@check@:>@])],
   [:],[with_systemd=check])
