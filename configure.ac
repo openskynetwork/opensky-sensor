@@ -154,6 +154,11 @@ AC_ARG_ENABLE([radarcape-library-examples],
    esac], [enableval=false])
 AM_CONDITIONAL([RADARCAPE_LIBRARY_EXAMPLES], [test x$enableval = xyes])
 
+AC_ARG_VAR([ETHER_DEV], [Set the name of the ethernet device @<:@eth0@:>@])
+AS_IF([test x${ETHER_DEV} != x],
+  [AC_DEFINE_UNQUOTED([ETHER_DEV], ["${ETHER_DEV}"],
+    [Override ethernet device])])
+  
 AC_ARG_WITH([systemd],
   [AS_HELP_STRING([--with-systemd],
     [Compile with systemd integration @<:@check@:>@])],
