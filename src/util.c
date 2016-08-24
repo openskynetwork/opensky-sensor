@@ -139,14 +139,14 @@ void UTIL_dropPrivileges()
 		struct group grp, * grp_res;
 
 		int pwd_err = getpwnam_r("nobody", &pwd, buffer, bufsz, &pwd_res);
-		if (!pwd_err && pwd_res == &pwd)
+		if (!pwd_err && pwd_res == &pwd) {
 			u_nobody = pwd.pw_uid;
+			g_nobody = pwd.pw_gid;
+		}
 
 		int grp_err = getgrnam_r("nobody", &grp, buffer, bufsz, &grp_res);
 		if (!grp_err && grp_res == &grp)
 			g_nobody = grp.gr_gid;
-		else if (!pwd_err && pwd_res == &pwd)
-			g_nobody = pwd.pw_gid;
 
 		free(buffer);
 	}
