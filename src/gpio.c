@@ -3,7 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <gpio.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -11,8 +10,9 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <stdlib.h>
-#include <util.h>
-#include <log.h>
+#include "gpio.h"
+#include "util.h"
+#include "log.h"
 
 static const char PFX[] = "GPIO";
 

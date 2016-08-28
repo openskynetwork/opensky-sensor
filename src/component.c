@@ -6,10 +6,10 @@
 #define _GNU_SOURCE
 #include <pthread.h>
 #include <errno.h>
-#include <component.h>
-#include <log.h>
 #include <stdlib.h>
 #include <time.h>
+#include "component.h"
+#include "log.h"
 
 static const char PFX[] = "COMP";
 

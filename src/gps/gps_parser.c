@@ -3,14 +3,14 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <gps/gps_parser.h>
-#include <gps/gps_input.h>
-#include <util.h>
 #include <assert.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
-#include <threads.h>
+#include "gps_parser.h"
+#include "gps_input.h"
+#include "util.h"
+#include "threads.h"
 
 enum DECODE_STATUS {
 	DECODE_STATUS_OK,

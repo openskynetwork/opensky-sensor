@@ -3,17 +3,17 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <statistics.h>
 #include <stdbool.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
-#include <buffer.h>
 #include <signal.h>
-#include <cfgfile.h>
-#include <threads.h>
+#include "statistics.h"
+#include "buffer.h"
+#include "cfgfile.h"
+#include "threads.h"
 
 volatile struct STAT_Statistics STAT_stats;
 

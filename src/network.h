@@ -6,9 +6,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <component.h>
-#include <gps.h>
-#include <openskytypes.h>
+#include "component.h"
+#include "gps.h"
+#include "openskytypes.h"
 
 extern struct Component NET_comp;
 

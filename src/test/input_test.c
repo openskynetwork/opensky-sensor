@@ -3,17 +3,18 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <input_test.h>
-#include <openskytypes.h>
-#include <radarcape/rc-input.h>
 #include <check.h>
-#include <input.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <endian.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
+#include "input_test.h"
+#include "../openskytypes.h"
+#include "../radarcape/rc-input.h"
+#include "../input.h"
 
 struct TEST test;
 

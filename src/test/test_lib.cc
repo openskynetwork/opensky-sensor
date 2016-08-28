@@ -3,14 +3,15 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <opensky.hh>
+#include <ostream>
 #include <cstring>
 #include <check.h>
-#include <buffer.h>
-#include <openskytypes.h>
 #include <unistd.h>
-#include <component.h>
 #include <endian.h>
+#include "../lib/opensky.hh"
+#include "../buffer.h"
+#include "../openskytypes.h"
+#include "../component.h"
 
 struct Component TB_comp = {};
 struct Component NET_comp = {};

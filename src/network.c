@@ -3,14 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <network.h>
-#include <log.h>
-#include <net_common.h>
-#include <statistics.h>
-#include <cfgfile.h>
-#include <util.h>
-#include <gps.h>
-#include <threads.h>
 #include <pthread.h>
 #include <sys/socket.h>
 #include <stdio.h>
@@ -19,11 +11,16 @@
 #include <string.h>
 #include <unistd.h>
 #include <endian.h>
-#include <statistics.h>
-#include <pthread.h>
-#include <threads.h>
-#include <cfgfile.h>
-#include <util.h>
+#include "network.h"
+#include "log.h"
+#include "net_common.h"
+#include "statistics.h"
+#include "cfgfile.h"
+#include "util.h"
+#include "gps.h"
+#include "threads.h"
+#include "statistics.h"
+#include "cfgfile.h"
 
 //#define DEBUG
 

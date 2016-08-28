@@ -3,25 +3,25 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <gpio.h>
-#include <watchdog.h>
-#include <fpga.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <buffer.h>
-#include <network.h>
-#include <cfgfile.h>
-#include <statistics.h>
-#include <tb.h>
-#include <recv.h>
-#include <relay.h>
-#include <log.h>
-#include <gps.h>
 #include <signal.h>
 #include <pthread.h>
 #include <string.h>
 #include <error.h>
 #include <sys/time.h>
+#include "gpio.h"
+#include "watchdog.h"
+#include "fpga.h"
+#include "buffer.h"
+#include "network.h"
+#include "cfgfile.h"
+#include "statistics.h"
+#include "tb.h"
+#include "recv.h"
+#include "relay.h"
+#include "log.h"
+#include "gps.h"
 
 static const char PFX[] = "MAIN";
 

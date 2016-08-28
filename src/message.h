@@ -4,7 +4,7 @@
 
 #define _HAVE_MESSAGE_H
 
-#include <openskytypes.h>
+#include "openskytypes.h"
 
 #ifdef __cplusplus
 extern "C" {

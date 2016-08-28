@@ -3,8 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <net_common.h>
-#include <log.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -14,9 +12,11 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
-#include <threads.h>
-#include <util.h>
 #include <assert.h>
+#include "net_common.h"
+#include "log.h"
+#include "threads.h"
+#include "util.h"
 
 struct Hosts {
 	struct addrinfo * hosts;

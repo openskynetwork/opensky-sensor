@@ -1,15 +1,16 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
-#include <gps.h>
+
 #include <error.h>
 #include <errno.h>
 #include <time.h>
 #include <pthread.h>
-#include <threads.h>
 #include <inttypes.h>
-#include <endec.h>
-#include <network.h>
 #include <stdio.h>
+#include "gps.h"
+#include "threads.h"
+#include "endec.h"
+#include "network.h"
 
 static pthread_mutex_t posMutex = PTHREAD_MUTEX_INITIALIZER;
 static struct GPS_RawPosition position;

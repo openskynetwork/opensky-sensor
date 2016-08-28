@@ -4,12 +4,13 @@
 #include <config.h>
 #endif
 #include <check.h>
-#include <buffer.h>
-#include <statistics.h>
-#include <component.h>
-#include <cfgfile.h>
 #include <signal.h>
 #include <sys/resource.h>
+#include <stdbool.h>
+#include "../buffer.h"
+#include "../statistics.h"
+#include "../component.h"
+#include "../cfgfile.h"
 
 struct CFG_Config CFG_config;
 static struct CFG_BUF * const cfg = &CFG_config.buf;

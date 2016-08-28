@@ -3,14 +3,14 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <input_perf.h>
-#include <input.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <endian.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include "input_perf.h"
+#include "../input.h"
 
 static uint8_t * buffer;
 static size_t bufLen;

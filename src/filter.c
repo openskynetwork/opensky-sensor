@@ -3,11 +3,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <filter.h>
-#include <statistics.h>
-#include <cfgfile.h>
-#include <util.h>
-#include <input.h>
+#include "filter.h"
+#include "statistics.h"
+#include "cfgfile.h"
+#include "util.h"
+#include "input.h"
 
 enum MODES_TYPE {
 	MODES_TYPE_NONE = 0,

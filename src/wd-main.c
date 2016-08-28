@@ -3,17 +3,17 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <gpio.h>
-#include <watchdog.h>
-#include <fpga.h>
-#include <cfgfile.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <stdio.h>
-#include <util.h>
 #include <string.h>
-#include <log.h>
+#include "gpio.h"
+#include "watchdog.h"
+#include "fpga.h"
+#include "cfgfile.h"
+#include "util.h"
+#include "log.h"
 
 #if defined(LOCAL_FILES) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."

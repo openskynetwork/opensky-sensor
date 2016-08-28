@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 
-#include <openskytypes.h>
+#include "openskytypes.h"
 
 #ifdef __cplusplus
 extern "C" {

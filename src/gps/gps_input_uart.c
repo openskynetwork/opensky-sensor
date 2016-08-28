@@ -3,7 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <gps/gps_input.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -12,8 +11,9 @@
 #include <error.h>
 #include <termios.h>
 #include <unistd.h>
-#include <cfgfile.h>
-#include <util.h>
+#include "gps_input.h"
+#include "../cfgfile.h"
+#include "../util.h"
 
 /** file descriptor for UART */
 static int fd;

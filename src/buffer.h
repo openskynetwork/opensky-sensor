@@ -5,8 +5,8 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <component.h>
-#include <openskytypes.h>
+#include "component.h"
+#include "openskytypes.h"
 
 #ifdef __cplusplus
 extern "C" {

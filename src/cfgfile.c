@@ -3,7 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <log.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -17,8 +16,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
-#include <cfgfile.h>
-#include <util.h>
+#include "log.h"
+#include "cfgfile.h"
+#include "util.h"
 
 static const char PFX[] = "CFG";
 

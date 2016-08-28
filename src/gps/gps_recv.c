@@ -1,17 +1,17 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
-#include <gps.h>
-#include <gps/gps_recv.h>
-#include <gps/gps_parser.h>
-#include <endec.h>
 #include <error.h>
 #include <errno.h>
 #include <time.h>
 #include <pthread.h>
-#include <threads.h>
 #include <inttypes.h>
-#include <network.h>
 #include <stdio.h>
+#include "gps_recv.h"
+#include "gps_parser.h"
+#include "../gps.h"
+#include "../network.h"
+#include "../endec.h"
+#include "../threads.h"
 
 //static void timeFrame(const uint8_t * buf);
 static void posFrame(const uint8_t * buf);

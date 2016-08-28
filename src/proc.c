@@ -3,8 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <proc.h>
-#include <log.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -14,6 +12,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include "proc.h"
+#include "log.h"
 
 static const char PFX[] = "PROC";
 

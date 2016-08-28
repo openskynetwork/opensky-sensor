@@ -3,14 +3,14 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <recv.h>
-#include <input.h>
-#include <message.h>
-#include <openskytypes.h>
-#include <buffer.h>
-#include <threads.h>
-#include <util.h>
-#include <filter.h>
+#include "recv.h"
+#include "input.h"
+#include "message.h"
+#include "openskytypes.h"
+#include "buffer.h"
+#include "threads.h"
+#include "util.h"
+#include "filter.h"
 
 static bool construct();
 static void destruct();

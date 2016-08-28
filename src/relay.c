@@ -3,14 +3,14 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <relay.h>
 #include <stdbool.h>
-#include <openskytypes.h>
-#include <buffer.h>
-#include <network.h>
-#include <cfgfile.h>
-#include <threads.h>
-#include <util.h>
+#include "relay.h"
+#include "openskytypes.h"
+#include "buffer.h"
+#include "network.h"
+#include "cfgfile.h"
+#include "threads.h"
+#include "util.h"
 
 static void mainloop();
 

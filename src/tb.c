@@ -3,8 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <tb.h>
-#include <log.h>
 #include <stdbool.h>
 #include <inttypes.h>
 #include <unistd.h>
@@ -14,13 +12,15 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdio.h>
-#include <network.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <proc.h>
-#include <cfgfile.h>
-#include <filter.h>
+#include "tb.h"
+#include "log.h"
+#include "network.h"
+#include "proc.h"
+#include "cfgfile.h"
+#include "filter.h"
 
 static const char PFX[] = "TB";
 

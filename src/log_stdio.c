@@ -1,13 +1,13 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
-#include <log.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include <threads.h>
-#include <util.h>
+#include "log.h"
+#include "threads.h"
+#include "util.h"
 
 static const char * levelNames[] = {
 	[LOG_LEVEL_INFO] = "INFO",

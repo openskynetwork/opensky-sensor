@@ -1,10 +1,10 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
-#include <opensky.hh>
 #include <cstring>
 #include <unistd.h>
 #include <endian.h>
 #include <stdint.h>
+#include "opensky.hh"
 
 int main()
 {

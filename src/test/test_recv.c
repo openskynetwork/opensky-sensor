@@ -4,15 +4,15 @@
 #include <config.h>
 #endif
 #include <check.h>
-#include <openskytypes.h>
-#include <recv.h>
-#include <buffer.h>
-#include <input_test.h>
-#include <statistics.h>
-#include <cfgfile.h>
 #include <signal.h>
 #include <ctype.h>
 #include <unistd.h>
+#include "../openskytypes.h"
+#include "../recv.h"
+#include "../buffer.h"
+#include "input_test.h"
+#include "../statistics.h"
+#include "../cfgfile.h"
 
 struct CFG_Config CFG_config;
 static struct CFG_RECV * const cfg = &CFG_config.recv;

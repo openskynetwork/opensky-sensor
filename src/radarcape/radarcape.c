@@ -4,7 +4,6 @@
 #include <config.h>
 #endif
 #define _DEFAULT_SOURCE
-#include <log.h>
 #include <assert.h>
 #include <string.h>
 #include <stdint.h>
@@ -12,13 +11,14 @@
 #include <endian.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include <radarcape/rc-input.h>
-#include <openskytypes.h>
-#include <statistics.h>
 #include <unistd.h>
-#include <cfgfile.h>
-#include <threads.h>
-#include <util.h>
+#include "rc-input.h"
+#include "../openskytypes.h"
+#include "../statistics.h"
+#include "../log.h"
+#include "../cfgfile.h"
+#include "../threads.h"
+#include "../util.h"
 
 static const char PFX[] = "RC";
 

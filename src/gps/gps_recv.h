@@ -3,9 +3,9 @@
 #ifndef _HAVE_GPS_RECV_H
 #define _HAVE_GPS_RECV_H
 
-#include <component.h>
 #include <stdint.h>
 #include <stdatomic.h>
+#include "component.h"
 
 #ifdef __cplusplus
 extern "C" {

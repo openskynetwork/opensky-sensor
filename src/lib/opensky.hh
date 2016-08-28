@@ -3,8 +3,8 @@
 #pragma once
 
 #include <ostream>
-#include <MessageTypes.h>
-#include <GpsStatus.h>
+#include "MessageTypes.h"
+#include "GpsStatus.h"
 
 namespace OpenSky {
 

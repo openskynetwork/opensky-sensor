@@ -28,7 +28,7 @@
 									<listOptionValue builtIn="false" value="&quot;__auto_type=void *&quot;"/>
 									<listOptionValue builtIn="false" value="ECLIPSE=1"/>
 								</option>
-								<option id="gnu.c.compiler.option.include.paths.1353469528" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+								<option id="gnu.c.compiler.option.include.paths.1353469528" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/opensky-sensor/src}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1218871380" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>

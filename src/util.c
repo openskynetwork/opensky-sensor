@@ -3,8 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <util.h>
-#include <log.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <linux/if.h>
@@ -20,6 +18,9 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <stdbool.h>
+#include "util.h"
+#include "log.h"
 
 static const char PFX[] = "UTIL";
 

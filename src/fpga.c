@@ -3,9 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <gpio.h>
-#include <fpga.h>
-#include <log.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -18,7 +15,10 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <string.h>
-#include <cfgfile.h>
+#include "gpio.h"
+#include "fpga.h"
+#include "log.h"
+#include "cfgfile.h"
 
 static const char PFX[] = "FPGA";
 

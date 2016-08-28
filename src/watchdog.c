@@ -3,11 +3,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <gpio.h>
-#include <watchdog.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <statistics.h>
+#include "watchdog.h"
+#include "gpio.h"
+#include "statistics.h"
 
 /** Watchdog GPIO number */
 #define WD_GPIO 60

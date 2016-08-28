@@ -4,7 +4,7 @@
 #define _HAVE_GPIO_H
 
 #include <stdint.h>
-#include <component.h>
+#include "component.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,13 +1,12 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
 #ifndef _HAVE_INPUT_TEST_H
-
 #define _HAVE_INPUT_TEST_H
 
-#include <openskytypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include "../openskytypes.h"
 
 struct TEST_Buffer {
 	uint8_t * payload;

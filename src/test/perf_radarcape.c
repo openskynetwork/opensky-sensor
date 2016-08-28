@@ -4,13 +4,13 @@
 #include <config.h>
 #endif
 #include <check.h>
-#include <openskytypes.h>
-#include <input_perf.h>
-#include <input.h>
-#include <statistics.h>
-#include <cfgfile.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include "input_perf.h"
+#include "../openskytypes.h"
+#include "../input.h"
+#include "../statistics.h"
+#include "../cfgfile.h"
 
 struct CFG_Config CFG_config;
 

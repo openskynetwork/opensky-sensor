@@ -3,7 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <radarcape/rc-input.h>
 #include <sys/types.h>
 #include <time.h>
 #include <string.h>
@@ -12,6 +11,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include "rc-input.h"
 
 static bool first;
 static uint_fast32_t x, x2;

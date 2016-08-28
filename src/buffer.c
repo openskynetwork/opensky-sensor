@@ -3,19 +3,19 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <log.h>
 #include <errno.h>
 #include <assert.h>
 #include <pthread.h>
-#include <buffer.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <statistics.h>
-#include <cfgfile.h>
-#include <threads.h>
-#include <util.h>
+#include "log.h"
+#include "buffer.h"
+#include "statistics.h"
+#include "cfgfile.h"
+#include "threads.h"
+#include "util.h"
 
 static const char PFX[] = "BUF";
 

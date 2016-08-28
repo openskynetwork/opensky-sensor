@@ -3,7 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <radarcape/rc-input.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -11,9 +10,10 @@
 #include <termios.h>
 #include <unistd.h>
 #include <errno.h>
-#include <cfgfile.h>
-#include <util.h>
-#include <log.h>
+#include "rc-input.h"
+#include "../cfgfile.h"
+#include "../util.h"
+#include "../log.h"
 
 static const char PFX[] = "INPUT";
 

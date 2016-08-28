@@ -1,24 +1,23 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "opensky.hh"
-#include <buffer.h>
-#include <component.h>
-#include <network.h>
-#include <relay.h>
-#include <filter.h>
 #include <assert.h>
 #include <string.h>
-#include <util.h>
-#include <cfgfile.h>
 #include <error.h>
 #include <stdlib.h>
-#include <MessageTypes.h>
-#include <log.h>
-#include <gps.h>
-#include <tb.h>
-#include <gps.h>
-#include <openskytypes.h>
+#include "opensky.hh"
+#include "MessageTypes.h"
+#include "../buffer.h"
+#include "../component.h"
+#include "../network.h"
+#include "../relay.h"
+#include "../filter.h"
+#include "../util.h"
+#include "../cfgfile.h"
+#include "../log.h"
+#include "../gps.h"
+#include "../tb.h"
+#include "../openskytypes.h"
 
 #ifndef ETHER_DEV
 #define ETHER_DEV "eth0"

@@ -4,8 +4,8 @@
 #define _HAVE_STATISTICS_H
 
 #include <stdint.h>
-#include <component.h>
-#include <message.h>
+#include "component.h"
+#include "message.h"
 
 #ifdef __cplusplus
 extern "C" {

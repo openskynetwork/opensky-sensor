@@ -3,7 +3,7 @@
 #ifndef _HAVE_WATCHDOG_H
 #define _HAVE_WATCHDOG_H
 
-#include <component.h>
+#include "component.h"
 
 #ifdef __cplusplus
 extern "C" {

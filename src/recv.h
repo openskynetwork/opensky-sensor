@@ -3,7 +3,7 @@
 #ifndef _HAVE_RECV_H
 #define _HAVE_RECV_H
 
-#include <component.h>
+#include "component.h"
 
 #ifdef __cplusplus
 extern "C" {
