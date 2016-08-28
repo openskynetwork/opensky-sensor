@@ -1,7 +1,7 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
-#ifndef _HAVE_INPUT_TEST_H
-#define _HAVE_INPUT_TEST_H
+#ifndef _HAVE_INPUT_PERF_H
+#define _HAVE_INPUT_PERF_H
 
 #include <adsb.h>
 #include <stdbool.h>
