@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#ifdef CLEANUP
+#ifdef CLEANUP_ROUTINES
 
 #include <pthread.h>
 

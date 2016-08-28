@@ -99,7 +99,7 @@ int main(int argc, char * argv[])
 
 	run = true;
 	pthread_mutex_lock(&sigmutex);
-#ifdef CLEANUP
+#ifdef CLEANUP_ROUTINES
 	signal(SIGINT, &sigint);
 #endif
 	while (run)
@@ -113,7 +113,7 @@ int main(int argc, char * argv[])
 	return EXIT_SUCCESS;
 }
 
-__attribute__((unused))
+#ifdef CLEANUP_ROUTINES
 static void sigint(int sig)
 {
 	pthread_mutex_lock(&sigmutex);
@@ -121,3 +121,4 @@ static void sigint(int sig)
 	pthread_cond_broadcast(&sigcond);
 	pthread_mutex_unlock(&sigmutex);
 }
+#endif
