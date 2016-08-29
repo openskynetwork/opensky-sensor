@@ -12,6 +12,36 @@
 extern "C" {
 #endif
 
+enum CFG_VALUE_TYPE {
+	CFG_VALUE_TYPE_STRING,
+	CFG_VALUE_TYPE_INT,
+	CFG_VALUE_TYPE_BOOL,
+};
+
+union CFG_Value {
+	char * string;
+	uint32_t integer;
+	bool boolean;
+};
+
+struct CFG_Option {
+	const char * name;
+	enum CFG_VALUE_TYPE type;
+	union CFG_Value * var;
+	union CFG_Value def;
+};
+
+struct CFG_Section {
+	const char * name;
+	void (*check)(struct CFG_Section *);
+	int n_opt;
+	struct CFG_Option options[];
+};
+
+bool CFG_registerSection(const struct CFG_Section * section);
+void CFG_parse(const char * file);
+
+
 struct CFG_WD {
 	bool enabled;
 };
