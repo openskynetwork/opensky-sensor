@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <sys/resource.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include "../buffer.h"
 #include "../statistics.h"
 #include "../component.h"

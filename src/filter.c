@@ -3,6 +3,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <stdbool.h>
 #include "filter.h"
 #include "statistics.h"
 #include "cfgfile.h"

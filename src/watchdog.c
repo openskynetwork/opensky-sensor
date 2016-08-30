@@ -3,8 +3,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <stdio.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include "watchdog.h"
 #include "gpio.h"
 #include "statistics.h"

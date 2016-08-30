@@ -6,7 +6,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <inttypes.h>
-#include <stdio.h>
+#include <stdbool.h>
 #include "gps.h"
 #include "threads.h"
 #include "endec.h"

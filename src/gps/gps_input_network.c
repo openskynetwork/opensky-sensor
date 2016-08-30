@@ -11,6 +11,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <stdbool.h>
 #include "gps_input.h"
 #include "../net_common.h"
 #include "../cfgfile.h"

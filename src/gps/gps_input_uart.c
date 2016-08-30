@@ -11,6 +11,7 @@
 #include <error.h>
 #include <termios.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include "gps_input.h"
 #include "../cfgfile.h"
 #include "../util.h"

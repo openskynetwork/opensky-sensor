@@ -15,10 +15,10 @@
 #include <pwd.h>
 #include <grp.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "util.h"
 #include "log.h"
 

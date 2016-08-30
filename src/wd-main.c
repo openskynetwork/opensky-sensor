@@ -6,8 +6,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
-#include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include "gpio.h"
 #include "watchdog.h"
 #include "fpga.h"

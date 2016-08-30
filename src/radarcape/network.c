@@ -9,6 +9,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <stdbool.h>
 #include "rc-input.h"
 #include "../net_common.h"
 #include "../cfgfile.h"

@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "gpio.h"
 #include "util.h"
 #include "log.h"

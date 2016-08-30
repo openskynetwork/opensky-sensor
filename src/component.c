@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
 #include "component.h"
 #include "log.h"
 

@@ -8,7 +8,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>

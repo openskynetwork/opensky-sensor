@@ -10,6 +10,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdbool.h>
 #include "rc-input.h"
 #include "../cfgfile.h"
 #include "../util.h"

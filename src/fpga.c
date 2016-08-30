@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <stdio.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdbool.h>

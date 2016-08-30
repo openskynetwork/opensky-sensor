@@ -5,12 +5,12 @@
 #endif
 #include <pthread.h>
 #include <sys/socket.h>
-#include <stdio.h>
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <endian.h>
+#include <stdbool.h>
 #include "network.h"
 #include "log.h"
 #include "net_common.h"

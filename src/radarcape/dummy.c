@@ -8,7 +8,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include <stdio.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include "rc-input.h"

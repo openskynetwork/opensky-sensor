@@ -5,6 +5,7 @@
 #endif
 #include <check.h>
 #include <inttypes.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include "input_perf.h"
 #include "../openskytypes.h"

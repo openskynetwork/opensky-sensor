@@ -7,6 +7,8 @@
 #include <signal.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include "../openskytypes.h"
 #include "../recv.h"
 #include "../buffer.h"

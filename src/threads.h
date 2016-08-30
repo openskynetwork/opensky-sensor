@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+/* TODO: get rid of NOC_printf/... functions -> should be LOG now! */
+
 #ifdef CLEANUP_ROUTINES
 
 #include <pthread.h>

@@ -8,7 +8,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <unistd.h>
 #include "log.h"
 #include "buffer.h"

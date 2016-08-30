@@ -4,9 +4,10 @@
 #include <config.h>
 #endif
 #include <assert.h>
-#include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include "gps_parser.h"
 #include "gps_input.h"
 #include "util.h"

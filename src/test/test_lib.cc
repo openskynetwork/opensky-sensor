@@ -11,7 +11,6 @@
 #include "../lib/opensky.hh"
 #include "../buffer.h"
 #include "../openskytypes.h"
-#include "../component.h"
 
 struct Component TB_comp = {};
 struct Component NET_comp = {};

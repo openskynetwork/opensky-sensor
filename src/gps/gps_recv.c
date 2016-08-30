@@ -5,7 +5,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <inttypes.h>
-#include <stdio.h>
+#include <stdbool.h>
 #include "gps_recv.h"
 #include "gps_parser.h"
 #include "../gps.h"

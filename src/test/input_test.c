@@ -5,10 +5,8 @@
 #endif
 #include <check.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <endian.h>
 #include <ctype.h>
-#include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include "input_test.h"

@@ -5,11 +5,14 @@
 #endif
 #include <check.h>
 #include <ctype.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include "../openskytypes.h"
 #include "../input.h"
 #include "input_test.h"
 #include "../statistics.h"
 #include "../cfgfile.h"
+
 
 struct CFG_Config CFG_config;
 struct CFG_RECV * const cfg = &CFG_config.recv;

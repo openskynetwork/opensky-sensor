@@ -4,10 +4,8 @@
 #include <config.h>
 #endif
 #include <stdlib.h>
-#include <stdio.h>
 #include <endian.h>
 #include <ctype.h>
-#include <stdlib.h>
 #include <string.h>
 #include "input_perf.h"
 #include "../input.h"
