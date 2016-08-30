@@ -34,9 +34,8 @@ static off_t bufferSize;
 static uint_fast32_t bufferLine;
 
 
-static void loadDefaults();
 static void readCfg(const char * cfgStr, off_t size);
-
+static void fix();
 
 bool CFG_registerSection(const struct CFG_Section * section)
 {
@@ -46,14 +45,6 @@ bool CFG_registerSection(const struct CFG_Section * section)
 		return false;
 	sections[n_sections++] = section;
 	return true;
-}
-
-/** Load default configuration values.
- * \note this should be called prior to CFG_readFile()
- */
-void CFG_loadDefaults()
-{
-	loadDefaults();
 }
 
 /** Read a configuration file.
@@ -92,19 +83,8 @@ bool CFG_readFile(const char * file)
 	munmap(cfgStr, st.st_size);
 
 	/* fix configuration */
-	//fix(&CFG_config);
+	fix();
 
-	return true;
-}
-
-/** Check the current configuration.
- * \note Should be called after CFG_readFile()
- * \return true if configuration is correct, false otherwise.
- */
-bool CFG_check()
-{
-	/* check configuration */
-	//return check(&CFG_config);
 	return true;
 }
 
@@ -206,16 +186,16 @@ static inline bool parseInt(const char * value, size_t valLen, uint32_t * ret)
 	return true;
 }
 
-#if 0
 /** Parse an integer for port. Garbage after the number is ignored.
  * \param opt option to be parsed
  * \param ret parsed port. Only written if parsing was successful
  * \return true if parsing was successful, false otherwise
  */
-static inline bool parsePort(const char * value, size_t valLen, uint32_t * ret)
+static inline bool parsePort(const char * value, size_t valLen,
+	uint_fast16_t * ret)
 {
 	uint32_t n;
-	if (parseInt(opt, &n)) {
+	if (parseInt(value, valLen, &n)) {
 		if (n > 0xffff) {
 			LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32
 				": port must be < 65536", bufferLine);
@@ -226,7 +206,6 @@ static inline bool parsePort(const char * value, size_t valLen, uint32_t * ret)
 	}
 	return false;
 }
-#endif
 
 /** Parse a boolean.
  * \param opt option to be parsed
@@ -283,13 +262,13 @@ static bool assignOptionFromString(const struct CFG_Option * option,
 {
 	switch (option->type) {
 	case CFG_VALUE_TYPE_STRING:
-		return parseString(value, valLen, option->var->string, 20); /* TODO */
+		return parseString(value, valLen, option->var, option->maxlen);
 		break;
 	case CFG_VALUE_TYPE_INT:
-		return parseInt(value, valLen, &option->var->integer);
+		return parseInt(value, valLen, option->var);
 		break;
 	case CFG_VALUE_TYPE_BOOL:
-		return parseBool(value, valLen, &option->var->boolean);
+		return parseBool(value, valLen, option->var);
 		break;
 	default:
 		assert(false);
@@ -386,10 +365,8 @@ static void readCfg(const char * cfgStr, off_t size)
 	}
 }
 
-/** Load default values.
- * \param cfg configuration
- */
-static void loadDefaults()
+/** Load default values. */
+void CFG_loadDefaults()
 {
 	size_t sect;
 
@@ -397,12 +374,50 @@ static void loadDefaults()
 		size_t i;
 		for (i = 0; i < sections[sect]->n_opt; ++i) {
 			const struct CFG_Option * opt = &sections[sect]->options[i];
+			union CFG_Value * val = opt->var;
 			switch (opt->type) {
+			case CFG_VALUE_TYPE_BOOL:
+				val->boolean = opt->def.boolean;
+				break;
+			case CFG_VALUE_TYPE_INT:
+				val->integer = opt->def.integer;
+				break;
+			case CFG_VALUE_TYPE_PORT:
+				val->port = opt->def.port;
+				break;
 			case CFG_VALUE_TYPE_STRING:
-				opt->var->string = opt->def.string;
+				strncpy(val->string, opt->def.string, opt->maxlen);
+				break;
 			}
 		}
 	}
+}
+
+static void fix()
+{
+	size_t sect;
+
+	for (sect = 0; sect < n_sections; ++sect) {
+		const struct CFG_Section * section = sections[sect];
+		if (section->fix)
+			section[sect]->fix(section);
+	}
+}
+
+/** Check the current configuration.
+ * \note Should be called after CFG_readFile()
+ * \return true if configuration is correct, false otherwise.
+ */
+bool CFG_check()
+{
+	size_t sect;
+
+	for (sect = 0; sect < n_sections; ++sect) {
+		const struct CFG_Section * section = sections[sect];
+		if (section->check && !section->check(section))
+			return false;
+	}
+	return true;
 }
 
 #if 0
