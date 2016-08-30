@@ -13,6 +13,8 @@ extern "C" {
 struct Component {
 	const char * description;
 
+	void (*enroll)();
+
 	bool (*construct)(void * data);
 	void (*destruct)();
 

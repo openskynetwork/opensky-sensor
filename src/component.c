@@ -39,10 +39,15 @@ void COMP_setSilent(bool s)
  */
 void COMP_register(struct Component * comp, void * initData)
 {
-	/* local fixups */
-	if (!comp->start && comp->main) {
-		comp->start = &COMP_startThreaded;
-		comp->stop = &COMP_stopThreaded;
+	if (comp->description) {
+		if (comp->enroll)
+			comp->enroll();
+
+		/* local fixups */
+		if (!comp->start && comp->main) {
+			comp->start = &COMP_startThreaded;
+			comp->stop = &COMP_stopThreaded;
+		}
 	}
 
 	/* append to list */
@@ -61,8 +66,12 @@ bool COMP_initAll()
 {
 	const struct Component * c;
 	for (c = head; c; c = c->next) {
+		if (!c->description)
+			continue;
+
 		if (!silent)
 			LOG_logf(LOG_LEVEL_INFO, PFX, "Initialize %s", c->description);
+
 		if (c->construct && !c->construct(c->data)) {
 			LOG_logf(LOG_LEVEL_ERROR, PFX, "Failed to initialize %s",
 				c->description);
@@ -78,7 +87,8 @@ void COMP_destructAll()
 {
 	const struct Component * c;
 	for (c = tail; c; c = c->prev)
-		destruct(c);
+		if (c->description)
+			destruct(c);
 }
 
 /** Start all components. If not all components could be started, the already
@@ -89,9 +99,14 @@ bool COMP_startAll()
 {
 	struct Component * c;
 	for (c = head; c; c = c->next) {
+		if (!c->description)
+			continue;
+
 		c->stopped = false;
+
 		if (!silent)
 			LOG_logf(LOG_LEVEL_INFO, PFX, "Start %s", c->description);
+
 		if (c->start && !c->start(c, c->data)) {
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Failed to start %s", c->description);
 			stopUntil(c);
@@ -111,6 +126,7 @@ static void stop(struct Component * c, bool deferred)
 {
 	if (!silent)
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Stopping %s", c->description);
+
 	if (c->stop) {
 		c->stopped = c->stop(c, deferred);
 	} else {
@@ -126,6 +142,9 @@ void stopAll(struct Component * tail)
 	struct Component * c;
 	bool deferred = false;
 	for (c = tail; c; c = c->prev) {
+		if (!c->description)
+			continue;
+
 		stop(c, false);
 		deferred |= !c->stopped;
 	}
@@ -137,6 +156,9 @@ void stopAll(struct Component * tail)
 		progress = false;
 		deferred = false;
 		for (c = tail; c; c = c->prev) {
+			if (!c->description)
+				continue;
+
 			if (!c->stopped) {
 				stop(c, true);
 				progress |= c->stopped;
@@ -176,6 +198,9 @@ static void stopUntil(struct Component * end)
  */
 bool COMP_startThreaded(struct Component * c, void * data)
 {
+	if (!c->description)
+		return true;
+
 	if (c->main) {
 		int rc = pthread_create(&c->thread, NULL, (void*(*)(void*))(c->main),
 			data);
@@ -208,6 +233,9 @@ static int tryJoin(struct Component * c)
  */
 bool COMP_stopThreaded(struct Component * c, bool deferred)
 {
+	if (!c->description)
+		return true;
+
 	if (deferred) {
 		if (tryJoin(c) != 0) {
 			/*if (!silent) TODO */
@@ -235,5 +263,6 @@ static void destructUntil(const struct Component * end)
 {
 	const struct Component * c;
 	for (c = end->prev; c; c = c->prev)
-		destruct(c);
+		if (c->description)
+			destruct(c);
 }
