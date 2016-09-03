@@ -46,10 +46,10 @@ int main(int argc, char * argv[])
 	srand(tv.tv_sec + tv.tv_usec);
 
 #ifdef STANDALONE
-	bool bbwhite = true;
+	//bool bbwhite = true;
 	if (argc == 2) {
 		if (!strcmp(argv[1], "--black")) {
-			bbwhite = false;
+			//bbwhite = false;
 		} else {
 			LOG_logf(LOG_LEVEL_ERROR, PFX, "Usage: %s [--black]", argv[0]);
 		}
@@ -67,6 +67,7 @@ int main(int argc, char * argv[])
 			"Configuration inconsistent, quitting");
 	}
 
+#if 0
 #ifdef STANDALONE
 	if (CFG_config.wd.enabled || CFG_config.fpga.configure)
 		COMP_register(&GPIO_comp, NULL);
@@ -87,6 +88,7 @@ int main(int argc, char * argv[])
 	COMP_register(&RECV_comp, NULL);
 	COMP_register(&RELAY_comp, NULL);
 	COMP_register(&GPS_RECV_comp, NULL);
+#endif
 
 	if (!COMP_initAll()) {
 		LOG_log(LOG_LEVEL_EMERG, PFX, "Could not initialize all components, "

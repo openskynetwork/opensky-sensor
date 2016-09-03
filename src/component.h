@@ -13,31 +13,21 @@ extern "C" {
 struct Component {
 	const char * description;
 
-	void (*enroll)();
-
-	bool (*construct)(void * data);
+	bool (*construct)();
 	void (*destruct)();
 
 	void (*main)();
 
-	bool (*start)(struct Component * c, void * data);
-	bool (*stop)(struct Component * c, bool deferred);
+	bool (*start)();
+	bool (*stop)(bool deferred);
 
-	pthread_t thread;
-	void * data;
-
-	bool stopped;
-
-	struct Component * next;
-	struct Component * prev;
+	const struct Component * dependencies[];
 };
+
 
 void COMP_setSilent(bool s);
 
-void COMP_register(struct Component * comp, void * initData);
-
-bool COMP_startThreaded(struct Component * comp, void * data);
-bool COMP_stopThreaded(struct Component * comp, bool deferred);
+void COMP_register(const struct Component * comp);
 
 bool COMP_initAll();
 void COMP_destructAll();

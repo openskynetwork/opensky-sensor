@@ -12,15 +12,28 @@
 #include "component.h"
 #include "log.h"
 
+#include <stdio.h>
+#include <assert.h>
+
 static const char PFX[] = "COMP";
 
-/** List of all components */
-static struct Component * head = NULL, * tail = NULL;
+struct ComponentI {
+	const struct Component * comp;
+	pthread_t thread;
+	bool stopped;
+	struct ComponentI * next;
+	struct ComponentI * prev;
+};
 
-static void stop(struct Component * c, bool deferred);
+/** List of all components */
+static struct ComponentI * head = NULL, * tail = NULL;
+
+static void stop(struct ComponentI * c, bool deferred);
 static void destruct(const struct Component * c);
-static void stopUntil(struct Component * end);
-static void destructUntil(const struct Component * end);
+static void stopUntil(struct ComponentI * end);
+static void destructUntil(const struct ComponentI * end);
+static bool startThreaded(struct ComponentI * ci);
+static bool stopThreaded(const struct ComponentI * ci, bool deferred);
 
 /** Silence all outputs (useful for unit testing) */
 static bool silent = false;
@@ -37,45 +50,98 @@ void COMP_setSilent(bool s)
  * \param comp component
  * \param initData initial data, passed to the components' start function
  */
-void COMP_register(struct Component * comp, void * initData)
+void COMP_register(const struct Component * comp)
 {
-	if (comp->description) {
-		if (comp->enroll)
-			comp->enroll();
-
-		/* local fixups */
-		if (!comp->start && comp->main) {
-			comp->start = &COMP_startThreaded;
-			comp->stop = &COMP_stopThreaded;
-		}
-	}
-
-	/* append to list */
-	comp->next = NULL;
-	comp->data = initData;
+	struct ComponentI * ci = malloc(sizeof *ci);
+	if (ci == NULL)
+		LOG_errno(LOG_LEVEL_EMERG, "malloc failed");
+	ci->comp = comp;
+	ci->stopped = true;
+	ci->next = NULL;
 	if (head == NULL)
-		head = comp;
+		head = ci;
 	else
-		tail->next = comp;
-	comp->prev = tail;
-	tail = comp;
+		tail->next = ci;
+	ci->prev = tail;
+	tail = ci;
 }
 
-/** Initialize all components */
+static bool exists(const struct Component * comp)
+{
+	struct ComponentI * ci;
+	for (ci = head; ci; ci = ci->next)
+		if (ci->comp == comp)
+			return true;
+	return false;
+}
+
+static void fixDependencies()
+{
+	struct ComponentI * ci;
+	struct Component const * const * dp;
+	for (ci = head; ci; ci = ci->next)
+		for (dp = ci->comp->dependencies; *dp; ++dp)
+			if (!exists(*dp))
+				COMP_register(*dp);
+}
+
+static bool allDependencies(const struct Component * c)
+{
+	struct Component const * const * dp;
+	for (dp = c->dependencies; *dp; ++dp)
+		if (!exists(*dp))
+			return false;
+	return true;
+}
+
+static void sequentialize()
+{
+	struct ComponentI * oldHead = head;
+
+	head = tail = NULL;
+
+	while (oldHead) {
+		struct ComponentI * ci;
+		for (ci = oldHead; ci; ci = ci->next) {
+			if (allDependencies(ci->comp)) {
+				if (ci == oldHead)
+					oldHead = oldHead->next;
+
+				if (ci->prev)
+					ci->prev->next = ci->next;
+				if (ci->next)
+					ci->next->prev = ci->prev;
+
+				ci->next = NULL;
+				if (head == NULL)
+					head = ci;
+				else
+					tail->next = ci;
+				ci->prev = tail;
+				tail = ci;
+				break;
+			}
+		}
+		if (ci == NULL)
+			LOG_log(LOG_LEVEL_EMERG, PFX, "Cycle in dependencies detected");
+	}
+}
+
 bool COMP_initAll()
 {
-	const struct Component * c;
-	for (c = head; c; c = c->next) {
-		if (!c->description)
-			continue;
+	fixDependencies();
+	sequentialize();
 
+	const struct ComponentI * ci;
+	for (ci = head; ci; ci = ci->next) {
+		const struct Component * c = ci->comp;
 		if (!silent)
 			LOG_logf(LOG_LEVEL_INFO, PFX, "Initialize %s", c->description);
 
-		if (c->construct && !c->construct(c->data)) {
+		if (c->construct && !c->construct()) {
 			LOG_logf(LOG_LEVEL_ERROR, PFX, "Failed to initialize %s",
 				c->description);
-			destructUntil(c);
+			destructUntil(ci);
 			return false;
 		}
 	}
@@ -85,10 +151,9 @@ bool COMP_initAll()
 /** Destruct all components. This is the opposite of COMP_initAll(). */
 void COMP_destructAll()
 {
-	const struct Component * c;
-	for (c = tail; c; c = c->prev)
-		if (c->description)
-			destruct(c);
+	const struct ComponentI * ci;
+	for (ci = tail; ci; ci = ci->prev)
+		destruct(ci->comp);
 }
 
 /** Start all components. If not all components could be started, the already
@@ -97,19 +162,24 @@ void COMP_destructAll()
  */
 bool COMP_startAll()
 {
-	struct Component * c;
-	for (c = head; c; c = c->next) {
-		if (!c->description)
-			continue;
+	struct ComponentI * ci;
+	for (ci = head; ci; ci = ci->next) {
+		const struct Component * c = ci->comp;
 
-		c->stopped = false;
+		ci->stopped = false;
 
 		if (!silent)
 			LOG_logf(LOG_LEVEL_INFO, PFX, "Start %s", c->description);
 
-		if (c->start && !c->start(c, c->data)) {
+		bool started = true;
+		if (!c->start && c->main)
+			started = startThreaded(ci);
+		else if (c->start)
+			started = c->start();
+
+		if (!started) {
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Failed to start %s", c->description);
-			stopUntil(c);
+			stopUntil(ci);
 			return false;
 		}
 	}
@@ -122,31 +192,30 @@ bool COMP_startAll()
  *  the component was tried to be stopped. This is passed to the stop function
  *  of the component.
  */
-static void stop(struct Component * c, bool deferred)
+static void stop(struct ComponentI * ci, bool deferred)
 {
+	const struct Component * c = ci->comp;
+
 	if (!silent)
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Stopping %s", c->description);
 
-	if (c->stop) {
-		c->stopped = c->stop(c, deferred);
-	} else {
-		c->stopped = true;
-	}
+	ci->stopped = true;
+	if (!c->stop && c->main)
+		ci->stopped = stopThreaded(ci, deferred);
+	else if (c->stop)
+		ci->stopped = c->stop(deferred);
 }
 
 /** Stop all components in reverse order, starting at a specific component.
  * @param tail first component to be stopped.
  */
-void stopAll(struct Component * tail)
+void stopAll(struct ComponentI * tail)
 {
-	struct Component * c;
+	struct ComponentI * ci;
 	bool deferred = false;
-	for (c = tail; c; c = c->prev) {
-		if (!c->description)
-			continue;
-
-		stop(c, false);
-		deferred |= !c->stopped;
+	for (ci = tail; ci; ci = ci->prev) {
+		stop(ci, false);
+		deferred |= !ci->stopped;
 	}
 	/* idea: if not all components could be stopped, try again while there is
 	 * some progress, i.e. while at least one components could be stopped.
@@ -155,14 +224,11 @@ void stopAll(struct Component * tail)
 	while (deferred && progress) {
 		progress = false;
 		deferred = false;
-		for (c = tail; c; c = c->prev) {
-			if (!c->description)
-				continue;
-
-			if (!c->stopped) {
-				stop(c, true);
-				progress |= c->stopped;
-				deferred |= !c->stopped;
+		for (ci = tail; ci; ci = ci->prev) {
+			if (!ci->stopped) {
+				stop(ci, true);
+				progress |= ci->stopped;
+				deferred |= !ci->stopped;
 			}
 		}
 	}
@@ -186,7 +252,7 @@ void COMP_stopAll()
  * should be stopped in reverse order.
  * @param end the first component NOT to be stopped
  */
-static void stopUntil(struct Component * end)
+static void stopUntil(struct ComponentI * end)
 {
 	stopAll(end->prev);
 }
@@ -196,19 +262,14 @@ static void stopUntil(struct Component * end)
  * @param data initial data
  * @return true if starting the component was successful
  */
-bool COMP_startThreaded(struct Component * c, void * data)
+static bool startThreaded(struct ComponentI * ci)
 {
-	if (!c->description)
-		return true;
-
-	if (c->main) {
-		int rc = pthread_create(&c->thread, NULL, (void*(*)(void*))(c->main),
-			data);
-		if (rc) {
-			LOG_errno2(LOG_LEVEL_WARN, rc, PFX, "Could not create thread for "
-				"%s", c->description);
-			return false;
-		}
+	int rc = pthread_create(&ci->thread, NULL,
+		(void*(*)(void*))(ci->comp->main), NULL);
+	if (rc) {
+		LOG_errno2(LOG_LEVEL_WARN, rc, PFX, "Could not create thread for "
+			"component %s", ci->comp->description);
+		return false;
 	}
 	return true;
 }
@@ -217,12 +278,12 @@ bool COMP_startThreaded(struct Component * c, void * data)
  * @param c threaded component to be stopped
  * @return the value of pthread_timedjoin_np()
  */
-static int tryJoin(struct Component * c)
+static int tryJoin(const struct ComponentI * ci)
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
 	ts.tv_sec += 1;
-	return pthread_timedjoin_np(c->thread, NULL, &ts);
+	return pthread_timedjoin_np(ci->thread, NULL, &ts);
 }
 
 /** Stop a threaded component.
@@ -231,19 +292,16 @@ static int tryJoin(struct Component * c)
  *  pthread_cancel to be called again.
  * @return true if stopping succeeded, false on timeout (one second)
  */
-bool COMP_stopThreaded(struct Component * c, bool deferred)
+static bool stopThreaded(const struct ComponentI * ci, bool deferred)
 {
-	if (!c->description)
-		return true;
-
 	if (deferred) {
-		if (tryJoin(c) != 0) {
+		if (tryJoin(ci) != 0) {
 			/*if (!silent) TODO */
 			return false;
 		}
 	} else {
-		pthread_cancel(c->thread);
-		if (tryJoin(c) == ETIMEDOUT) {
+		pthread_cancel(ci->thread);
+		if (tryJoin(ci) == ETIMEDOUT) {
 			/* if (!silent) TODO */
 			return false;
 		}
@@ -259,10 +317,9 @@ static void destruct(const struct Component * c)
 		c->destruct(c);
 }
 
-static void destructUntil(const struct Component * end)
+static void destructUntil(const struct ComponentI * end)
 {
-	const struct Component * c;
-	for (c = end->prev; c; c = c->prev)
-		if (c->description)
-			destruct(c);
+	const struct ComponentI * ci;
+	for (ci = end->prev; ci; ci = ci->prev)
+		destruct(ci->comp);
 }
