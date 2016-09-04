@@ -15,7 +15,7 @@
 #include <string.h>
 #include <log.h>
 
-#if defined(DEVELOPMENT) && !defined(SYSCONFDIR)
+#if defined(LOCAL_FILES) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
 #endif
 

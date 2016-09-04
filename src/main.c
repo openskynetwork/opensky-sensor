@@ -25,7 +25,7 @@
 
 static const char PFX[] = "MAIN";
 
-#if (defined(ECLIPSE) || defined(DEVELOPMENT)) && !defined(SYSCONFDIR)
+#if (defined(ECLIPSE) || defined(LOCAL_FILES)) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
 #endif
 

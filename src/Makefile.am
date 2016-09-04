@@ -44,7 +44,7 @@ openskyd_LDADD = -lm
 AM_CFLAGS = @PTHREAD_CFLAGS@
 
 # flags for development
-if !DEVELOPMENT
+if !LOCAL_FILES
 AM_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"' -DFWDIR='"$(libdir)"'
 endif
 

@@ -22,7 +22,7 @@
 
 static const char PFX[] = "FPGA";
 
-#if (defined(ECLIPSE) || defined(DEVELOPMENT)) && !defined(FWDIR)
+#if (defined(ECLIPSE) || defined(LOCAL_FILES)) && !defined(FWDIR)
 #define FWDIR "."
 #endif
 

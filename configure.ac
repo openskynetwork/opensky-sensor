@@ -78,7 +78,7 @@ AC_ARG_ENABLE([development],
     no)  development=false ;;
      *)  AC_MSG_ERROR([bad value ${enableval} for --enable-development]) ;;
    esac], [development=false])
-AM_CONDITIONAL([DEVELOPMENT], [test x$development = xtrue])
+AM_CONDITIONAL([LOCAL_FILES], [test x$development = xtrue])
 
 AC_ARG_ENABLE([test-coverage],
   [AS_HELP_STRING([--enable-test-coverage], [Enable Test Coverage @<:@no@:>@])],
@@ -191,7 +191,7 @@ AS_IF([test x"$with_pacman" != x"no"],
   [AC_DEFINE([WITH_PACMAN], [1], [Enable pacman integration])])
 
 AS_IF([test x$development = xtrue],
-  [AC_DEFINE([DEVELOPMENT], [], [Enable development features])])
+  [AC_DEFINE([LOCAL_FILES], [], [Use local files])])
 
 AS_IF([test x$talkback = xtrue],
   [AC_DEFINE([TALKBACK], [], [Enable talkback component])])
