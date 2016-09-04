@@ -89,6 +89,26 @@ static void cleanup()
 	pthread_mutex_unlock(&mutex);
 }
 
+static void cleanupMain()
+{
+	pthread_mutex_unlock(&mutex);
+	if (connState == CONN_STATE_CONNECTED) {
+		switch (transState) {
+		case TRANSIT_NONE:
+		case TRANSIT_SEND:
+			shutdown(recvsock, SHUT_RDWR);
+			close(recvsock);
+			break;
+		case TRANSIT_RECV:
+			shutdown(sendsock, SHUT_RDWR);
+			close(sendsock);
+			break;
+		}
+	}
+	connState = CONN_STATE_DISCONNECTED;
+	transState = TRANSIT_NONE;
+}
+
 static void cleanupSend()
 {
 	pthread_mutex_unlock(&sendMutex);
@@ -101,7 +121,7 @@ static void mainloop()
 	transState = TRANSIT_NONE;
 
 	pthread_mutex_lock(&mutex);
-	CLEANUP_PUSH(&cleanup, NULL);
+	CLEANUP_PUSH(&cleanupMain, NULL);
 	while (true) {
 		assert (connState == CONN_STATE_DISCONNECTED);
 		int sock;
@@ -122,6 +142,9 @@ static void mainloop()
 			continue;
 		}
 
+		int oldState;
+		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldState);
+
 		switch (transState) {
 		case TRANSIT_NONE:
 			recvsock = sendsock = sock;
@@ -136,6 +159,8 @@ static void mainloop()
 
 		connState = CONN_STATE_CONNECTED;
 		pthread_cond_broadcast(&cond);
+
+		pthread_setcancelstate(oldState, NULL);
 
 		/* wait for failure */
 		while (connState != CONN_STATE_DISCONNECTED)
