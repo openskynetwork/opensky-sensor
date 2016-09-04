@@ -123,7 +123,6 @@ void disable()
 {
 	if (running) {
 		COMP_stopAll();
-		COMP_destructAll();
 
 		running = false;
 	}
