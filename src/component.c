@@ -182,6 +182,8 @@ bool COMP_startThreaded(struct Component * c, void * data)
 			LOG_errno2(LOG_LEVEL_WARN, rc, PFX, "Could not create thread for "
 				"%s", c->description);
 			return false;
+		} else {
+			pthread_setname_np(c->thread, c->description);
 		}
 	}
 	return true;
