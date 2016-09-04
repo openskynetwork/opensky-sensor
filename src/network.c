@@ -142,9 +142,6 @@ static void mainloop()
 			continue;
 		}
 
-		int oldState;
-		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldState);
-
 		switch (transState) {
 		case TRANSIT_NONE:
 			recvsock = sendsock = sock;
@@ -159,8 +156,6 @@ static void mainloop()
 
 		connState = CONN_STATE_CONNECTED;
 		pthread_cond_broadcast(&cond);
-
-		pthread_setcancelstate(oldState, NULL);
 
 		/* wait for failure */
 		while (connState != CONN_STATE_DISCONNECTED)
