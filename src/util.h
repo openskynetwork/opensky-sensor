@@ -23,6 +23,12 @@ void UTIL_dropPrivileges();
 
 #define ARRAY_SIZE(a) (sizeof ((a)) / sizeof (*(a)))
 
+#define MIN(a,b) ({__typeof__(a) _a = (a); __typeof__(b) _b = (b); \
+	_a < _b ? _a : _b; })
+
+#define MAX(a,b) ({__typeof__(a) _a = (a); __typeof__(b) _b = (b); \
+	_a < _b ? _b : _a; })
+
 #define likely(x) __builtin_expect(!!(x),1)
 #define unlikely(x) __builtin_expect(!!(x),0)
 

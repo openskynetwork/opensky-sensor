@@ -10,6 +10,8 @@
 #include <log.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
+#include <util.h>
 
 static const char PFX[] = "COMP";
 
@@ -143,12 +145,25 @@ void stopAll(struct Component * tail)
 			}
 		}
 	}
-	if (deferred && !silent) {
+	if (deferred) {
 		/* there are still some components which could not be stopped */
-		LOG_logf(LOG_LEVEL_WARN, PFX, "Some components could not be stopped: "); // TODO
-		/*for (c = tail; c ; c = c->prev)
-			if (!c->stopped)
-				printf(" %s", c->description);*/
+		char buffer[1000];
+		char * buf = buffer;
+		char * const end = buffer + sizeof(buffer) - 1;
+		for (c = tail; c && buf < end; c = c->prev) {
+			if (!c->stopped) {
+				size_t len = MIN(strlen(c->description), end - buf);
+				memcpy(buf, c->description, len);
+				buf += len;
+				*(buf++) = ' ';
+			}
+		}
+		if (buf != buffer)
+			buf[-1] = 0;
+		else
+			*buf = 0;
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Some components could not be stopped: "
+			"%s", buffer);
 	}
 }
 
@@ -211,13 +226,17 @@ bool COMP_stopThreaded(struct Component * c, bool deferred)
 {
 	if (deferred) {
 		if (tryJoin(c) != 0) {
-			/*if (!silent) TODO */
+			if (!silent)
+				LOG_logf(LOG_LEVEL_WARN, PFX, "Component %s could not be "
+					"joined", c->description);
 			return false;
 		}
 	} else {
 		pthread_cancel(c->thread);
 		if (tryJoin(c) == ETIMEDOUT) {
-			/* if (!silent) TODO */
+			if (!silent)
+				LOG_logf(LOG_LEVEL_WARN, PFX, "Component %s could not be "
+					"joined, deferring", c->description);
 			return false;
 		}
 	}
