@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
+#include <string.h>
+#include <util.h>
 #include "component.h"
 #include "log.h"
 
@@ -232,12 +234,25 @@ void stopAll(struct ComponentI * tail)
 			}
 		}
 	}
-	if (deferred && !silent) {
+	if (deferred) {
 		/* there are still some components which could not be stopped */
-		LOG_logf(LOG_LEVEL_WARN, PFX, "Some components could not be stopped: "); // TODO
-		/*for (c = tail; c ; c = c->prev)
-			if (!c->stopped)
-				printf(" %s", c->description);*/
+		char buffer[1000];
+		char * buf = buffer;
+		char * const end = buffer + sizeof(buffer) - 1;
+		for (ci = tail; ci && buf < end; ci = ci->prev) {
+			if (!ci->stopped) {
+				size_t len = MIN(strlen(ci->comp->description), end - buf);
+				memcpy(buf, ci->comp->description, len);
+				buf += len;
+				*(buf++) = ' ';
+			}
+		}
+		if (buf != buffer)
+			buf[-1] = 0;
+		else
+			*buf = 0;
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Some components could not be stopped: "
+			"%s", buffer);
 	}
 }
 
@@ -270,6 +285,8 @@ static bool startThreaded(struct ComponentI * ci)
 		LOG_errno2(LOG_LEVEL_WARN, rc, PFX, "Could not create thread for "
 			"component %s", ci->comp->description);
 		return false;
+	} else {
+		pthread_setname_np(ci->thread, ci->comp->description);
 	}
 	return true;
 }
@@ -296,13 +313,17 @@ static bool stopThreaded(const struct ComponentI * ci, bool deferred)
 {
 	if (deferred) {
 		if (tryJoin(ci) != 0) {
-			/*if (!silent) TODO */
+			if (!silent)
+				LOG_logf(LOG_LEVEL_WARN, PFX, "Component %s could not be "
+					"joined", ci->comp->description);
 			return false;
 		}
 	} else {
 		pthread_cancel(ci->thread);
 		if (tryJoin(ci) == ETIMEDOUT) {
-			/* if (!silent) TODO */
+			if (!silent)
+				LOG_logf(LOG_LEVEL_WARN, PFX, "Component %s could not be "
+					"joined, deferring", ci->comp->description);
 			return false;
 		}
 	}

@@ -47,4 +47,6 @@ int main()
 	sleep(1);
 
 	OpenSky::disable();
+
+	sleep(5);
 }

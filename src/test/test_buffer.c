@@ -38,6 +38,7 @@ START_TEST(test_start_stop)
 }
 END_TEST
 
+#ifndef NDEBUG
 START_TEST(test_param_backlog)
 {
 	cfg->statBacklog = 1;
@@ -45,6 +46,7 @@ START_TEST(test_param_backlog)
 	ck_abort_msg("Test should have failed");
 }
 END_TEST
+#endif
 
 START_TEST(test_newMsg)
 {
@@ -54,6 +56,7 @@ START_TEST(test_newMsg)
 }
 END_TEST
 
+#ifndef NDEBUG
 START_TEST(test_newMsgFail)
 {
 	COMP_initAll();
@@ -63,6 +66,7 @@ START_TEST(test_newMsgFail)
 	ck_abort_msg("Test should have failed earlier");
 }
 END_TEST
+#endif
 
 START_TEST(test_abort)
 {
@@ -103,6 +107,7 @@ START_TEST(test_get_null)
 }
 END_TEST
 
+#ifndef NDEBUG
 START_TEST(test_get_fail)
 {
 	COMP_initAll();
@@ -115,6 +120,7 @@ START_TEST(test_get_fail)
 	ck_abort_msg("Test should have failed earlier");
 }
 END_TEST
+#endif
 
 START_TEST(test_release)
 {
@@ -128,6 +134,7 @@ START_TEST(test_release)
 }
 END_TEST
 
+#ifndef NDEBUG
 START_TEST(test_release_fail)
 {
 	COMP_initAll();
@@ -137,8 +144,10 @@ START_TEST(test_release_fail)
 	const struct OPENSKY_RawFrame * frame2 = BUF_getFrameTimeout(0);
 	ck_assert_ptr_eq(frame2, frame);
 	BUF_releaseFrame(NULL);
+	ck_abort_msg("Test should have failed earlier");
 }
 END_TEST
+#endif
 
 START_TEST(test_queue_n)
 {
@@ -638,13 +647,17 @@ static Suite * buffer_suite()
 	TCase * tc = tcase_create("StartStop");
 	tcase_add_checked_fixture(tc, setup, NULL);
 	tcase_add_test(tc, test_start_stop);
+#ifndef NDEBUG
 	tcase_add_test_raise_signal(tc, test_param_backlog, SIGABRT);
+#endif
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("Producer");
 	tcase_add_checked_fixture(tc, setup, NULL);
 	tcase_add_test(tc, test_newMsg);
+#ifndef NDEBUG
 	tcase_add_test_raise_signal(tc, test_newMsgFail, SIGABRT);
+#endif
 	tcase_add_test(tc, test_abort);
 	tcase_add_test(tc, test_commit);
 	suite_add_tcase(s, tc);
@@ -653,9 +666,13 @@ static Suite * buffer_suite()
 	tcase_add_checked_fixture(tc, setup, NULL);
 	tcase_add_test(tc, test_get);
 	tcase_add_test(tc, test_get_null);
+#ifndef NDEBUG
 	tcase_add_test_raise_signal(tc, test_get_fail, SIGABRT);
+#endif
 	tcase_add_test(tc, test_release);
+#ifndef NDEBUG
 	tcase_add_test_raise_signal(tc, test_release_fail, SIGABRT);
+#endif
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("Queue");
