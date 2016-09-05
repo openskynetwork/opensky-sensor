@@ -56,7 +56,7 @@ void COMP_register(const struct Component * comp)
 {
 	struct ComponentI * ci = malloc(sizeof *ci);
 	if (ci == NULL)
-		LOG_errno(LOG_LEVEL_EMERG, "malloc failed");
+		LOG_errno(LOG_LEVEL_EMERG, PFX, "malloc failed");
 	ci->comp = comp;
 	ci->stopped = true;
 	ci->next = NULL;
