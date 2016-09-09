@@ -386,7 +386,10 @@ void CFG_loadDefaults()
 				val->port = opt->def.port;
 				break;
 			case CFG_VALUE_TYPE_STRING:
-				strncpy(val->string, opt->def.string, opt->maxlen);
+				if (opt->def.string)
+					strncpy(val->string, opt->def.string, opt->maxlen);
+				else
+					val->string[0] = '\0';
 				break;
 			}
 		}
