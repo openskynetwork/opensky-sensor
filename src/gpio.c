@@ -48,7 +48,8 @@ static void destruct();
 struct Component GPIO_comp = {
 	.description = PFX,
 	.construct = &construct,
-	.destruct = &destruct
+	.destruct = &destruct,
+	.dependencies = { NULL }
 };
 
 static bool controllerInit(int devfd, struct Controller * ctrl);
@@ -144,7 +145,7 @@ static bool controllerInit(int devfd, struct Controller * ctrl)
 	ctrl->map = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, devfd,
 		ctrl->base);
 
-	if (ctrl->map == (char*)-1) {
+	if (ctrl->map == MAP_FAILED) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not mmap /dev/mem for base 0x%08"
 			PRIxPTR, ctrl->base);
 		return false;
