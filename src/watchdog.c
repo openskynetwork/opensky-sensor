@@ -10,9 +10,9 @@
 #include "statistics.h"
 
 /** Watchdog GPIO number */
-#define WD_GPIO 60
+#define GPIO 60
 /** Watchdog repetition rate in seconds */
-#define WD_REPEAT 30
+#define REPEAT 30
 
 static bool construct();
 static void mainloop();
@@ -20,16 +20,26 @@ static void mainloop();
 struct Component WD_comp = {
 	.description = "WD",
 	.construct = &construct,
-	.main = &mainloop
+	.main = &mainloop,
+	.dependencies = {
+		&GPIO_comp,
+		NULL
+	}
 };
+
+__attribute__((constructor))
+static void registerComponent()
+{
+	COMP_register(&WD_comp);
+}
 
 /** Initialize watchdog.
  * \note: GPIO_init() must be called prior to that function!
  */
 static bool construct()
 {
-	GPIO_setDirection(WD_GPIO, GPIO_DIRECTION_OUT);
-	GPIO_clear(WD_GPIO);
+	GPIO_setDirection(GPIO, GPIO_DIRECTION_OUT);
+	GPIO_clear(GPIO);
 
 	return true;
 }
@@ -38,11 +48,11 @@ static bool construct()
 static void mainloop()
 {
 	while (1) {
-		GPIO_set(WD_GPIO);
-		GPIO_clear(WD_GPIO);
+		GPIO_set(GPIO);
+		GPIO_clear(GPIO);
 #ifndef WD_ONLY
 		++STAT_stats.WD_events;
 #endif
-		sleep(WD_REPEAT);
+		sleep(REPEAT);
 	}
 }
