@@ -57,23 +57,59 @@ static const struct FPGApins pins[2] = {
 
 static const struct FPGApins * fpga;
 
+static char filename[PATH_MAX];
+static bool configure;
+
+#define RETRIES 3
+#define TIMEOUT 10
+
+static struct CFG_Section cfg = {
+	.name = "FPGA",
+	.n_opt = 1,
+	.options = {
+		{
+			.name = "file",
+			.type = CFG_VALUE_TYPE_STRING,
+			.var = filename,
+			.maxlen = sizeof(filename),
+		},
+		{
+			.name = "configure",
+			.type = CFG_VALUE_TYPE_BOOL,
+			.var = &configure,
+		}
+	}
+};
+
 static bool construct();
 static bool program();
 
 struct Component FPGA_comp = {
 	.description = PFX,
 	.construct = &construct,
-	.start = &program
+	.start = &program,
+	.dependencies = {
+		&GPIO_comp,
+		NULL
+	}
 };
 
 static bool reset(uint32_t timeout);
 static bool transfer(const uint8_t * rfd, off_t size);
+
+__attribute__((constructor))
+static void registerComponent()
+{
+	COMP_register(&FPGA_comp);
+}
 
 /** Initialize FPGA configuration.
  * \note: GPIO_init() must be called prior to that function!
  */
 static bool construct(const bool * bbwhite)
 {
+	CFG_registerSection(&cfg);
+
 	fpga = &pins[*bbwhite ? BB_TYPE_WHITE : BB_TYPE_BLACK];
 
 	GPIO_setDirection(fpga->confd, GPIO_DIRECTION_IN);
@@ -95,13 +131,12 @@ static bool program()
 	char file[PATH_MAX];
 
 	struct stat st;
-	if (CFG_config.fpga.file[0] == '/'
-		&& stat(CFG_config.fpga.file, &st) == 0) {
-		strncpy(file, CFG_config.fpga.file, sizeof file);
+	if (filename[0] == '/' && stat(filename, &st) == 0) {
+		strncpy(file, filename, sizeof file);
 	} else {
-		strncpy(file, FWDIR, PATH_MAX);
-		strncat(file, "/", strlen(file) - PATH_MAX);
-		strncat(file, CFG_config.fpga.file, strlen(file) - PATH_MAX);
+		strncpy(file, FWDIR, sizeof file);
+		strncat(file, "/", strlen(file) - sizeof file);
+		strncat(file, filename, strlen(file) - sizeof file);
 	}
 
 	/* open input file */
@@ -127,13 +162,13 @@ static bool program()
 	}
 
 	uint32_t try;
-	uint32_t retries = CFG_config.fpga.retries + 1;
+	uint32_t retries = RETRIES + 1;
 	for (try = 1; try < retries; ++try) {
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Programming (attempt %" PRIu32
 			" of %" PRIu32 ")", try, retries);
 
 		/* reset FPGA */
-		if (!reset(CFG_config.fpga.timeout))
+		if (!reset(TIMEOUT))
 			continue;
 
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Transferring RBF for beagle bone %s",
@@ -141,7 +176,7 @@ static bool program()
 		if (!transfer(rfd, st.st_size))
 			continue;
 
-		uint32_t spin = CFG_config.fpga.timeout;
+		uint32_t spin = TIMEOUT;
 		while (GPIO_read(fpga->confd) && spin--)
 			usleep(50);
 		if (!GPIO_read(fpga->confd)) {
