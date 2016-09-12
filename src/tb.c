@@ -60,10 +60,11 @@ static char ** daemonArgv;
 static bool construct(void * argv);
 static void mainloop();
 
-struct Component TB_comp = {
+const struct Component TB_comp = {
 	.description = PFX,
-	.construct = &construct,
-	.main = &mainloop
+	.onConstruct = &construct,
+	.main = &mainloop,
+	.dependencies = { &NET_comp, NULL }
 };
 
 static void processPacket(const struct TB_Packet * packet);
