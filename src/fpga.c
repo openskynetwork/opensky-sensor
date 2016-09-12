@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <string.h>
+#include <assert.h>
 #include "gpio.h"
 #include "fpga.h"
 #include "log.h"
@@ -57,21 +58,26 @@ static const struct FPGApins pins[2] = {
 
 static const struct FPGApins * fpga;
 
-static char filename[PATH_MAX];
+static char cfgFilename[PATH_MAX];
 static bool configure;
+
+bool FPGA_bbwhite;
 
 #define RETRIES 3
 #define TIMEOUT 10
 
+static bool checkCfg(const struct CFG_Section * sect);
+
 static struct CFG_Section cfg = {
 	.name = "FPGA",
+	.check = &checkCfg,
 	.n_opt = 1,
 	.options = {
 		{
 			.name = "file",
 			.type = CFG_VALUE_TYPE_STRING,
-			.var = filename,
-			.maxlen = sizeof(filename),
+			.var = cfgFilename,
+			.maxlen = sizeof(cfgFilename),
 		},
 		{
 			.name = "configure",
@@ -86,8 +92,9 @@ static bool program();
 
 struct Component FPGA_comp = {
 	.description = PFX,
-	.construct = &construct,
-	.start = &program,
+	.onConstruct = &construct,
+	.onStart = &program,
+	.config = &cfg,
 	.dependencies = {
 		&GPIO_comp,
 		NULL
@@ -97,20 +104,24 @@ struct Component FPGA_comp = {
 static bool reset(uint32_t timeout);
 static bool transfer(const uint8_t * rfd, off_t size);
 
-__attribute__((constructor))
-static void registerComponent()
+static bool checkCfg(const struct CFG_Section * sect)
 {
-	COMP_register(&FPGA_comp);
+	assert(sect == &cfg);
+	if (cfgFilename[0] == '\0') {
+		LOG_log(LOG_LEVEL_ERROR, PFX, "FPGA.file is missing");
+		return false;
+	}
+	return true;
 }
 
 /** Initialize FPGA configuration.
  * \note: GPIO_init() must be called prior to that function!
  */
-static bool construct(const bool * bbwhite)
+static bool construct()
 {
 	CFG_registerSection(&cfg);
 
-	fpga = &pins[*bbwhite ? BB_TYPE_WHITE : BB_TYPE_BLACK];
+	fpga = &pins[FPGA_bbwhite ? BB_TYPE_WHITE : BB_TYPE_BLACK];
 
 	GPIO_setDirection(fpga->confd, GPIO_DIRECTION_IN);
 	GPIO_setDirection(fpga->dclk, GPIO_DIRECTION_OUT);
@@ -131,12 +142,12 @@ static bool program()
 	char file[PATH_MAX];
 
 	struct stat st;
-	if (filename[0] == '/' && stat(filename, &st) == 0) {
-		strncpy(file, filename, sizeof file);
+	if (cfgFilename[0] == '/' && stat(cfgFilename, &st) == 0) {
+		strncpy(file, cfgFilename, sizeof file);
 	} else {
 		strncpy(file, FWDIR, sizeof file);
 		strncat(file, "/", strlen(file) - sizeof file);
-		strncat(file, filename, strlen(file) - sizeof file);
+		strncat(file, cfgFilename, strlen(file) - sizeof file);
 	}
 
 	/* open input file */
