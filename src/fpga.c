@@ -59,7 +59,7 @@ static const struct FPGApins pins[2] = {
 static const struct FPGApins * fpga;
 
 static char cfgFilename[PATH_MAX];
-static bool configure;
+static bool cfgConfigure;
 
 bool FPGA_bbwhite;
 
@@ -82,7 +82,7 @@ static struct CFG_Section cfg = {
 		{
 			.name = "configure",
 			.type = CFG_VALUE_TYPE_BOOL,
-			.var = &configure,
+			.var = &cfgConfigure,
 		}
 	}
 };
@@ -95,6 +95,7 @@ struct Component FPGA_comp = {
 	.onConstruct = &construct,
 	.onStart = &program,
 	.config = &cfg,
+	.enabled = &cfgConfigure,
 	.dependencies = {
 		&GPIO_comp,
 		NULL
@@ -107,7 +108,7 @@ static bool transfer(const uint8_t * rfd, off_t size);
 static bool checkCfg(const struct CFG_Section * sect)
 {
 	assert(sect == &cfg);
-	if (cfgFilename[0] == '\0') {
+	if (cfgConfigure && cfgFilename[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "FPGA.file is missing");
 		return false;
 	}

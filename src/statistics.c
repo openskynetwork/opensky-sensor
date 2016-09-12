@@ -28,12 +28,19 @@ struct Snapshot {
 static time_t start;
 static char startstr[26];
 
-static bool cfgInterval;
+static bool cfgEnabled;
+static uint32_t cfgInterval;
 
 static const struct CFG_Section cfg = {
 	.name = "STATISTICS",
-	.n_opt = 1,
+	.n_opt = 2,
 	.options = {
+		{
+			.name = "Enabled",
+			.type = CFG_VALUE_TYPE_BOOL,
+			.var = &cfgEnabled,
+			.def = { .boolean = true }
+		},
 		{
 			.name = "Interval",
 			.type = CFG_VALUE_TYPE_INT,
@@ -49,6 +56,7 @@ static void mainloop();
 
 const struct Component STAT_comp = {
 	.description = "STAT",
+	.start = &cfgEnabled,
 	.onConstruct = &construct,
 	.onDestruct = &destruct,
 	.main = &mainloop,

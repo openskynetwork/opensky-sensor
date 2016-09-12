@@ -159,6 +159,7 @@ static const struct CFG_Section cfg = {
 
 const struct Component BUF_comp = {
 	.description = PFX,
+	.start = &cfgGC,
 	.onConstruct = &construct,
 	.onDestruct = &destruct,
 	.main = &mainloop,
