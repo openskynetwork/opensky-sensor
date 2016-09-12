@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-extern struct Component RELAY_comp;
+extern const struct Component RELAY_comp;
 
 #ifdef __cplusplus
 }

@@ -14,9 +14,26 @@
 
 static void mainloop();
 
-struct Component RELAY_comp = {
+static uint32_t cfgTimeout;
+
+static const struct CFG_Section cfg = {
+	.name = "NETWORK",
+	.n_opt = 1,
+	.options = {
+		{
+			.name = "Timeout",
+			.type = CFG_VALUE_TYPE_INT,
+			.var = &cfgTimeout,
+			.def = { .integer = 1500 }
+		}
+	}
+};
+
+const struct Component RELAY_comp = {
 	.description = "RELAY",
-	.main = &mainloop
+	.main = &mainloop,
+	.config = &cfg,
+	.dependencies = { &NET_comp, &BUF_comp, NULL }
 };
 
 static void cleanup(struct OPENSKY_RawFrame * frame)
@@ -32,14 +49,14 @@ static void mainloop()
 
 		/* Now we have a new connection to the server */
 
-		if (!CFG_config.buf.history) /* flush buffer if history is disabled */
+		if (!BUF_cfgHistory) /* flush buffer if history is disabled */
 			BUF_flush();
 
 		bool success;
 		do {
 			/* read a frame from the buffer */
 			const struct OPENSKY_RawFrame * frame =
-				BUF_getFrameTimeout(CFG_config.net.timeout);
+				BUF_getFrameTimeout(cfgTimeout);
 			if (!frame) {
 				/* timeout */
 				success = NET_sendTimeout();
