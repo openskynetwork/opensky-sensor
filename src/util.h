@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-bool UTIL_getSerial(const char * device, uint32_t * serial);
+bool UTIL_getSerial(uint32_t * serial);
 
 void UTIL_dropPrivileges();
 

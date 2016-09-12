@@ -24,6 +24,8 @@
 
 static const char PFX[] = "UTIL";
 
+#define ETHERNET_DEVICE_NAME "eth0"
+
 /** whether the serial number has already been resolved */
 static bool cachedSerial;
 /** the serial number, if cachedSerial is true */
@@ -80,12 +82,15 @@ static bool getMacBySysfs(const char * dev, uint8_t mac[IFHWADDRLEN])
  *  return value is true.
  * \return true if operation succeeded, false otherwise
  */
-bool UTIL_getSerial(const char * device, uint32_t * serial)
+bool UTIL_getSerial(uint32_t * serial)
 {
 	if (cachedSerial) {
-		*serial = serialNo;
+		if (serial)
+			*serial = serialNo;
 		return true;
 	}
+
+	const char * device = ETHERNET_DEVICE_NAME;
 
 	_Static_assert(IFHWADDRLEN == 6,
 		"Length Ethernet MAC address is not 6 bytes");
@@ -110,7 +115,9 @@ bool UTIL_getSerial(const char * device, uint32_t * serial)
 	uint32_t serial_be;
 	memcpy(&serial_be, mac + 2, sizeof serial_be);
 	/* get the lower 31 bit */
-	*serial = serialNo = be32toh(serial_be) & 0x7fffffff;
+	serialNo = be32toh(serial_be) & 0x7fffffff;
+	if (serial)
+		*serial = serialNo;
 
 	LOG_logf(LOG_LEVEL_INFO, PFX, "MAC address: %02" PRIx8 ":%02" PRIx8 ":%02"
 		PRIx8 ":%02" PRIx8 ":%02" PRIx8 ":%02" PRIx8
