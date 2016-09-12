@@ -18,6 +18,7 @@
 #include "../cfgfile.h"
 #include "../threads.h"
 #include "../util.h"
+#include "../filter.h"
 
 static const char PFX[] = "RC";
 
@@ -80,6 +81,30 @@ enum DECODE_STATUS {
 	DECODE_STATUS_CONNFAIL
 };
 
+static bool cfgFec;
+
+static struct CFG_Section cfg = {
+	.name = "INPUT",
+	.n_opt = 1,
+	.options = {
+		{
+			.name = "fec",
+			.type = CFG_VALUE_TYPE_BOOL,
+			.var = &cfgFec,
+			.def = {
+				.boolean = true
+			}
+		}
+	}
+};
+
+const struct Component INPUT_comp = {
+	.description = "RDC",
+	.onRegister = &RC_INPUT_register,
+	.config = &cfg,
+	.dependencies = { NULL }
+};
+
 static bool configure();
 static inline bool discardAndFill();
 static inline bool next(uint8_t * ch);
@@ -101,21 +126,20 @@ void INPUT_destruct()
 /** Setup ADSB receiver with some options. */
 static bool configure()
 {
-#if defined(INPUT_RADARCAPE_UART) || defined(CHECK)
-	const struct CFG_RECV * cfg = &CFG_config.recv;
+#if 1 || defined(INPUT_RADARCAPE_UART) || defined(CHECK)
+	const struct FILTER_Configuration * filterCfg = FILTER_getConfiguration();
 	/* setup ADSB */
 	return setOption(RADARCAPE_OPTION_OUTPUT_FORMAT_BIN) &&
-		setOption(cfg->modeSLongExtSquitter ?
+		setOption(filterCfg->extSquitter ?
 			RADARCAPE_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
 			RADARCAPE_OPTION_FRAME_FILTER_ALL) &&
 		setOption(RADARCAPE_OPTION_AVR_FORMAT_MLAT) &&
-		setOption(cfg->crc ? RADARCAPE_OPTION_DF_11_17_18_CRC_ENABLED :
+		setOption(filterCfg->crc ?
+			RADARCAPE_OPTION_DF_11_17_18_CRC_ENABLED :
 			RADARCAPE_OPTION_DF_11_17_18_CRC_DISABLED) &&
-		setOption(cfg->gps ? RADARCAPE_OPTION_TIMESTAMP_SOURCE_GPS :
-			RADARCAPE_OPTION_TIMESTAMP_SOURCE_LEGACY_12_MHZ) &&
-		setOption(CFG_config.input.rtscts ? RADARCAPE_OPTION_RTS_HANDSHAKE_ENABLED :
-			RADARCAPE_OPTION_RTS_HANDSHAKE_DISABLED) &&
-		setOption(cfg->fec ? RADARCAPE_OPTION_DF_17_18_FEC_ENABLED :
+		setOption(RADARCAPE_OPTION_TIMESTAMP_SOURCE_GPS) &&
+		setOption(RADARCAPE_OPTION_RTS_HANDSHAKE_ENABLED) &&
+		setOption(cfgFec ? RADARCAPE_OPTION_DF_17_18_FEC_ENABLED :
 			RADARCAPE_OPTION_DF_17_18_FEC_DISABLED) &&
 		setOption(RADARCAPE_OPTION_MODE_AC_DECODING_DISABLED) &&
 		setOption(RADARCAPE_OPTION_Y) &&
@@ -127,8 +151,9 @@ static bool configure()
 
 void INPUT_reconfigure()
 {
-#ifdef INPUT_RADARCAPE_UART
-	setOption(CFG_config.recv.modeSLongExtSquitter ?
+#ifndef INPUT_RADARCAPE_UART
+	const struct FILTER_Configuration * filterCfg = FILTER_getConfiguration();
+	setOption(filterCfg->extSquitter ?
 		RADARCAPE_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
 		RADARCAPE_OPTION_FRAME_FILTER_ALL);
 #endif

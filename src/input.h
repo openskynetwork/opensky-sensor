@@ -5,11 +5,14 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "component.h"
 #include "openskytypes.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern const struct Component INPUT_comp;
 
 void INPUT_init();
 void INPUT_destruct();

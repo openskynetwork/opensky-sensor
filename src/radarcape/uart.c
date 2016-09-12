@@ -18,6 +18,9 @@
 
 static const char PFX[] = "INPUT";
 
+#define RECONNECT_INTERVAL 10
+#define UART "/dev/ttyS5"
+
 /** file descriptor for UART */
 static int fd;
 /** poll set when waiting for data */
@@ -25,6 +28,10 @@ static struct pollfd fds;
 
 static bool doConnect();
 static void closeUart();
+
+void RC_INPUT_register()
+{
+}
 
 void RC_INPUT_init()
 {
@@ -47,7 +54,7 @@ static void closeUart()
 void RC_INPUT_connect()
 {
 	while (!doConnect())
-		sleep(CFG_config.input.reconnectInterval);
+		sleep(RECONNECT_INTERVAL);
 }
 
 static bool doConnect()
@@ -55,10 +62,9 @@ static bool doConnect()
 	closeUart();
 
 	/* open uart */
-	fd = open(CFG_config.input.uart, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
+	fd = open(UART, O_RDWR, O_NONBLOCK | O_NOCTTY | O_CLOEXEC);
 	if (fd < 0) {
-		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not open UART at '%s'",
-			CFG_config.input.uart);
+		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not open UART at '%s'", UART);
 		fd = -1;
 		return false;
 	}
@@ -74,8 +80,7 @@ static bool doConnect()
 	t.c_iflag = IGNPAR;
 	t.c_oflag = ONLCR;
 	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3500000;
-	if (CFG_config.input.rtscts)
-		t.c_cflag |= CRTSCTS;
+	t.c_cflag |= CRTSCTS;
 	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
 	t.c_ispeed = B3500000;
 	t.c_ospeed = B3500000;

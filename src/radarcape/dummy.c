@@ -15,6 +15,10 @@
 static bool first;
 static uint_fast32_t x, x2;
 
+void RC_INPUT_register()
+{
+}
+
 void RC_INPUT_init()
 {
 	srandom(time(NULL));
