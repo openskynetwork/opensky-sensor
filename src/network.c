@@ -114,7 +114,9 @@ static bool sendPosition(int sock);
 
 const struct Component NET_comp = {
 	.description = PFX,
-	.main = &mainloop
+	.main = &mainloop,
+	.config = &cfg,
+	.dependencies = { NULL }
 };
 
 static bool checkCfg(const struct CFG_Section * sect)
