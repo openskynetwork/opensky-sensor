@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include "gps_recv.h"
 #include "gps_parser.h"
+#include "gps_input.h"
 #include "../gps.h"
 #include "../network.h"
 #include "../endec.h"
@@ -22,9 +23,11 @@ static void mainloop();
 
 struct Component GPS_RECV_comp = {
 	.description = "GPS",
-	.construct = &construct,
-	.destruct = &destruct,
-	.main = &mainloop
+	.onRegister = &GPS_INPUT_register,
+	.onConstruct = &construct,
+	.onDestruct = &destruct,
+	.main = &mainloop,
+	.dependencies = { NULL }
 };
 
 /** Receiver Mode */

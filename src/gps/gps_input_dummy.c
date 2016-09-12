@@ -6,6 +6,10 @@
 #include <unistd.h>
 #include "gps_input.h"
 
+void GPS_INPUT_register()
+{
+}
+
 void GPS_INPUT_init()
 {
 }
