@@ -17,11 +17,12 @@ static bool construct();
 static void destruct();
 static void mainloop();
 
-struct Component RECV_comp = {
+const struct Component RECV_comp = {
 	.description = "RECV",
-	.construct = &construct,
-	.destruct = &destruct,
-	.main = &mainloop
+	.onConstruct = &construct,
+	.onDestruct = &destruct,
+	.main = &mainloop,
+	.dependencies = { &BUF_comp, &INPUT_comp, &FILTER_comp, NULL }
 };
 
 static bool construct()

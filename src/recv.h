@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-extern struct Component RECV_comp;
+extern const struct Component RECV_comp;
 
 #ifdef __cplusplus
 }

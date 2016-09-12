@@ -25,15 +25,47 @@ enum MODES_TYPE {
 /** frame filter (for Mode-S frames) */
 static enum MODES_TYPE modeSFilter;
 
-/** synchronize filter */
-static bool syncFilter;
+struct FILTER_Configuration FILTER_cfg;
+
+static const struct CFG_Section cfg = {
+	.name = "FILTER",
+	.n_opt = 3,
+	.options = {
+		{
+			.name = "CRC",
+			.type = CFG_VALUE_TYPE_BOOL,
+			.var = &FILTER_cfg.crc,
+			.def = { .boolean = true }
+		},
+		{
+			.name = "ModeSExtSquitterOnly",
+			.type = CFG_VALUE_TYPE_BOOL,
+			.var = &FILTER_cfg.extSquitter,
+			.def = { .boolean = true }
+		},
+		{
+			.name = "SyncFilter",
+			.type = CFG_VALUE_TYPE_BOOL,
+			.var = &FILTER_cfg.sync,
+			.def = { .boolean = true }
+		}
+	}
+};
 
 /** synchronization info: true if receiver has a valid GPS timestamp */
 static bool isSynchronized;
 
+const struct Component FILTER_comp = {
+	.description = "FILTER",
+	.config = &cfg,
+	.dependencies = { NULL }
+};
+
 void FILTER_init()
 {
-	FILTER_reconfigure(true);
+	modeSFilter = FILTER_cfg.extSquitter ?
+		MODES_TYPE_EXTENDED_SQUITTER_ALL : MODES_TYPE_ALL;
+	FILTER_reset();
 }
 
 void FILTER_reset()
@@ -41,14 +73,12 @@ void FILTER_reset()
 	isSynchronized = false;
 }
 
-void FILTER_reconfigure(bool reset)
+void FILTER_setModeSExtSquitter(bool modeSExtSquitter)
 {
-	syncFilter = CFG_config.recv.syncFilter;
-	modeSFilter = CFG_config.recv.modeSLongExtSquitter ?
+	FILTER_cfg.extSquitter = modeSExtSquitter;
+	modeSFilter = FILTER_cfg.extSquitter ?
 		MODES_TYPE_EXTENDED_SQUITTER_ALL : MODES_TYPE_ALL;
 	INPUT_reconfigure();
-	if (reset)
-		isSynchronized = false;
 }
 
 void FILTER_setSynchronized(bool synchronized)
@@ -62,7 +92,7 @@ bool FILTER_filter(enum OPENSKY_FRAME_TYPE frameType, uint8_t firstByte)
 
 	if (unlikely(!isSynchronized)) {
 		++STAT_stats.RECV_framesUnsynchronized;
-		if (CFG_config.recv.syncFilter) {
+		if (FILTER_cfg.sync) {
 			++STAT_stats.RECV_framesFiltered;
 			return false;
 		}
