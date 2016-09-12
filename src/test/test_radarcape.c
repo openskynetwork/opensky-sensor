@@ -9,17 +9,20 @@
 #include <stdlib.h>
 #include "../openskytypes.h"
 #include "../input.h"
+#include "../filter.h"
+#include "../component.h"
 #include "input_test.h"
 #include "../statistics.h"
 #include "../cfgfile.h"
 
-
-struct CFG_Config CFG_config;
-struct CFG_RECV * const cfg = &CFG_config.recv;
-
 static void setup()
 {
 	test.testAck = -1;
+	COMP_register(&INPUT_comp);
+	COMP_fixup();
+	FILTER_register();
+	FILTER_init();
+	CFG_loadDefaults();
 }
 
 START_TEST(test_init_destruct)
@@ -61,70 +64,54 @@ END_TEST
 
 START_TEST(test_config_frameFilter_0)
 {
-	cfg->modeSLongExtSquitter = true;
+	CFG_setBoolean("FILTER", "ModeSExtSquitterOnly", true);
 	configAssert('D');
 }
 END_TEST
 
 START_TEST(test_config_frameFilter_1)
 {
-	cfg->modeSLongExtSquitter = false;
+	CFG_setBoolean("FILTER", "ModeSExtSquitterOnly", false);
 	configAssert('d');
 }
 END_TEST
 
 START_TEST(test_config_crc_0)
 {
-	cfg->crc = false;
+	CFG_setBoolean("FILTER", "CRC", false);
 	configAssert('F');
 }
 END_TEST
 
 START_TEST(test_config_crc_1)
 {
-	cfg->crc = true;
+	CFG_setBoolean("FILTER", "CRC", true);
 	configAssert('f');
 }
 END_TEST
 
-START_TEST(test_config_gps_0)
+START_TEST(test_config_gps)
 {
-	cfg->gps = false;
-	configAssert('g');
-}
-END_TEST
-
-START_TEST(test_config_gps_1)
-{
-	cfg->gps = true;
 	configAssert('G');
 }
 END_TEST
 
-START_TEST(test_config_rtscts_0)
+START_TEST(test_config_rtscts)
 {
-	CFG_config.input.rtscts = false;
-	configAssert('h');
-}
-END_TEST
-
-START_TEST(test_config_rtscts_1)
-{
-	CFG_config.input.rtscts = true;
 	configAssert('H');
 }
 END_TEST
 
 START_TEST(test_config_fec_0)
 {
-	cfg->fec = false;
+	CFG_setBoolean("INPUT", "FEC", false);
 	configAssert('I');
 }
 END_TEST
 
 START_TEST(test_config_fec_1)
 {
-	cfg->fec = true;
+	CFG_setBoolean("INPUT", "FEC", true);
 	configAssert('i');
 }
 END_TEST
@@ -168,7 +155,7 @@ START_TEST(test_decode_modeac)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -195,7 +182,7 @@ START_TEST(test_decode_modesshort)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -222,7 +209,7 @@ START_TEST(test_decode_modeslong)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -249,7 +236,7 @@ START_TEST(test_decode_status)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -276,7 +263,7 @@ START_TEST(test_decode_unknown)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -299,7 +286,7 @@ START_TEST(test_decode_unknown_next)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -328,7 +315,7 @@ START_TEST(test_decode_escape)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -355,7 +342,7 @@ START_TEST(test_decode_unsynchronized_start)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -385,7 +372,7 @@ START_TEST(test_decode_unsynchronized_type)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -415,7 +402,7 @@ START_TEST(test_decode_unsynchronized_header)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -445,7 +432,7 @@ START_TEST(test_decode_unsynchronized_payload)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -476,7 +463,7 @@ START_TEST(test_buffer_two_frames)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -513,7 +500,7 @@ START_TEST(test_buffer_fail_start)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -533,7 +520,7 @@ START_TEST(test_buffer_fail_type)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -553,7 +540,7 @@ START_TEST(test_buffer_fail_header)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -573,7 +560,7 @@ START_TEST(test_buffer_fail_payload)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -593,7 +580,7 @@ START_TEST(test_buffer_fail_escape)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -617,7 +604,7 @@ START_TEST(test_buffer_end_start)
 	test.buffers = buf;
 	test.nBuffers = 2;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -657,7 +644,7 @@ START_TEST(test_buffer_end)
 	test.buffers = buf;
 	test.nBuffers = len < _i ? 1 : 2;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -687,7 +674,7 @@ START_TEST(test_buffer_end_escape)
 	test.buffers = buf;
 	test.nBuffers = 2;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -715,7 +702,7 @@ START_TEST(test_buffer_end_escape_fail)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -740,7 +727,7 @@ START_TEST(test_synchronize_peek_unsync)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -774,7 +761,7 @@ START_TEST(test_synchronize_peek_unsync_at_end)
 	test.buffers = buf;
 	test.nBuffers = 2;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -807,7 +794,7 @@ START_TEST(test_synchronize_peek_sync_at_end)
 	test.buffers = buf;
 	test.nBuffers = 2;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -832,7 +819,7 @@ START_TEST(test_synchronize_fail)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init(&cfg);
+	INPUT_init();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -859,10 +846,8 @@ static Suite * RADARCAPE_suite()
 	tcase_add_test(tc, test_config_frameFilter_1);
 	tcase_add_test(tc, test_config_crc_0);
 	tcase_add_test(tc, test_config_crc_1);
-	tcase_add_test(tc, test_config_gps_0);
-	tcase_add_test(tc, test_config_gps_1);
-	tcase_add_test(tc, test_config_rtscts_0);
-	tcase_add_test(tc, test_config_rtscts_1);
+	tcase_add_test(tc, test_config_gps);
+	tcase_add_test(tc, test_config_rtscts);
 	tcase_add_test(tc, test_config_fec_0);
 	tcase_add_test(tc, test_config_fec_1);
 	tcase_add_test(tc, test_config_modeac);

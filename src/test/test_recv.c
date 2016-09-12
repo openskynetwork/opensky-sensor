@@ -16,27 +16,23 @@
 #include "../statistics.h"
 #include "../cfgfile.h"
 
-struct CFG_Config CFG_config;
-static struct CFG_RECV * const cfg = &CFG_config.recv;
-
 static void setup()
 {
-	struct CFG_BUF * const bufCfg = &CFG_config.buf;
-	bufCfg->gcEnabled = false;
-	bufCfg->gcInterval = 120;
-	bufCfg->gcLevel = 10;
-	bufCfg->history = false;
-	bufCfg->statBacklog = 10;
-	bufCfg->dynBacklog = 100;
-	bufCfg->dynIncrement = 10;
+	COMP_register(&RECV_comp);
+	COMP_register(&BUF_comp);
+	COMP_fixup();
+	CFG_loadDefaults();
 
-	cfg->crc = true;
-	cfg->fec = true;
-	cfg->gps = true;
-	cfg->modeSLongExtSquitter = false;
-	cfg->syncFilter = false;
-	COMP_register(&BUF_comp, NULL);
-	COMP_register(&RECV_comp, NULL);
+	CFG_setBoolean("BUFFER", "GC", false);
+	CFG_setBoolean("BUFFER", "History", false);
+	CFG_setInteger("BUFFER", "StaticBacklog", 10);
+	CFG_setInteger("BUFFER", "DynamicBacklog", 100);
+	CFG_setInteger("BUFFER", "DynamicIncrements", 10);
+
+	CFG_setBoolean("FILTER", "CRC", true);
+	CFG_setBoolean("FILTER", "ModeSExtSquitterOnly", true);
+	CFG_setBoolean("FILTER", "SyncFilter", true);
+
 	COMP_setSilent(true);
 }
 
@@ -50,6 +46,8 @@ START_TEST(test_recv_frame)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 	test.noRet = true;
+
+	CFG_setBoolean("FILTER", "SyncFilter", false);
 
 	COMP_initAll();
 	COMP_startAll();
@@ -70,8 +68,6 @@ END_TEST
 
 START_TEST(test_filter_unsynchronized)
 {
-	cfg->syncFilter = true;
-
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
 	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
@@ -95,8 +91,6 @@ END_TEST
 
 START_TEST(test_filter_synchronized)
 {
-	cfg->syncFilter = true;
-
 	uint8_t frm[46], frm2[46];
 	struct TEST_Buffer buf[2] = { { .payload = frm }, { .payload = frm2  } };
 	size_t len1 = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_STATUS, 0x123456, 0,
@@ -148,8 +142,6 @@ END_TEST
 
 START_TEST(test_filter_type)
 {
-	cfg->modeSLongExtSquitter = true;
-
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
 	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
@@ -174,8 +166,6 @@ END_TEST
 
 START_TEST(test_filter_extsquitter)
 {
-	cfg->modeSLongExtSquitter = true;
-
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
 	char payload[14] = "abcdefghijklmn";

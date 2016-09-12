@@ -16,6 +16,8 @@
 
 struct TEST test;
 
+void RC_INPUT_register() {}
+
 void RC_INPUT_init()
 {
 	test.init = true;

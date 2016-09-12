@@ -13,8 +13,6 @@
 #include "../statistics.h"
 #include "../cfgfile.h"
 
-struct CFG_Config CFG_config;
-
 int main()
 {
 	struct OPENSKY_RawFrame raw;

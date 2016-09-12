@@ -14,8 +14,6 @@
 #include "../statistics.h"
 #include "../cfgfile.h"
 
-struct CFG_Config CFG_config;
-
 int main()
 {
 	uint8_t buf[46];
@@ -23,13 +21,14 @@ int main()
 		-10, "abcdefghijklmn", 14);
 	RC_INPUT_setBuffer(buf, len);
 
-	COMP_register(&BUF_comp, NULL);
-	COMP_register(&RECV_comp, NULL);
+	COMP_register(&BUF_comp);
+	COMP_register(&RECV_comp);
+	COMP_fixup();
 	COMP_setSilent(true);
 
-	CFG_config.buf.gcEnabled = false;
-	CFG_config.buf.history = false;
-	CFG_config.buf.statBacklog = 100;
+	CFG_setBoolean("BUFFER", "GC", false);
+	CFG_setBoolean("BUFFER", "History", false);
+	CFG_setInteger("BUFFER", "StaticBacklog", 100);
 
 	COMP_initAll();
 	COMP_startAll();

@@ -14,6 +14,8 @@ static uint8_t * buffer;
 static size_t bufLen;
 static uint8_t * curPtr;
 
+void RC_INPUT_register() {}
+
 void RC_INPUT_init() {}
 
 void RC_INPUT_destruct() {}

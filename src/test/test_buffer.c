@@ -13,20 +13,19 @@
 #include "../component.h"
 #include "../cfgfile.h"
 
-struct CFG_Config CFG_config;
-static struct CFG_BUF * const cfg = &CFG_config.buf;
-
 static void setup()
 {
-	cfg->gcEnabled = false;
-	cfg->gcInterval = 120;
-	cfg->gcLevel = 10;
-	cfg->history = false;
-	cfg->statBacklog = 10;
-	cfg->dynBacklog = 100;
-	cfg->dynIncrement = 10;
-	COMP_register(&BUF_comp, NULL);
+	COMP_register(&BUF_comp);
+	COMP_fixup();
 	COMP_setSilent(true);
+
+	CFG_setBoolean("BUFFER", "GC", false);
+	CFG_setInteger("BUFFER", "GCInterval", 120);
+	CFG_setInteger("BUFFER", "GCLevel", 10);
+	CFG_setBoolean("BUFFER", "History", false);
+	CFG_setInteger("BUFFER", "StaticBacklog", 10);
+	CFG_setInteger("BUFFER", "DynamicBacklog", 100);
+	CFG_setInteger("BUFFER", "DynamicIncrements", 10);
 }
 
 START_TEST(test_start_stop)
@@ -41,7 +40,7 @@ END_TEST
 #ifndef NDEBUG
 START_TEST(test_param_backlog)
 {
-	cfg->statBacklog = 1;
+	CFG_setInteger("BUFFER", "StaticBacklog", 1);
 	COMP_initAll();
 	ck_abort_msg("Test should have failed");
 }
@@ -209,7 +208,7 @@ END_TEST
 
 START_TEST(test_put_new)
 {
-	cfg->statBacklog = 2;
+	CFG_setInteger("BUFFER", "StaticBacklog", 2);
 	COMP_initAll();
 
 	struct OPENSKY_RawFrame * frame = BUF_newFrame();
@@ -241,7 +240,7 @@ END_TEST
 
 START_TEST(test_sacrifice)
 {
-	cfg->statBacklog = 2;
+	CFG_setInteger("BUFFER", "StaticBacklog", 2);
 	COMP_initAll();
 
 	struct OPENSKY_RawFrame * frame = BUF_newFrame();
@@ -275,7 +274,7 @@ END_TEST
 
 START_TEST(test_sacrifice_n)
 {
-	cfg->statBacklog = _i;
+	CFG_setInteger("BUFFER", "StaticBacklog", _i);
 	COMP_initAll();
 	uint32_t j;
 	for (j = 0; j < _i * 2; ++j) {
@@ -300,7 +299,7 @@ END_TEST
 
 START_TEST(test_sacrifice_get)
 {
-	cfg->statBacklog = 2;
+	CFG_setInteger("BUFFER", "StaticBacklog", 2);
 	COMP_initAll();
 
 	struct OPENSKY_RawFrame * frame = BUF_newFrame();
@@ -334,7 +333,7 @@ END_TEST
 
 START_TEST(test_sacrifice_put_get)
 {
-	cfg->statBacklog = 2;
+	CFG_setInteger("BUFFER", "StaticBacklog", 2);
 	COMP_initAll();
 
 	struct OPENSKY_RawFrame * frame = BUF_newFrame();
@@ -372,10 +371,10 @@ END_TEST
 
 START_TEST(test_dynamic)
 {
-	cfg->statBacklog = 2;
-	cfg->dynIncrement = 1;
-	cfg->dynBacklog = 2;
-	cfg->history = true;
+	CFG_setInteger("BUFFER", "StaticBacklog", 2);
+	CFG_setInteger("BUFFER", "DynamicIncrements", 1);
+	CFG_setInteger("BUFFER", "DynamicBacklog", 2);
+	CFG_setBoolean("BUFFER", "History", true);
 	COMP_initAll();
 
 	uint32_t i;
@@ -396,10 +395,10 @@ END_TEST
 
 START_TEST(test_dynamic_sacrifice)
 {
-	cfg->statBacklog = 2;
-	cfg->dynIncrement = 2;
-	cfg->dynBacklog = 2;
-	cfg->history = true;
+	CFG_setInteger("BUFFER", "StaticBacklog", 2);
+	CFG_setInteger("BUFFER", "DynamicIncrements", 2);
+	CFG_setInteger("BUFFER", "DynamicBacklog", 2);
+	CFG_setBoolean("BUFFER", "History", true);
 	COMP_initAll();
 
 	uint32_t i;
@@ -431,10 +430,10 @@ START_TEST(test_dynamic_exhaust)
 	limit.rlim_max = 20 << 20;
 	setrlimit(RLIMIT_AS, &limit);
 
-	cfg->statBacklog = 10;
-	cfg->dynIncrement = 1000000;
-	cfg->dynBacklog = 1000;
-	cfg->history = true;
+	CFG_setInteger("BUFFER", "StaticBacklog", 10);
+	CFG_setInteger("BUFFER", "DynamicIncrements", 1000000);
+	CFG_setInteger("BUFFER", "DynamicBacklog", 1000);
+	CFG_setBoolean("BUFFER", "History", true);
 	COMP_initAll();
 
 	struct OPENSKY_RawFrame * frame = BUF_newFrame();
@@ -462,10 +461,10 @@ END_TEST
 
 START_TEST(test_dynamic_uncollect)
 {
-	cfg->statBacklog = 2;
-	cfg->dynIncrement = 1;
-	cfg->dynBacklog = 10;
-	cfg->history = true;
+	CFG_setInteger("BUFFER", "StaticBacklog", 2);
+	CFG_setInteger("BUFFER", "DynamicIncrements", 1);
+	CFG_setInteger("BUFFER", "DynamicBacklog", 10);
+	CFG_setBoolean("BUFFER", "History", true);
 	COMP_initAll();
 
 	struct OPENSKY_RawFrame * static1 = BUF_newFrame();
@@ -522,10 +521,10 @@ END_TEST
 
 START_TEST(test_dynamic_destroy)
 {
-	cfg->statBacklog = 2;
-	cfg->dynIncrement = 1;
-	cfg->dynBacklog = 10;
-	cfg->history = true;
+	CFG_setInteger("BUFFER", "StaticBacklog", 2);
+	CFG_setInteger("BUFFER", "DynamicIncrements", 1);
+	CFG_setInteger("BUFFER", "DynamicBacklog", 10);
+	CFG_setBoolean("BUFFER", "History", true);
 	COMP_initAll();
 
 	struct OPENSKY_RawFrame * static1 = BUF_newFrame();
@@ -579,10 +578,10 @@ END_TEST
 
 START_TEST(test_dynamic_destroy_2nd)
 {
-	cfg->statBacklog = 2;
-	cfg->dynIncrement = 2;
-	cfg->dynBacklog = 2;
-	cfg->history = true;
+	CFG_setInteger("BUFFER", "StaticBacklog", 2);
+	CFG_setInteger("BUFFER", "DynamicIncrements", 2);
+	CFG_setInteger("BUFFER", "DynamicBacklog", 2);
+	CFG_setBoolean("BUFFER", "History", true);
 	COMP_initAll();
 
 	uint32_t i;
@@ -620,14 +619,14 @@ START_TEST(test_flush)
 	COMP_initAll();
 
 	uint32_t i;
-	for (i = 0; i < cfg->statBacklog - _i; ++i) {
+	for (i = 0; i < 10 - _i; ++i) {
 		struct OPENSKY_RawFrame * frame = BUF_newFrame();
 		ck_assert_ptr_ne(frame, NULL);
 		BUF_commitFrame(frame);
 	}
 
 	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_queue, cfg->statBacklog - _i);
+	ck_assert_uint_eq(STAT_stats.BUF_queue, 10 - _i);
 	ck_assert_uint_eq(STAT_stats.BUF_flushes, 0);
 
 	BUF_flush();

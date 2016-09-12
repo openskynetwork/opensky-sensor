@@ -12,10 +12,6 @@
 #include "../buffer.h"
 #include "../openskytypes.h"
 
-struct Component TB_comp = {};
-struct Component NET_comp = {};
-struct Component RELAY_comp = {};
-
 static void setup()
 {
 	OpenSky::init();
