@@ -19,19 +19,13 @@ static void mainloop();
 
 struct Component WD_comp = {
 	.description = "WD",
-	.construct = &construct,
+	.onConstruct = &construct,
 	.main = &mainloop,
 	.dependencies = {
 		&GPIO_comp,
 		NULL
 	}
 };
-
-__attribute__((constructor))
-static void registerComponent()
-{
-	COMP_register(&WD_comp);
-}
 
 /** Initialize watchdog.
  * \note: GPIO_init() must be called prior to that function!
