@@ -28,15 +28,32 @@ struct Snapshot {
 static time_t start;
 static char startstr[26];
 
+static bool cfgInterval;
+
+static const struct CFG_Section cfg = {
+	.name = "STATISTICS",
+	.n_opt = 1,
+	.options = {
+		{
+			.name = "Interval",
+			.type = CFG_VALUE_TYPE_INT,
+			.var = &cfgInterval,
+			.def = { .integer = 600 }
+		}
+	}
+};
+
 static bool construct();
 static void destruct();
 static void mainloop();
 
-struct Component STAT_comp = {
+const struct Component STAT_comp = {
 	.description = "STAT",
-	.construct = &construct,
-	.destruct = &destruct,
-	.main = &mainloop
+	.onConstruct = &construct,
+	.onDestruct = &destruct,
+	.main = &mainloop,
+	.config = &cfg,
+	.dependencies = { NULL }
 };
 
 static void sigStats(int sig);
@@ -70,7 +87,7 @@ static void mainloop()
 	snapshot.timestamp = time(NULL);
 
 	while (true) {
-		sleep(CFG_config.stats.interval);
+		sleep(cfgInterval);
 
 		__attribute__((unused)) int r;
 		CANCEL_DISABLE(&r);

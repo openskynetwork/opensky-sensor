@@ -43,7 +43,7 @@ struct STAT_Statistics {
 	uint_fast64_t NET_msgsRecvFailed;
 };
 
-extern struct Component STAT_comp;
+extern const struct Component STAT_comp;
 
 extern volatile struct STAT_Statistics STAT_stats;
 
