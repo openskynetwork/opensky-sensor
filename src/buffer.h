@@ -12,7 +12,9 @@
 extern "C" {
 #endif
 
-extern struct Component BUF_comp;
+extern bool BUF_cfgHistory;
+
+extern const struct Component BUF_comp;
 
 void BUF_flush();
 

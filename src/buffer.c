@@ -87,20 +87,99 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Reader condition (for listOut) */
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
+static uint32_t cfgStatBacklog;
+static uint32_t cfgDynBacklog;
+static uint32_t cfgDynIncrement;
+bool BUF_cfgHistory;
+static bool cfgGC;
+static uint32_t cfgGCInterval;
+static uint32_t cfgGCLevel;
+
 static bool construct();
 static void destruct();
 static void mainloop();
-static bool start(struct Component * c, void * data);
-static bool stop(struct Component * c, bool deferred);
 
-struct Component BUF_comp = {
-	.description = PFX,
-	.construct = &construct,
-	.destruct = &destruct,
-	.main = &mainloop,
-	.start = &start,
-	.stop = &stop
+static void cfgFix(const struct CFG_Section * sect);
+
+static const struct CFG_Section cfg = {
+	.name = "BUFFER",
+	.n_opt = 7,
+	.fix = &cfgFix,
+	.options = {
+		{
+			.name = "StaticBacklog",
+			.type = CFG_VALUE_TYPE_INT,
+			.var = &cfgStatBacklog,
+			.def = {
+				.integer = 200
+			}
+		},
+		{
+			.name = "DynamicBacklog",
+			.type = CFG_VALUE_TYPE_INT,
+			.var = &cfgDynBacklog,
+			.def = {
+				.integer = 1000
+			}
+		},
+		{
+			.name = "DynamicIncrements",
+			.type = CFG_VALUE_TYPE_INT,
+			.var = &cfgDynIncrement,
+			.def = {
+				.integer = 1080
+			}
+		},
+		{
+			.name = "History",
+			.type = CFG_VALUE_TYPE_BOOL,
+			.var = &BUF_cfgHistory,
+			.def = { .boolean = false }
+		},
+		{
+			.name = "GC",
+			.type = CFG_VALUE_TYPE_BOOL,
+			.var = &cfgGC,
+			.def = { .boolean = false }
+		},
+		{
+			.name = "GCInterval",
+			.type = CFG_VALUE_TYPE_INT,
+			.var = &cfgGCInterval,
+			.def = { .integer = 120 }
+		},
+		{
+			.name = "GCLevel",
+			.type = CFG_VALUE_TYPE_INT,
+			.var = &cfgGCLevel,
+			.def = { .integer = 2 }
+		},
+	}
 };
+
+const struct Component BUF_comp = {
+	.description = PFX,
+	.onConstruct = &construct,
+	.onDestruct = &destruct,
+	.main = &mainloop,
+	.config = &cfg,
+	.dependencies = { NULL }
+};
+
+static void cfgFix(const struct CFG_Section * sect)
+{
+	assert (sect == &cfg);
+	if (cfgStatBacklog < 2) {
+		cfgStatBacklog = 2;
+		LOG_log(LOG_LEVEL_WARN, PFX, "BUFFER.staticBacklog was increased to 2");
+	}
+
+	if (cfgGC && !BUF_cfgHistory) {
+		cfgGC = false;
+		LOG_log(LOG_LEVEL_WARN, PFX, "Ignoring BUFFER.GC because "
+			"BUFFER.history is not enabled");
+	}
+}
 
 static bool deployPool(struct Pool * newPool, size_t size);
 static bool createDynPool();
@@ -122,7 +201,7 @@ static bool construct()
 {
 	dynIncrements = 0;
 
-	assert(CFG_config.buf.statBacklog >= 2);
+	assert(cfgStatBacklog >= 2);
 
 	dynPools = NULL;
 	clear(&pool);
@@ -130,9 +209,9 @@ static bool construct()
 
 	newFrame = currentFrame = NULL;
 
-	dynMaxIncrements = CFG_config.buf.history ? CFG_config.buf.dynIncrement : 0;
+	dynMaxIncrements = BUF_cfgHistory ? cfgDynIncrement : 0;
 
-	if (!deployPool(&staticPool, CFG_config.buf.statBacklog)) {
+	if (!deployPool(&staticPool, cfgStatBacklog)) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "malloc failed");
 		return false;
 	} else
@@ -150,30 +229,15 @@ static void destruct()
 	free(staticPool.pool);
 }
 
-static bool start(struct Component * c, void * data)
-{
-	if (CFG_config.buf.gcEnabled)
-		return COMP_startThreaded(c, data);
-	return true;
-}
-
-static bool stop(struct Component * c, bool deferred)
-{
-	if (CFG_config.buf.gcEnabled)
-		return COMP_stopThreaded(c, deferred);
-	return true;
-}
-
 /** Gargabe collector mainloop.
  * \note intialize garbage collection first using BUF_initGC */
 static void mainloop()
 {
 	while (true) {
-		sleep(CFG_config.buf.gcInterval);
+		sleep(cfgGCInterval);
 		pthread_mutex_lock(&mutex);
 		if (queue.size <
-			(dynIncrements * CFG_config.buf.dynBacklog) /
-				CFG_config.buf.gcLevel) {
+			(dynIncrements * cfgDynBacklog) / cfgGCLevel) {
 			gc();
 		}
 		pthread_mutex_unlock(&mutex);
@@ -271,6 +335,7 @@ struct OPENSKY_RawFrame * BUF_newFrame()
 	newFrame = getFrameFromPool();
 	pthread_mutex_unlock(&mutex);
 	assert(newFrame);
+	assert(newFrame != currentFrame);
 	return &newFrame->frame;
 }
 
@@ -454,7 +519,7 @@ static bool createDynPool()
 		return false;
 
 	/* deployment */
-	if (unlikely(!deployPool(newPool, CFG_config.buf.dynBacklog))) {
+	if (unlikely(!deployPool(newPool, cfgDynBacklog))) {
 		free(newPool);
 		return false;
 	}
