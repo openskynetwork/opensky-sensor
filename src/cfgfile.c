@@ -23,6 +23,8 @@
 
 static const char PFX[] = "CFG";
 
+//#define DEBUG
+
 static size_t n_sections;
 static struct CFG_Section const ** sections;
 
@@ -33,18 +35,42 @@ static off_t bufferSize;
 /** Current line number */
 static uint_fast32_t bufferLine;
 
+enum SECTION_STATE {
+	SECTION_STATE_NOSECTION,
+	SECTION_STATE_UNKNOWN,
+	SECTION_STATE_VALID,
+};
+
+static enum SECTION_STATE sectionState;
+static const char * sectionName;
+static size_t sectionNameLen;
 
 static void readCfg(const char * cfgStr, off_t size);
 static void fix();
 
-bool CFG_registerSection(const struct CFG_Section * section)
+void CFG_registerSection(const struct CFG_Section * section)
 {
 	struct CFG_Section const ** newSections =
 		realloc(sections, (n_sections + 1) * sizeof(sections));
 	if (newSections == NULL)
-		return false;
+		LOG_errno(LOG_LEVEL_EMERG, PFX, "malloc failed");
+	sections = newSections;
+#ifdef DEBUG
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Registered Section %s with %d options",
+		section->name, section->n_opt);
+	size_t i;
+	for (i = 0; i < section->n_opt; ++i) {
+		const struct CFG_Option * opt = &section->options[i];
+		static const char * types[] = {
+			[CFG_VALUE_TYPE_BOOL] = "bool",
+			[CFG_VALUE_TYPE_INT] = "int",
+			[CFG_VALUE_TYPE_STRING] = "string",
+			[CFG_VALUE_TYPE_PORT] = "port",
+		};
+		LOG_logf(LOG_LEVEL_INFO, PFX, " - %s: %s", opt->name, types[opt->type]);
+	}
+#endif
 	sections[n_sections++] = section;
-	return true;
 }
 
 /** Read a configuration file.
@@ -104,7 +130,7 @@ static bool isSame(const char * str1, const char * str2, size_t str2len)
 /** Parse a section name.
  * \return section
  */
-static const struct CFG_Section * parseSection()
+static enum SECTION_STATE parseSection()
 {
 	/* get next ']' terminator */
 	const char * c = memchr(bufferInput, ']', bufferSize);
@@ -139,10 +165,13 @@ static const struct CFG_Section * parseSection()
 	if (section > n_sections) {
 		LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": Section %.*s is "
 			"unknown", bufferLine, (int)len, buf);
-		return NULL;
+		return SECTION_STATE_UNKNOWN;
 	}
 
-	return sections[section];
+	sectionName = buf;
+	sectionNameLen = len;
+
+	return SECTION_STATE_VALID;
 }
 
 /** Scan a comment. This will just advance the parser to the end of line/file */
@@ -270,6 +299,9 @@ static bool assignOptionFromString(const struct CFG_Option * option,
 	case CFG_VALUE_TYPE_BOOL:
 		return parseBool(value, valLen, option->var);
 		break;
+	case CFG_VALUE_TYPE_PORT:
+		return parsePort(value, valLen, option->var);
+		break;
 	default:
 		assert(false);
 		return false;
@@ -280,7 +312,7 @@ static bool assignOptionFromString(const struct CFG_Option * option,
  * \param section current section
  * \param cfg configuration to be filled
  */
-static bool parseOption(const struct CFG_Section * section)
+static bool parseOption()
 {
 	/* split option on '='-sign */
 	const char * e = memchr(bufferInput, '=', bufferSize);
@@ -307,18 +339,26 @@ static bool parseOption(const struct CFG_Section * section)
 		++value;
 	size_t valLen = n - value;
 
-	if (section) {
-		uint32_t i;
-		for (i = 0; i < section->n_opt; ++i) {
-			if (isSame(section->options[i].name, key, keyLen)) {
-				assignOptionFromString(&section->options[i], value, valLen);
-				break;
+	if (sectionState == SECTION_STATE_VALID) {
+		size_t sectidx;
+		for (sectidx = 0; sectidx < n_sections; ++sectidx) {
+			const struct CFG_Section * section = sections[sectidx];
+			if (isSame(section->name, sectionName, sectionNameLen)) {
+				size_t i;
+				for (i = 0; i < section->n_opt; ++i) {
+					if (isSame(section->options[i].name, key, keyLen)) {
+						assignOptionFromString(&section->options[i], value,
+							valLen);
+						goto found;
+					}
+				}
 			}
 		}
-		if (i > section->n_opt)
+		if (sectidx >= n_sections)
 			unknownKey(key, keyLen);
 	}
 
+found:
 	/* advance buffer */
 	bufferSize -= n + 1 - bufferInput;
 	bufferInput = n + 1;
@@ -334,8 +374,7 @@ static bool parseOption(const struct CFG_Section * section)
  */
 static void readCfg(const char * cfgStr, off_t size)
 {
-	bool noSection = true;
-	const struct CFG_Section * section = NULL;
+	sectionState = SECTION_STATE_UNKNOWN;
 
 	/* initialize parser buffer */
 	bufferInput = cfgStr;
@@ -345,7 +384,7 @@ static void readCfg(const char * cfgStr, off_t size)
 	while (bufferSize) {
 		switch (bufferInput[0]) {
 		case '[':
-			section = parseSection();
+			sectionState = parseSection();
 		break;
 		case '\n':
 			++bufferInput;
@@ -357,10 +396,10 @@ static void readCfg(const char * cfgStr, off_t size)
 			skipComment();
 		break;
 		default:
-			if (noSection)
+			if (sectionState == SECTION_STATE_NOSECTION)
 				LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": "
 					"Unexpected option outside any section", bufferLine);
-			parseOption(section);
+			parseOption();
 		}
 	}
 }
@@ -377,22 +416,101 @@ void CFG_loadDefaults()
 			union CFG_Value * val = opt->var;
 			switch (opt->type) {
 			case CFG_VALUE_TYPE_BOOL:
+#ifdef DEBUG
+				LOG_logf(LOG_LEVEL_INFO, PFX, "bool %s.%s = %s",
+					sections[sect]->name, opt->name, opt->def.boolean ? "true" :
+						"false");
+#endif
 				val->boolean = opt->def.boolean;
 				break;
 			case CFG_VALUE_TYPE_INT:
+#ifdef DEBUG
+				LOG_logf(LOG_LEVEL_INFO, PFX, "int %s.%s = %" PRIu32,
+					sections[sect]->name, opt->name, opt->def.integer);
+#endif
 				val->integer = opt->def.integer;
 				break;
 			case CFG_VALUE_TYPE_PORT:
+#ifdef DEBUG
+				LOG_logf(LOG_LEVEL_INFO, PFX, "port %s.%s = %" PRIuFAST16,
+					sections[sect]->name, opt->name, opt->def.port);
+#endif
 				val->port = opt->def.port;
 				break;
 			case CFG_VALUE_TYPE_STRING:
+#ifdef DEBUG
 				if (opt->def.string)
-					strncpy(val->string, opt->def.string, opt->maxlen);
+					LOG_logf(LOG_LEVEL_INFO, PFX, "string %s.%s = \"%s\"",
+						sections[sect]->name, opt->name, opt->def.string);
+				else
+					LOG_logf(LOG_LEVEL_INFO, PFX, "string %s.%s = NULL",
+						sections[sect]->name, opt->name);
+#endif
+				if (opt->def.string)
+					strncpy(opt->var, opt->def.string, opt->maxlen);
 				else
 					val->string[0] = '\0';
 				break;
 			}
 		}
+	}
+}
+
+static const struct CFG_Option * getOption(const char * section,
+	const char * option)
+{
+	size_t sect;
+
+	for (sect = 0; sect < n_sections; ++sect) {
+		if (strcasecmp(sections[sect]->name, section))
+			continue;
+		size_t i;
+		for (i = 0; i < sections[sect]->n_opt; ++i) {
+			const struct CFG_Option * opt = &sections[sect]->options[i];
+			if (!strcasecmp(opt->name, option))
+				return opt;
+		}
+	}
+	LOG_logf(LOG_LEVEL_EMERG, PFX, "Could not find option %s.%s\n", section,
+		option);
+	return false;
+}
+
+void CFG_setBoolean(const char * section, const char * option, bool value)
+{
+	const struct CFG_Option * opt = getOption(section, option);
+	if (opt) {
+		assert(opt->type == CFG_VALUE_TYPE_BOOL);
+		((union CFG_Value*)opt->var)->boolean = value;
+	}
+}
+
+void CFG_setInteger(const char * section, const char * option, uint32_t value)
+{
+	const struct CFG_Option * opt = getOption(section, option);
+	if (opt) {
+		assert(opt->type == CFG_VALUE_TYPE_INT);
+		((union CFG_Value*)opt->var)->integer = value;
+	}
+}
+
+void CFG_setPort(const char * section, const char * option,
+	uint_fast16_t value)
+{
+	const struct CFG_Option * opt = getOption(section, option);
+	if (opt) {
+		assert(opt->type == CFG_VALUE_TYPE_PORT);
+		((union CFG_Value*)opt->var)->port = value;
+	}
+}
+
+void CFG_setString(const char * section, const char * option,
+	const char * value)
+{
+	const struct CFG_Option * opt = getOption(section, option);
+	if (opt) {
+		assert(opt->type == CFG_VALUE_TYPE_STRING);
+		strncpy(opt->var, value, opt->maxlen);
 	}
 }
 
@@ -403,7 +521,7 @@ static void fix()
 	for (sect = 0; sect < n_sections; ++sect) {
 		const struct CFG_Section * section = sections[sect];
 		if (section->fix)
-			section[sect]->fix(section);
+			section->fix(section);
 	}
 }
 

@@ -36,16 +36,23 @@ struct CFG_Option {
 
 struct CFG_Section {
 	const char * name;
-	void (*fix)(struct CFG_Section *);
-	void (*check)(struct CFG_Section *);
+	void (*fix)(const struct CFG_Section *);
+	bool (*check)(const struct CFG_Section *);
 	int n_opt;
 	struct CFG_Option options[];
 };
 
-bool CFG_registerSection(const struct CFG_Section * section);
+void CFG_registerSection(const struct CFG_Section * section);
 void CFG_loadDefaults();
 bool CFG_readFile(const char * file);
 bool CFG_check();
+
+void CFG_setBoolean(const char * section, const char * option, bool value);
+void CFG_setInteger(const char * section, const char * option, uint32_t value);
+void CFG_setPort(const char * section, const char * option,
+	uint_fast16_t value);
+void CFG_setString(const char * section, const char * option,
+	const char * value);
 
 #ifdef __cplusplus
 }
