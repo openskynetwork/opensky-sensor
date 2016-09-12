@@ -47,8 +47,8 @@ static void destruct();
 
 struct Component GPIO_comp = {
 	.description = PFX,
-	.construct = &construct,
-	.destruct = &destruct,
+	.onConstruct = &construct,
+	.onDestruct = &destruct,
 	.dependencies = { NULL }
 };
 
