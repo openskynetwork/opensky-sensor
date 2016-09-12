@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 #include <pthread.h>
+#include "cfgfile.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,13 +14,17 @@ extern "C" {
 struct Component {
 	const char * description;
 
-	bool (*construct)();
-	void (*destruct)();
+	void (*onRegister)();
+
+	bool (*onConstruct)();
+	void (*onDestruct)();
 
 	void (*main)();
 
-	bool (*start)();
-	bool (*stop)(bool deferred);
+	bool (*onStart)();
+	bool (*onStop)(bool deferred);
+
+	const struct CFG_Section * config;
 
 	const struct Component * dependencies[];
 };
@@ -29,6 +34,7 @@ void COMP_setSilent(bool s);
 
 void COMP_register(const struct Component * comp);
 
+void COMP_fixup();
 bool COMP_initAll();
 void COMP_destructAll();
 bool COMP_startAll();

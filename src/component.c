@@ -13,6 +13,7 @@
 #include <util.h>
 #include "component.h"
 #include "log.h"
+#include "cfgfile.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -30,6 +31,7 @@ struct ComponentI {
 /** List of all components */
 static struct ComponentI * head = NULL, * tail = NULL;
 
+static bool exists(const struct Component * comp);
 static void stop(struct ComponentI * c, bool deferred);
 static void destruct(const struct Component * c);
 static void stopUntil(struct ComponentI * end);
@@ -54,6 +56,11 @@ void COMP_setSilent(bool s)
  */
 void COMP_register(const struct Component * comp)
 {
+	if (exists(comp)) {
+		LOG_logf(LOG_LEVEL_EMERG, PFX, "Component %s is already registered",
+			comp->description);
+	}
+
 	struct ComponentI * ci = malloc(sizeof *ci);
 	if (ci == NULL)
 		LOG_errno(LOG_LEVEL_EMERG, PFX, "malloc failed");
@@ -66,6 +73,16 @@ void COMP_register(const struct Component * comp)
 		tail->next = ci;
 	ci->prev = tail;
 	tail = ci;
+
+#if 0
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Registered Component %s with config: %d and "
+		"onRegister: %d", comp->description, !!comp->config,
+		!!comp->onRegister);
+#endif
+	if (comp->config)
+		CFG_registerSection(comp->config);
+	if (comp->onRegister)
+		comp->onRegister();
 }
 
 static bool exists(const struct Component * comp)
@@ -129,18 +146,21 @@ static void sequentialize()
 	}
 }
 
-bool COMP_initAll()
+void COMP_fixup()
 {
 	fixDependencies();
 	sequentialize();
+}
 
+bool COMP_initAll()
+{
 	const struct ComponentI * ci;
 	for (ci = head; ci; ci = ci->next) {
 		const struct Component * c = ci->comp;
 		if (!silent)
 			LOG_logf(LOG_LEVEL_INFO, PFX, "Initialize %s", c->description);
 
-		if (c->construct && !c->construct()) {
+		if (c->onConstruct && !c->onConstruct()) {
 			LOG_logf(LOG_LEVEL_ERROR, PFX, "Failed to initialize %s",
 				c->description);
 			destructUntil(ci);
@@ -174,10 +194,10 @@ bool COMP_startAll()
 			LOG_logf(LOG_LEVEL_INFO, PFX, "Start %s", c->description);
 
 		bool started = true;
-		if (!c->start && c->main)
+		if (!c->onStart && c->main)
 			started = startThreaded(ci);
-		else if (c->start)
-			started = c->start();
+		else if (c->onStart)
+			started = c->onStart();
 
 		if (!started) {
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Failed to start %s", c->description);
@@ -202,10 +222,10 @@ static void stop(struct ComponentI * ci, bool deferred)
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Stopping %s", c->description);
 
 	ci->stopped = true;
-	if (!c->stop && c->main)
+	if (!c->onStop && c->main)
 		ci->stopped = stopThreaded(ci, deferred);
-	else if (c->stop)
-		ci->stopped = c->stop(deferred);
+	else if (c->onStop)
+		ci->stopped = c->onStop(deferred);
 }
 
 /** Stop all components in reverse order, starting at a specific component.
@@ -334,8 +354,8 @@ static void destruct(const struct Component * c)
 {
 	if (!silent)
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Destruct %s", c->description);
-	if (c->destruct)
-		c->destruct(c);
+	if (c->onDestruct)
+		c->onDestruct(c);
 }
 
 static void destructUntil(const struct ComponentI * end)
