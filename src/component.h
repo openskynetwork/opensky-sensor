@@ -24,6 +24,9 @@ struct Component {
 	bool (*onStart)();
 	bool (*onStop)(bool deferred);
 
+	bool * enabled;
+	bool * start;
+
 	const struct CFG_Section * config;
 
 	const struct Component * dependencies[];

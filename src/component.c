@@ -10,20 +10,24 @@
 #include <time.h>
 #include <stdbool.h>
 #include <string.h>
-#include <util.h>
+#include <assert.h>
 #include "component.h"
 #include "log.h"
 #include "cfgfile.h"
-
-#include <stdio.h>
-#include <assert.h>
+#include "util.h"
 
 static const char PFX[] = "COMP";
+
+enum COMPONENT_STATE {
+	COMPONENT_STATE_REGISTERED,
+	COMPONENT_STATE_INITIALIZED,
+	COMPONENT_STATE_STARTED,
+};
 
 struct ComponentI {
 	const struct Component * comp;
 	pthread_t thread;
-	bool stopped;
+	enum COMPONENT_STATE state;
 	struct ComponentI * next;
 	struct ComponentI * prev;
 };
@@ -33,7 +37,7 @@ static struct ComponentI * head = NULL, * tail = NULL;
 
 static bool exists(const struct Component * comp);
 static void stop(struct ComponentI * c, bool deferred);
-static void destruct(const struct Component * c);
+static void destruct(struct ComponentI * ci);
 static void stopUntil(struct ComponentI * end);
 static void destructUntil(const struct ComponentI * end);
 static bool startThreaded(struct ComponentI * ci);
@@ -65,7 +69,7 @@ void COMP_register(const struct Component * comp)
 	if (ci == NULL)
 		LOG_errno(LOG_LEVEL_EMERG, PFX, "malloc failed");
 	ci->comp = comp;
-	ci->stopped = true;
+	ci->state = COMPONENT_STATE_REGISTERED;
 	ci->next = NULL;
 	if (head == NULL)
 		head = ci;
@@ -102,6 +106,19 @@ static void fixDependencies()
 		for (dp = ci->comp->dependencies; *dp; ++dp)
 			if (!exists(*dp))
 				COMP_register(*dp);
+}
+
+static void checkEnabledDependencies()
+{
+	struct ComponentI * ci;
+	struct Component const * const * dp;
+	for (ci = head; ci; ci = ci->next)
+		if (!ci->comp->enabled || *ci->comp->enabled)
+			for (dp = ci->comp->dependencies; *dp; ++dp)
+				if ((*dp)->enabled && !*(*dp)->enabled)
+					LOG_logf(LOG_LEVEL_EMERG, PFX, "Component %s needs "
+						"component %s, which is disabled",
+						ci->comp->description, (*dp)->description);
 }
 
 static bool allDependencies(const struct Component * c)
@@ -154,9 +171,18 @@ void COMP_fixup()
 
 bool COMP_initAll()
 {
-	const struct ComponentI * ci;
+	struct ComponentI * ci;
+
+	checkEnabledDependencies();
+
 	for (ci = head; ci; ci = ci->next) {
 		const struct Component * c = ci->comp;
+
+		assert(ci->state == COMPONENT_STATE_REGISTERED);
+
+		if (c->enabled && !*c->enabled)
+			continue;
+
 		if (!silent)
 			LOG_logf(LOG_LEVEL_INFO, PFX, "Initialize %s", c->description);
 
@@ -166,6 +192,8 @@ bool COMP_initAll()
 			destructUntil(ci);
 			return false;
 		}
+
+		ci->state = COMPONENT_STATE_INITIALIZED;
 	}
 	return true;
 }
@@ -173,9 +201,9 @@ bool COMP_initAll()
 /** Destruct all components. This is the opposite of COMP_initAll(). */
 void COMP_destructAll()
 {
-	const struct ComponentI * ci;
+	struct ComponentI * ci;
 	for (ci = tail; ci; ci = ci->prev)
-		destruct(ci->comp);
+		destruct(ci);
 }
 
 /** Start all components. If not all components could be started, the already
@@ -186,9 +214,13 @@ bool COMP_startAll()
 {
 	struct ComponentI * ci;
 	for (ci = head; ci; ci = ci->next) {
+		if (ci->state != COMPONENT_STATE_INITIALIZED)
+			continue;
+
 		const struct Component * c = ci->comp;
 
-		ci->stopped = false;
+		if (c->start && !*c->start)
+			continue;
 
 		if (!silent)
 			LOG_logf(LOG_LEVEL_INFO, PFX, "Start %s", c->description);
@@ -204,6 +236,8 @@ bool COMP_startAll()
 			stopUntil(ci);
 			return false;
 		}
+
+		ci->state = COMPONENT_STATE_STARTED;
 	}
 	return true;
 }
@@ -218,14 +252,22 @@ static void stop(struct ComponentI * ci, bool deferred)
 {
 	const struct Component * c = ci->comp;
 
+	if (ci->state != COMPONENT_STATE_STARTED)
+		return;
+
 	if (!silent)
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Stopping %s", c->description);
 
-	ci->stopped = true;
+	bool stopped;
 	if (!c->onStop && c->main)
-		ci->stopped = stopThreaded(ci, deferred);
+		stopped = stopThreaded(ci, deferred);
 	else if (c->onStop)
-		ci->stopped = c->onStop(deferred);
+		stopped = c->onStop(deferred);
+	else
+		stopped = true;
+
+	if (!stopped)
+		ci->state = COMPONENT_STATE_INITIALIZED;
 }
 
 /** Stop all components in reverse order, starting at a specific component.
@@ -237,7 +279,7 @@ void stopAll(struct ComponentI * tail)
 	bool deferred = false;
 	for (ci = tail; ci; ci = ci->prev) {
 		stop(ci, false);
-		deferred |= !ci->stopped;
+		deferred |= ci->state == COMPONENT_STATE_STARTED;
 	}
 	/* idea: if not all components could be stopped, try again while there is
 	 * some progress, i.e. while at least one components could be stopped.
@@ -247,10 +289,10 @@ void stopAll(struct ComponentI * tail)
 		progress = false;
 		deferred = false;
 		for (ci = tail; ci; ci = ci->prev) {
-			if (!ci->stopped) {
+			if (ci->state == COMPONENT_STATE_STARTED) {
 				stop(ci, true);
-				progress |= ci->stopped;
-				deferred |= !ci->stopped;
+				progress |= ci->state == COMPONENT_STATE_STARTED;
+				deferred |= ci->state != COMPONENT_STATE_STARTED;
 			}
 		}
 	}
@@ -260,7 +302,7 @@ void stopAll(struct ComponentI * tail)
 		char * buf = buffer;
 		char * const end = buffer + sizeof(buffer) - 1;
 		for (ci = tail; ci && buf < end; ci = ci->prev) {
-			if (!ci->stopped) {
+			if (ci->state == COMPONENT_STATE_STARTED) {
 				size_t len = MIN(strlen(ci->comp->description), end - buf);
 				memcpy(buf, ci->comp->description, len);
 				buf += len;
@@ -350,17 +392,25 @@ static bool stopThreaded(const struct ComponentI * ci, bool deferred)
 	return true;
 }
 
-static void destruct(const struct Component * c)
+static void destruct(struct ComponentI * ci)
 {
+	assert(ci->state != COMPONENT_STATE_STARTED);
+
+	if (ci->state != COMPONENT_STATE_INITIALIZED)
+		return;
+
+	const struct Component * c = ci->comp;
 	if (!silent)
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Destruct %s", c->description);
 	if (c->onDestruct)
 		c->onDestruct(c);
+
+	ci->state = COMPONENT_STATE_REGISTERED;
 }
 
 static void destructUntil(const struct ComponentI * end)
 {
-	const struct ComponentI * ci;
+	struct ComponentI * ci;
 	for (ci = end->prev; ci; ci = ci->prev)
-		destruct(ci->comp);
+		destruct(ci);
 }
