@@ -46,7 +46,9 @@ enum CONN_STATE {
 	/** Disconnected */
 	CONN_STATE_DISCONNECTED,
 	/** Connected */
-	CONN_STATE_CONNECTED
+	CONN_STATE_CONNECTED,
+	/** Special state when shutting down */
+	CONN_STATE_SHUTDOWN
 };
 
 enum TRANSIT_STATE {
@@ -98,15 +100,16 @@ static void cleanupMain()
 		case TRANSIT_SEND:
 			shutdown(recvsock, SHUT_RDWR);
 			close(recvsock);
+			recvsock = -1;
 			break;
 		case TRANSIT_RECV:
 			shutdown(sendsock, SHUT_RDWR);
 			close(sendsock);
+			sendsock = -1;
 			break;
 		}
 	}
-	connState = CONN_STATE_DISCONNECTED;
-	transState = TRANSIT_NONE;
+	connState = CONN_STATE_SHUTDOWN;
 }
 
 static void cleanupSend()
@@ -229,7 +232,8 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 			*mysock = othsock;
 			transState = TRANSIT_NONE;
 		}
-	} else if (transState != (enum TRANSIT_STATE)by) {
+	} else if (connState != CONN_STATE_SHUTDOWN &&
+		transState != (enum TRANSIT_STATE)by) {
 		assert (transState != TRANSIT_NONE);
 		/* we have not been reconnected yet, but the follower has seen the
 		 * failure -> close the stale socket */
