@@ -1,3 +1,5 @@
+/* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -19,12 +21,7 @@
 #include "../tb.h"
 #include "../openskytypes.h"
 
-#ifndef ETHER_DEV
-#define ETHER_DEV "eth0"
-#endif
-
 extern "C" {
-struct CFG_Config CFG_config;
 
 void INPUT_reconfigure() {}
 
@@ -45,17 +42,18 @@ static GpsTimeStatus_t gpsTimeStatus = GpsTimeInvalid;
 
 void init()
 {
+	COMP_register(&TB_comp);
+	COMP_register(&RELAY_comp);
+	COMP_register(&FILTER_comp);
+	COMP_fixup();
+
+	CFG_loadDefaults();
+
 	GPS_reset();
 
-	CFG_config.dev.serialSet = false;
 	configure();
 
 	FILTER_init();
-
-	COMP_register(&BUF_comp, NULL);
-	COMP_register(&NET_comp, NULL);
-	COMP_register(&RELAY_comp, NULL);
-	COMP_register(&TB_comp, NULL);
 
 	COMP_setSilent(true);
 
@@ -64,37 +62,10 @@ void init()
 
 void configure()
 {
-#ifdef LOCAL_FILES
-	strncpy(CFG_config.net.host, "localhost", sizeof CFG_config.net.host);
-#else
-	strncpy(CFG_config.net.host, "collector.opensky-network.org",
-	    sizeof CFG_config.net.host);
-#endif
-	CFG_config.net.port = 10004;
-	CFG_config.net.reconnectInterval = 10;
-	CFG_config.net.timeout = 1500; // TODO: increase
-
-	CFG_config.recv.modeSLongExtSquitter = true;
-	CFG_config.recv.syncFilter = true;
-
-	CFG_config.buf.history = false;
-	CFG_config.buf.statBacklog = 200;
-	CFG_config.buf.dynBacklog = 1000;
-	CFG_config.buf.dynIncrement = 1080;
-	CFG_config.buf.gcEnabled = false;
-	CFG_config.buf.gcInterval = 120;
-	CFG_config.buf.gcLevel = 2;
-
-	CFG_config.stats.enabled = false;
-
-	if (!CFG_config.dev.serialSet) {
-		CFG_config.dev.serialSet = UTIL_getSerial(ETHER_DEV,
-			&CFG_config.dev.serial);
-		if (!CFG_config.dev.serialSet) {
-			LOG_log(LOG_LEVEL_ERROR, PFX, "No serial number configured");
-		} else {
-			configured = true;
-		}
+	if (!UTIL_getSerial(NULL)) {
+		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
+	} else {
+		configured = true;
 	}
 }
 
@@ -104,7 +75,7 @@ void configure()
 void enable()
 {
 	if (unlikely(!configured)) {
-		LOG_log(LOG_LEVEL_ERROR, PFX,
+		LOG_log(LOG_LEVEL_EMERG, PFX,
 		    "Feeder could not be initialized properly");
 		return;
 	}
