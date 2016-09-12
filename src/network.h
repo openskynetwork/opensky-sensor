@@ -10,7 +10,7 @@
 #include "gps.h"
 #include "openskytypes.h"
 
-extern struct Component NET_comp;
+extern const struct Component NET_comp;
 
 #ifdef __cplusplus
 extern "C" {

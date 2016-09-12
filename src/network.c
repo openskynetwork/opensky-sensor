@@ -26,6 +26,40 @@
 
 static const char PFX[] = "NET";
 
+#define RECONNET_INTERVAL 10
+
+static char cfgHost[NI_MAXHOST];
+static uint_fast16_t cfgPort;
+
+static bool checkCfg(const struct CFG_Section * sect);
+
+static const struct CFG_Section cfg = {
+	.name = "NETWORK",
+	.check = &checkCfg,
+	.n_opt = 2,
+	.options = {
+		{
+			.name = "Host",
+			.type = CFG_VALUE_TYPE_STRING,
+			.var = cfgHost,
+			.maxlen = sizeof(cfgHost),
+			.def = {
+#ifdef LOCAL_FILES
+				.string = "localhost"
+#else
+				.string = "collector.opensky-network.org"
+#endif
+			}
+		},
+		{
+			.name = "Port",
+			.type = CFG_VALUE_TYPE_PORT,
+			.var = &cfgPort,
+			.def = { .port = 10004 }
+		}
+	}
+};
+
 /** Networking socket */
 static int recvsock;
 
@@ -78,10 +112,24 @@ static bool trySendLocked(const void * buf, size_t len);
 static bool sendSerial(int sock);
 static bool sendPosition(int sock);
 
-struct Component NET_comp = {
+const struct Component NET_comp = {
 	.description = PFX,
 	.main = &mainloop
 };
+
+static bool checkCfg(const struct CFG_Section * sect)
+{
+	assert(sect == &cfg);
+	if (cfgHost[0] == '\0') {
+		LOG_log(LOG_LEVEL_ERROR, PFX, "NET.host is missing");
+		return false;
+	}
+	if (cfgPort == 0) {
+		LOG_log(LOG_LEVEL_ERROR, PFX, "NET.port = 0");
+		return false;
+	}
+	return true;
+}
 
 static void cleanup()
 {
@@ -127,7 +175,7 @@ static void mainloop()
 		int sock;
 		while ((sock = tryConnect(&sock)) == -1) {
 			++STAT_stats.NET_connectsFail;
-			sleep(CFG_config.net.reconnectInterval);
+			sleep(RECONNET_INTERVAL);
 		}
 
 		/* connection established */
@@ -166,7 +214,7 @@ static void mainloop()
 
 static int tryConnect()
 {
-	int sock = NETC_connect("NET", CFG_config.net.host, CFG_config.net.port);
+	int sock = NETC_connect("NET", cfgHost, cfgPort);
 	if (sock < 0)
 		sock = -1;
 	return sock;
@@ -378,12 +426,16 @@ static bool sendSerial(int sock)
 {
 	uint8_t buf[10] = { '\x1a', '\x35' };
 
+	uint32_t serialno;
+	if (!UTIL_getSerial(&serialno)) {
+		LOG_log(LOG_LEVEL_ERROR, PFX, "No serial number configured");
+	}
+
 	union {
 		uint8_t ca[4];
-		uint32_t serial;
+		uint32_t serialbe;
 	} serial;
-	serial.serial = htobe32(CFG_config.dev.serial);
-
+	serial.serialbe = htobe32(serialno);
 	size_t len = 2 + encode(buf + 2, serial.ca, sizeof serial.ca);
 
 	return trySendSock(sock, buf, len);
