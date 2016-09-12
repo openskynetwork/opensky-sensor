@@ -19,6 +19,8 @@ static void setup()
 	COMP_fixup();
 	COMP_setSilent(true);
 
+	CFG_loadDefaults();
+
 	CFG_setBoolean("BUFFER", "GC", false);
 	CFG_setInteger("BUFFER", "GCInterval", 120);
 	CFG_setInteger("BUFFER", "GCLevel", 10);

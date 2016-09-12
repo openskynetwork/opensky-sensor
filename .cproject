@@ -186,6 +186,9 @@
 	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.672002806.794800620;cdt.managedbuild.toolchain.gnu.base.672002806.794800620.;cdt.managedbuild.tool.gnu.c.compiler.base.793059893;cdt.managedbuild.tool.gnu.c.compiler.input.61847569">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.672002806.516674183;cdt.managedbuild.toolchain.gnu.base.672002806.516674183.;cdt.managedbuild.tool.gnu.cpp.compiler.base.541122956;cdt.managedbuild.tool.gnu.cpp.compiler.input.1929599773">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
@@ -202,6 +205,9 @@
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.672002806.516674183;cdt.managedbuild.toolchain.gnu.base.672002806.516674183.;cdt.managedbuild.tool.gnu.c.compiler.base.1488666301;cdt.managedbuild.tool.gnu.c.compiler.input.641443763">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.672002806.794800620;cdt.managedbuild.toolchain.gnu.base.672002806.794800620.;cdt.managedbuild.tool.gnu.cpp.compiler.base.1515737428;cdt.managedbuild.tool.gnu.cpp.compiler.input.205998226">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
