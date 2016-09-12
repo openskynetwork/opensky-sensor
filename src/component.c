@@ -266,7 +266,7 @@ static void stop(struct ComponentI * ci, bool deferred)
 	else
 		stopped = true;
 
-	if (!stopped)
+	if (stopped)
 		ci->state = COMPONENT_STATE_INITIALIZED;
 }
 
