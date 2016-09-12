@@ -40,7 +40,7 @@ openskyd_rc_dummy_SOURCES = $(radarcape_sources) radarcape/dummy.c \
 	gps/gps_input_dummy.c
 
 rc_wd_SOURCES = wd-main.c \
-	gpio.h gpio.c watchdog.h watchdog.c fpga.h fpga.c \
+	gpio.h gpio.c watchdog.h watchdog.c \
 	cfgfile.h cfgfile.c util.h util.c log.h log_stdio.c
 
 # compiler libs
