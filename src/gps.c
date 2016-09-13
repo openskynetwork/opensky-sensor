@@ -55,5 +55,7 @@ bool GPS_getRawPosition(struct GPS_RawPosition * rawPos)
 
 void GPS_setNeedPosition()
 {
+	pthread_mutex_lock(&posMutex);
 	needPosition = true;
+	pthread_mutex_unlock(&posMutex);
 }
