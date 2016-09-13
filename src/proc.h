@@ -10,10 +10,10 @@ extern "C" {
 #endif
 
 bool PROC_fork();
-void PROC_execRaw(char * argv[]);
-void PROC_execAndFinalize(char * argv[]);
-void PROC_forkAndExec(char * argv[]);
-bool PROC_execAndReturn(char * argv[]);
+void PROC_execRaw(char * const argv[]);
+void PROC_execAndFinalize(char * const argv[]);
+void PROC_forkAndExec(char * const argv[]);
+bool PROC_execAndReturn(char * const argv[]);
 
 #ifdef __cplusplus
 }

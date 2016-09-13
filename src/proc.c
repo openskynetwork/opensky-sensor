@@ -20,7 +20,7 @@ static const char PFX[] = "PROC";
 /** Print a command line which is about to be executed to stdout.
  * \param argv the whole argument vector where argv[0] is the executable.
  */
-static void printCmdLine(char * argv[])
+static void printCmdLine(char * const argv[])
 {
 	char * const * arg;
 
@@ -58,7 +58,7 @@ bool PROC_fork()
 /** Execute a command and don't return.
  * \param argv argument vector.
  */
-void PROC_execAndFinalize(char * argv[])
+void PROC_execAndFinalize(char * const argv[])
 {
 	close(STDIN_FILENO);
 	/*close(STDOUT_FILENO);
@@ -75,7 +75,7 @@ void PROC_execAndFinalize(char * argv[])
 
 /** Print command line and execute. This will replace the current process by
  * the new process. */
-void PROC_execRaw(char * argv[])
+void PROC_execRaw(char * const argv[])
 {
 	printCmdLine(argv);
 
@@ -104,7 +104,7 @@ static inline void escape_cgroup()
 /** Fork parent process, daemonize child and execute.
  * \param argv argument vector
  */
-void PROC_forkAndExec(char * argv[])
+void PROC_forkAndExec(char * const argv[])
 {
 	if (!PROC_fork())
 		return; /* parent */
@@ -123,7 +123,7 @@ void PROC_forkAndExec(char * argv[])
  * \param argv argument vector.
  * \return true if call succeeded
  */
-bool PROC_execAndReturn(char * argv[])
+bool PROC_execAndReturn(char * const argv[])
 {
 	pid_t pid = fork();
 	if (!pid)
