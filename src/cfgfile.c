@@ -548,6 +548,63 @@ bool CFG_check()
 	return true;
 }
 
+static void writeOptions(FILE * file, const struct CFG_Section * section)
+{
+	size_t n;
+	for (n = 0; n < section->n_opt; ++n) {
+		const struct CFG_Option * opt = &section->options[n];
+		const union CFG_Value * val = opt->var;
+		fprintf(file, "%s = ", opt->name);
+		switch (opt->type) {
+		case CFG_VALUE_TYPE_BOOL:
+			fprintf(file, "%s\n", val->boolean ? "true" : "false");
+			break;
+		case CFG_VALUE_TYPE_INT:
+			fprintf(file, "%" PRIu32 "\n", val->integer);
+			break;
+		case CFG_VALUE_TYPE_PORT:
+			fprintf(file, "%" PRIuFAST16 "\n", val->port);
+			break;
+		case CFG_VALUE_TYPE_STRING:
+			fprintf(file, "%s\n", (const char*)opt->var);
+			break;
+		}
+	}
+}
+
+void CFG_write(const char * filename)
+{
+	FILE * file = fopen(filename, "w");
+	if (!file) {
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not write configuration file "
+			"'%s'", filename);
+		return;
+	}
+
+	bool first = true;
+	size_t s;
+	for (s = 0; s < n_sections; ++s) {
+		const struct CFG_Section * sect = sections[s];
+		size_t prev;
+		for (prev = 0; prev < s; ++prev)
+			if (!strcasecmp(sect->name, sections[prev]->name))
+				break;
+		if (prev < s)
+			continue;
+		if (!first)
+			fprintf(file, "\n\n");
+		first = false;
+		fprintf(file, "[%s]\n", sect->name);
+		writeOptions(file, sect);
+
+		size_t next;
+		for (next = s + 1; next < n_sections; ++next)
+			if (!strcasecmp(sect->name, sections[next]->name))
+				writeOptions(file, sections[next]);
+	}
+	fclose(file);
+}
+
 #if 0
 
 static void fix(struct CFG_Config * cfg)

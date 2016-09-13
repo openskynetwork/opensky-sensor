@@ -47,6 +47,7 @@ void CFG_unregisterAll();
 
 void CFG_loadDefaults();
 bool CFG_readFile(const char * file);
+void CFG_write(const char * filename);
 bool CFG_check();
 
 void CFG_setBoolean(const char * section, const char * option, bool value);

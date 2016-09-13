@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <getopt.h>
 #include "gpio.h"
 #include "watchdog.h"
 #include "fpga.h"
@@ -38,6 +39,15 @@ static bool run;
 static pthread_mutex_t sigmutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t sigcond = PTHREAD_COND_INITIALIZER;
 
+static struct option opts[] = {
+#ifdef STANDALONE
+	{ .name = "black", .has_arg = no_argument, .val = 'b' },
+#endif
+	{ .name = "save", .has_arg = required_argument, .val = 's' },
+	{ .name = "help", .has_arg = no_argument, .val = 'h' },
+	{}
+};
+
 int main(int argc, char * argv[])
 {
 	/* force flushing of stdout and stderr on newline */
@@ -45,25 +55,36 @@ int main(int argc, char * argv[])
 
 	pthread_setname_np(pthread_self(), "MAIN");
 
+#ifdef STANDALONE
+	FPGA_bbwhite = true;
+#endif
+
+	const char * savefile = NULL;
+
+	int opt;
+	while ((opt = getopt_long(argc, argv, "h", opts, NULL)) != -1) {
+		switch (opt) {
+#ifdef STANDALONE
+		case 'b':
+			FPGA_bbwhite = false;
+			break;
+#endif
+		case 's':
+			savefile = optarg;
+			break;
+		default:
+			fprintf(stderr, "Usage: %s [--black] [--save <file>] [--help|-h]\n",
+				argv[0]);
+			return EXIT_FAILURE;
+		}
+	}
+
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_sec + tv.tv_usec);
 
 	if (!UTIL_getSerial(NULL))
 		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
-
-#ifdef STANDALONE
-	//bool bbwhite = true;
-	if (argc == 2) {
-		if (!strcmp(argv[1], "--black")) {
-			FPGA_bbwhite = false;
-		} else {
-			LOG_logf(LOG_LEVEL_ERROR, PFX, "Usage: %s [--black]", argv[0]);
-		}
-	} else {
-		FPGA_bbwhite = true;
-	}
-#endif
 
 #ifdef STANDALONE
 	COMP_register(&FPGA_comp);
@@ -86,6 +107,15 @@ int main(int argc, char * argv[])
 	if (!CFG_check()) {
 		LOG_log(LOG_LEVEL_EMERG, PFX,
 			"Configuration inconsistent, quitting");
+	}
+
+	if (savefile) {
+		LOG_logf(LOG_LEVEL_INFO, PFX, "Writing configuration file '%s'",
+			savefile);
+		CFG_write(savefile);
+		COMP_unregisterAll();
+		CFG_unregisterAll();
+		return EXIT_SUCCESS;
 	}
 
 	if (!COMP_initAll()) {
