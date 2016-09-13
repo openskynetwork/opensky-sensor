@@ -26,7 +26,7 @@ void RC_INPUT_init()
 	x = x2 = 0;
 }
 
-void RC_INPUT_destruct() {}
+void RC_INPUT_disconnect() {}
 
 void RC_INPUT_connect() {}
 

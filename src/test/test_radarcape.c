@@ -29,7 +29,7 @@ START_TEST(test_init_destruct)
 {
 	INPUT_init();
 	ck_assert(test.init);
-	INPUT_destruct();
+	INPUT_disconnect();
 	ck_assert(test.destruct);
 }
 END_TEST

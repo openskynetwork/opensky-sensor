@@ -38,17 +38,17 @@ void RC_INPUT_init()
 	fd = -1;
 }
 
-void RC_INPUT_destruct()
-{
-	closeUart();
-}
-
 static void closeUart()
 {
 	if (fd != -1) {
 		close(fd);
 		fd = -1;
 	}
+}
+
+void RC_INPUT_disconnect()
+{
+	closeUart();
 }
 
 void RC_INPUT_connect()

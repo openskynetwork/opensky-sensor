@@ -118,11 +118,6 @@ void INPUT_init()
 	RC_INPUT_init();
 }
 
-void INPUT_destruct()
-{
-	RC_INPUT_destruct();
-}
-
 /** Setup ADSB receiver with some options. */
 static bool configure()
 {
@@ -183,6 +178,11 @@ void INPUT_connect()
 	/* reset buffer */
 	bufCur = buf;
 	bufEnd = bufCur;
+}
+
+void INPUT_disconnect()
+{
+	RC_INPUT_disconnect();
 }
 
 bool INPUT_getFrame(struct OPENSKY_RawFrame * raw,

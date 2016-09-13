@@ -23,7 +23,7 @@ void RC_INPUT_init()
 	test.init = true;
 }
 
-void RC_INPUT_destruct()
+void RC_INPUT_disconnect()
 {
 	test.destruct = true;
 }

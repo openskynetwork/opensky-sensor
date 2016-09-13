@@ -81,7 +81,7 @@ void RC_INPUT_init()
 	sock = -1;
 }
 
-void RC_INPUT_destruct()
+void RC_INPUT_disconnect()
 {
 	closeConn();
 }

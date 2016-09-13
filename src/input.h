@@ -15,8 +15,8 @@ extern "C" {
 extern const struct Component INPUT_comp;
 
 void INPUT_init();
-void INPUT_destruct();
 void INPUT_connect();
+void INPUT_disconnect();
 void INPUT_reconfigure();
 bool INPUT_getFrame(struct OPENSKY_RawFrame * raw,
 	struct OPENSKY_DecodedFrame * decoded);

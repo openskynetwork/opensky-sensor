@@ -18,7 +18,7 @@ void RC_INPUT_register() {}
 
 void RC_INPUT_init() {}
 
-void RC_INPUT_destruct() {}
+void RC_INPUT_disconnect() {}
 
 void RC_INPUT_connect()
 {

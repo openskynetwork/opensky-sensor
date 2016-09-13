@@ -14,13 +14,11 @@
 #include "filter.h"
 
 static bool construct();
-static void destruct();
 static void mainloop();
 
 const struct Component RECV_comp = {
 	.description = "RECV",
 	.onConstruct = &construct,
-	.onDestruct = &destruct,
 	.main = &mainloop,
 	.dependencies = { &BUF_comp, &INPUT_comp, &FILTER_comp, NULL }
 };
@@ -34,15 +32,15 @@ static bool construct()
 	return true;
 }
 
-static void destruct()
-{
-	INPUT_destruct();
-}
-
 static void cleanup(struct OPENSKY_RawFrame ** frame)
 {
 	if (*frame)
 		BUF_abortFrame(*frame);
+}
+
+static void cleanupInput(void * dummy)
+{
+	INPUT_disconnect();
 }
 
 static void mainloop()
@@ -53,6 +51,8 @@ static void mainloop()
 	CLEANUP_PUSH(&cleanup, &frame);
 	while (true) {
 		INPUT_connect();
+
+		CLEANUP_PUSH(&cleanupInput, NULL);
 
 		FILTER_reset();
 
@@ -74,6 +74,8 @@ static void mainloop()
 				break;
 			}
 		}
+
+		CLEANUP_POP();
 	}
 	CLEANUP_POP();
 }

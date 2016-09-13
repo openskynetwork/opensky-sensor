@@ -12,7 +12,7 @@ extern "C" {
 
 void RC_INPUT_register();
 void RC_INPUT_init();
-void RC_INPUT_destruct();
+void RC_INPUT_disconnect();
 void RC_INPUT_connect();
 size_t RC_INPUT_read(uint8_t * buf, size_t bufLen);
 size_t RC_INPUT_write(uint8_t * buf, size_t bufLen);
