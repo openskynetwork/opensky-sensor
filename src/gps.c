@@ -19,8 +19,10 @@ static bool needPosition = false;
 
 void GPS_reset()
 {
+	pthread_mutex_lock(&posMutex);
 	needPosition = false;
 	hasPosition = false;
+	pthread_mutex_unlock(&posMutex);
 }
 
 void GPS_setPosition(double latitude, double longitude, double altitude)

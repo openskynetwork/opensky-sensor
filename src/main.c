@@ -111,6 +111,9 @@ int main(int argc, char * argv[])
 	COMP_stopAll();
 	COMP_destructAll();
 
+	COMP_unregisterAll();
+	CFG_unregisterAll();
+
 	return EXIT_SUCCESS;
 }
 

@@ -89,6 +89,17 @@ void COMP_register(const struct Component * comp)
 		comp->onRegister();
 }
 
+void COMP_unregisterAll()
+{
+	struct ComponentI * ci, * next;
+	for (ci = head; ci; ci = next) {
+		next = ci->next;
+		assert(ci->state == COMPONENT_STATE_REGISTERED);
+		free(ci);
+	}
+	head = tail = NULL;
+}
+
 static bool exists(const struct Component * comp)
 {
 	struct ComponentI * ci;

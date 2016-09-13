@@ -73,6 +73,13 @@ void CFG_registerSection(const struct CFG_Section * section)
 	sections[n_sections++] = section;
 }
 
+void CFG_unregisterAll()
+{
+	free(sections);
+	sections = NULL;
+	n_sections = 0;
+}
+
 /** Read a configuration file.
  * \param file configuration file name to be read
  * \return true if reading succeeded, false otherwise

@@ -36,6 +36,7 @@ struct Component {
 void COMP_setSilent(bool s);
 
 void COMP_register(const struct Component * comp);
+void COMP_unregisterAll();
 
 void COMP_fixup();
 bool COMP_initAll();

@@ -334,9 +334,9 @@ struct OPENSKY_RawFrame * BUF_newFrame()
 	assert(!newFrame);
 	pthread_mutex_lock(&mutex);
 	newFrame = getFrameFromPool();
+	assert(newFrame != currentFrame);
 	pthread_mutex_unlock(&mutex);
 	assert(newFrame);
-	assert(newFrame != currentFrame);
 	return &newFrame->frame;
 }
 

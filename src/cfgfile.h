@@ -43,6 +43,8 @@ struct CFG_Section {
 };
 
 void CFG_registerSection(const struct CFG_Section * section);
+void CFG_unregisterAll();
+
 void CFG_loadDefaults();
 bool CFG_readFile(const char * file);
 bool CFG_check();
