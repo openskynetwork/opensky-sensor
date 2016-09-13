@@ -302,8 +302,8 @@ void stopAll(struct ComponentI * tail)
 		for (ci = tail; ci; ci = ci->prev) {
 			if (ci->state == COMPONENT_STATE_STARTED) {
 				stop(ci, true);
-				progress |= ci->state == COMPONENT_STATE_STARTED;
-				deferred |= ci->state != COMPONENT_STATE_STARTED;
+				progress |= ci->state != COMPONENT_STATE_STARTED;
+				deferred |= ci->state == COMPONENT_STATE_STARTED;
 			}
 		}
 	}
