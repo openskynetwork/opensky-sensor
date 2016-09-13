@@ -37,11 +37,6 @@ void GPS_PARSER_init()
 	GPS_INPUT_init();
 }
 
-void GPS_PARSER_destruct()
-{
-	GPS_INPUT_destruct();
-}
-
 /** Setup GPS receiver with some options. */
 static bool configure()
 {
@@ -68,6 +63,11 @@ void GPS_PARSER_connect()
 	/* reset buffer */
 	bufCur = buf;
 	bufEnd = bufCur;
+}
+
+void GPS_PARSER_disconnect()
+{
+	GPS_INPUT_disconnect();
 }
 
 size_t GPS_PARSER_getFrame(uint8_t * buf, size_t bufLen)

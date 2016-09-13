@@ -39,7 +39,7 @@ void GPS_INPUT_init()
 	fd = -1;
 }
 
-void GPS_INPUT_destruct()
+void GPS_INPUT_disconnect()
 {
 	closeUart();
 }

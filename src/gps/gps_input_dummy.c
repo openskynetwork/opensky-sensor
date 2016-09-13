@@ -14,7 +14,7 @@ void GPS_INPUT_init()
 {
 }
 
-void GPS_INPUT_destruct()
+void GPS_INPUT_disconnect()
 {
 }
 

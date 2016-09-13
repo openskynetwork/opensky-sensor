@@ -18,14 +18,12 @@
 static void posFrame(const uint8_t * buf);
 
 static bool construct();
-static void destruct();
 static void mainloop();
 
 struct Component GPS_RECV_comp = {
 	.description = "GPS",
 	.onRegister = &GPS_INPUT_register,
 	.onConstruct = &construct,
-	.onDestruct = &destruct,
 	.main = &mainloop,
 	.dependencies = { &NET_comp, NULL }
 };
@@ -149,9 +147,9 @@ static bool construct()
 	return true;
 }
 
-static void destruct()
+static void cleanupParser(void * dummy)
 {
-	GPS_PARSER_destruct();
+	GPS_PARSER_disconnect();
 }
 
 static void mainloop()
@@ -160,13 +158,16 @@ static void mainloop()
 
 	while (true) {
 		GPS_PARSER_connect();
+
+		CLEANUP_PUSH(&cleanupParser, NULL);
+
 		GPS_reset();
 
 		while (true) {
 			uint8_t buf[1024];
 			size_t len = GPS_PARSER_getFrame(buf, sizeof buf);
-			if (!len)
-				continue;
+			if (len == 0)
+				break;
 			switch (buf[0]) {
 			case 0x8f:
 				if (len < 2)
@@ -193,6 +194,8 @@ static void mainloop()
 				break;
 			}
 		}
+
+		CLEANUP_POP();
 	}
 }
 
