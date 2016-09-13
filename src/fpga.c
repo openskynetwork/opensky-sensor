@@ -71,16 +71,16 @@ static bool checkCfg(const struct CFG_Section * sect);
 static struct CFG_Section cfg = {
 	.name = "FPGA",
 	.check = &checkCfg,
-	.n_opt = 1,
+	.n_opt = 2,
 	.options = {
 		{
-			.name = "file",
+			.name = "File",
 			.type = CFG_VALUE_TYPE_STRING,
 			.var = cfgFilename,
 			.maxlen = sizeof(cfgFilename),
 		},
 		{
-			.name = "configure",
+			.name = "Configure",
 			.type = CFG_VALUE_TYPE_BOOL,
 			.var = &cfgConfigure,
 		}
@@ -177,7 +177,7 @@ static bool program()
 	uint32_t retries = RETRIES + 1;
 	for (try = 1; try < retries; ++try) {
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Programming (attempt %" PRIu32
-			" of %" PRIu32 ")", try, retries);
+			" of %" PRIu32 ")", try, RETRIES);
 
 		/* reset FPGA */
 		if (!reset(TIMEOUT))
