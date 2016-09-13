@@ -39,6 +39,8 @@ static bool run;
 static pthread_mutex_t sigmutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t sigcond = PTHREAD_COND_INITIALIZER;
 
+const char * MAIN_progName;
+
 static struct option opts[] = {
 #ifdef STANDALONE
 	{ .name = "black", .has_arg = no_argument, .val = 'b' },
@@ -54,6 +56,8 @@ int main(int argc, char * argv[])
 	setlinebuf(stdout);
 
 	pthread_setname_np(pthread_self(), "MAIN");
+
+	MAIN_progName = argv[0];
 
 #ifdef STANDALONE
 	FPGA_bbwhite = true;

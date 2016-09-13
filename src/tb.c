@@ -21,6 +21,7 @@
 #include "proc.h"
 #include "cfgfile.h"
 #include "filter.h"
+#include "fpga.h"
 
 static const char PFX[] = "TB";
 
@@ -55,15 +56,10 @@ struct TB_Packet {
 	const uint8_t * payload;
 };
 
-/** argument vector of daemon, needed for restart */
-static char ** daemonArgv;
-
-static bool construct(void * argv);
 static void mainloop();
 
 const struct Component TB_comp = {
 	.description = PFX,
-	.onConstruct = &construct,
 	.main = &mainloop,
 	.dependencies = { &NET_comp, NULL }
 };
@@ -103,16 +99,6 @@ static PacketProcessor processors[] = {
 #endif
 	[4] = &packetConfigureFilter,
 };
-
-/** Initialize TB.
- * \param argv argument vector of the daemon
- */
-static bool construct(void * argv)
-{
-	daemonArgv = argv;
-
-	return true;
-}
 
 /** Mainloop of the TB. */
 static void mainloop()
@@ -223,7 +209,7 @@ static void packetShell(const struct TB_Packet * packet)
 	/* start rcc in background */
 	LOG_logf(LOG_LEVEL_INFO, PFX, "Starting rcc to %s", addr);
 
-	char *argv[] = { "/usr/bin/rcc", "-t", ":22", "-r", addr, "-n", NULL };
+	char * argv[] = { "/usr/bin/rcc", "-t", ":22", "-r", addr, "-n", NULL };
 	PROC_forkAndExec(argv); /* returns while executing in the background */
 }
 
@@ -234,8 +220,20 @@ static void packetRestartDaemon(const struct TB_Packet * packet)
 	LOG_log(LOG_LEVEL_INFO, PFX, "restarting daemon");
 	LOG_flush();
 
+	extern char * MAIN_progName;
+
+	char * argv[] = {
+		MAIN_progName,
+		NULL
+	};
+	char * argvBlack[] = {
+		MAIN_progName,
+		"--black",
+		NULL
+	};
+
 	/* replace daemon by new instance */
-	PROC_execRaw(daemonArgv);
+	PROC_execRaw(FPGA_bbwhite ? argv : argvBlack);
 }
 #endif
 
