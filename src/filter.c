@@ -73,6 +73,11 @@ void FILTER_reset()
 	isSynchronized = false;
 }
 
+void FILTER_setSynchronizedFilter(bool syncFilter)
+{
+	FILTER_cfg.sync = syncFilter;
+}
+
 void FILTER_setModeSExtSquitter(bool modeSExtSquitter)
 {
 	FILTER_cfg.extSquitter = modeSExtSquitter;

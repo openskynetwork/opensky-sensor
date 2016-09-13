@@ -25,11 +25,11 @@ inline static const struct FILTER_Configuration * FILTER_getConfiguration()
 	return &FILTER_cfg;
 }
 
+void FILTER_setSynchronizedFilter(bool syncFilter);
 void FILTER_setModeSExtSquitter(bool modeSExtSquitter);
 
 void FILTER_init();
 void FILTER_reset();
-void FILTER_reconfigure(bool reset);
 void FILTER_setSynchronized(bool synchronized);
 bool FILTER_filter(enum OPENSKY_FRAME_TYPE frameType, uint8_t firstByte);
 

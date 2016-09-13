@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <stdio.h>
 #include "tb.h"
 #include "log.h"
 #include "network.h"
@@ -69,38 +70,38 @@ const struct Component TB_comp = {
 
 static void processPacket(const struct TB_Packet * packet);
 
-#ifdef TALKBACK
-#if defined(STANDALONE) && !defined(LIB)
+#ifndef LIB
+#ifdef STANDALONE
 static void packetShell(const struct TB_Packet * packet);
 static void packetRestartDaemon(const struct TB_Packet * packet);
 #endif
-#if defined(WITH_SYSTEMD) && !defined(LIB)
+#ifdef WITH_SYSTEMD
 static void packetRebootSystem(const struct TB_Packet * packet);
 #endif
-#if defined(WITH_PACMAN) && !defined(LIB)
+#ifdef WITH_PACMAN
 static void packetUpgradeDaemon(const struct TB_Packet * packet);
 #endif
-static void packetConfigureFilter(const struct TB_Packet * packet);
 #endif
+static void packetConfigureFilter(const struct TB_Packet * packet);
 
 /** Packet processor function pointer */
 typedef void (*PacketProcessor)(const struct TB_Packet*);
 
 /** All packet processors in order of their type */
 static PacketProcessor processors[] = {
-#ifdef TALKBACK
-#if defined(STANDALONE) && !defined(LIB)
+#ifndef LIB
+#ifdef STANDALONE
 	[0] = &packetShell,
 	[1] = &packetRestartDaemon,
 #endif
-#if defined(WITH_SYSTEMD) && !defined(LIB)
+#ifdef WITH_SYSTEMD
 	[2] = &packetRebootSystem,
 #endif
-#if defined(WITH_PACMAN) && !defined(LIB)
+#ifdef WITH_PACMAN
 	[3] = &packetUpgradeDaemon,
 #endif
-	[4] = &packetConfigureFilter,
 #endif
+	[4] = &packetConfigureFilter,
 };
 
 /** Initialize TB.
@@ -183,8 +184,6 @@ static void processPacket(const struct TB_Packet * packet)
 	processors[packet->type](packet);
 }
 
-#ifdef TALKBACK
-
 static void warnTooShort(const struct TB_Packet * packet)
 {
 	LOG_logf(LOG_LEVEL_WARN, PFX, "packet of type %" PRIuFAST16 " too "
@@ -192,7 +191,8 @@ static void warnTooShort(const struct TB_Packet * packet)
 		packet->len);
 }
 
-#if defined(STANDALONE) && !defined(LIB)
+#ifndef LIB
+#ifdef STANDALONE
 /** Start reverse connect to given server
  * \param packet packet containing the server address */
 static void packetShell(const struct TB_Packet * packet)
@@ -239,7 +239,7 @@ static void packetRestartDaemon(const struct TB_Packet * packet)
 }
 #endif
 
-#if defined(WITH_SYSTEMD) && !defined(LIB)
+#ifdef WITH_SYSTEMD
 /** Reboot system using systemd.
  * \param packet packet */
 static void packetRebootSystem(const struct TB_Packet * packet)
@@ -249,7 +249,7 @@ static void packetRebootSystem(const struct TB_Packet * packet)
 }
 #endif
 
-#if defined(WITH_PACMAN) && !defined(LIB)
+#ifdef WITH_PACMAN
 /** Upgrade daemon using pacman and restart daemon using systemd.
  * \param packet packet */
 static void packetUpgradeDaemon(const struct TB_Packet * frame)
@@ -270,6 +270,7 @@ static void packetUpgradeDaemon(const struct TB_Packet * frame)
 	}
 }
 #endif
+#endif
 
 static void packetConfigureFilter(const struct TB_Packet * packet)
 {
@@ -288,10 +289,10 @@ static void packetConfigureFilter(const struct TB_Packet * packet)
 	uint8_t mask = packet->payload[0];
 	uint8_t cfg = packet->payload[1];
 	if (mask & FILT_SYNC_ONLY)
-		CFG_config.recv.syncFilter = !!(cfg & FILT_SYNC_ONLY);
+		FILTER_setSynchronizedFilter(!!(cfg & FILT_SYNC_ONLY));
 	if (mask & FILT_EXT_SQUITTER_ONLY)
-		CFG_config.recv.modeSLongExtSquitter = !!(cfg & FILT_EXT_SQUITTER_ONLY);
-	FILTER_reconfigure(!!(mask & FILT_RESET_SYNC));
+		FILTER_setModeSExtSquitter(!!(cfg & FILT_EXT_SQUITTER_ONLY));
+	if (mask & FILT_RESET_SYNC)
+		FILTER_reset();
 }
 
-#endif
