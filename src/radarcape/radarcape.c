@@ -99,7 +99,7 @@ static struct CFG_Section cfg = {
 };
 
 const struct Component INPUT_comp = {
-	.description = "RDC",
+	.description = PFX,
 	.onRegister = &RC_INPUT_register,
 	.config = &cfg,
 	.dependencies = { NULL }
