@@ -27,7 +27,7 @@ struct Component GPS_RECV_comp = {
 	.onConstruct = &construct,
 	.onDestruct = &destruct,
 	.main = &mainloop,
-	.dependencies = { NULL }
+	.dependencies = { &NET_comp, NULL }
 };
 
 /** Receiver Mode */
