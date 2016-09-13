@@ -456,7 +456,7 @@ void CFG_loadDefaults()
 				if (opt->def.string)
 					strncpy(opt->var, opt->def.string, opt->maxlen);
 				else
-					val->string[0] = '\0';
+					((char*)opt->var)[0] = '\0';
 				break;
 			}
 		}
