@@ -53,8 +53,6 @@ void init()
 
 	configure();
 
-	FILTER_init();
-
 	COMP_setSilent(true);
 
 	COMP_initAll();

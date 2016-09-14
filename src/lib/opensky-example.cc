@@ -48,5 +48,21 @@ int main()
 
 	OpenSky::disable();
 
+	sleep(2);
+
+	OpenSky::enable();
+	OpenSky::setGpsTimeStatus(UsingGpsTime);
+
+	sleep(1);
+
+	for (i = 0; i < 10; ++i) {
+		frame[8] = i + 20;
+		OpenSky::output_message(frame, MessageType_ModeSLong);
+	}
+
 	sleep(5);
+
+	OpenSky::disable();
+
+	sleep(2);
 }

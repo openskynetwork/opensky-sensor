@@ -8,6 +8,7 @@
 #include "../cfgfile.h"
 #include "../openskytypes.h"
 #include "../input.h"
+#include "../component.h"
 
 extern "C" {
 
@@ -17,8 +18,16 @@ void BUF_fillStatistics() {}
 
 int main()
 {
+	COMP_register(&INPUT_comp);
+	COMP_fixup();
+
 	CFG_loadDefaults();
 	CFG_check();
+
+	CFG_setString("INPUT", "host", "skydev");
+
+	COMP_initAll();
+	COMP_startAll();
 
 	OpenSky::init();
 
@@ -26,7 +35,6 @@ int main()
 
 	OpenSky::enable();
 
-	INPUT_init();
 	while (true) {
 		INPUT_connect();
 

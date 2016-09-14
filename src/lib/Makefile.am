@@ -12,7 +12,7 @@ libopensky_la_SOURCES=opensky.hh opensky.cc MessageTypes.h GpsStatus.h \
 	../network.h ../network.c ../net_common.h ../net_common.c \
 	../statistics.h ../statistics.c ../component.h ../component.c \
 	../threads.h ../util.h ../util.c ../log.h log_lib.cc ../gps.h \
-	../tb.h ../tb.c ../gps.h ../gps.c
+	../tb.h ../tb.c ../gps.h ../gps.c ../cfgfile.h ../cfgfile.c
 
 # version info: CURRENT (=iface version) : REVISION (internal changes only) : AGE (delta to last iface supported)
 libopensky_la_LDFLAGS=-version-info 0:1:0
@@ -28,7 +28,8 @@ opensky_lib_example_LDADD=libopensky.la
 opensky_lib_test_SOURCES=opensky-test.cc \
 	../input.h ../radarcape/radarcape.c ../radarcape/network.c \
 	../statistics.h ../statistics.c ../cfgfile.h ../cfgfile.c \
-	../log.h ../log_stdio.c ../util.h ../util.c ../net_common.c
+	../log.h ../log_stdio.c ../util.h ../util.c ../net_common.c \
+	../filter.h ../filter.c ../component.h ../component.c
 opensky_lib_test_CXXFLAGS=@PTHREAD_CFLAGS@ -I$(srcdir)/..
 opensky_lib_test_CFLAGS=@PTHREAD_CFLAGS@ -I$(srcdir)/..
 opensky_lib_test_LDFLAGS=@PTHREAD_CFLAGS@ @PTHREAD_LIBS@
