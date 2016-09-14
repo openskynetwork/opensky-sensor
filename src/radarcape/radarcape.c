@@ -98,9 +98,12 @@ static struct CFG_Section cfg = {
 	}
 };
 
+static bool construct();
+
 const struct Component INPUT_comp = {
 	.description = PFX,
 	.onRegister = &RC_INPUT_register,
+	.onConstruct = &construct,
 	.config = &cfg,
 	.dependencies = { NULL }
 };
@@ -113,9 +116,10 @@ static inline bool setOption(enum RADARCAPE_OPTION option);
 static inline enum DECODE_STATUS decode(uint8_t * buf, size_t len,
 	struct OPENSKY_RawFrame * raw);
 
-void INPUT_init()
+static bool construct()
 {
 	RC_INPUT_init();
+	return true;
 }
 
 /** Setup ADSB receiver with some options. */

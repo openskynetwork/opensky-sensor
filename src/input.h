@@ -14,7 +14,6 @@ extern "C" {
 
 extern const struct Component INPUT_comp;
 
-void INPUT_init();
 void INPUT_connect();
 void INPUT_disconnect();
 void INPUT_reconfigure();
