@@ -55,17 +55,22 @@ static const struct CFG_Section cfg = {
 /** synchronization info: true if receiver has a valid GPS timestamp */
 static bool isSynchronized;
 
+static bool construct();
+
 const struct Component FILTER_comp = {
 	.description = "FILTER",
 	.config = &cfg,
+	.onConstruct = &construct,
 	.dependencies = { NULL }
 };
 
-void FILTER_init()
+static bool construct()
 {
 	modeSFilter = FILTER_cfg.extSquitter ?
 		MODES_TYPE_EXTENDED_SQUITTER_ALL : MODES_TYPE_ALL;
 	FILTER_reset();
+
+	return true;
 }
 
 void FILTER_reset()
