@@ -13,24 +13,13 @@
 #include "util.h"
 #include "filter.h"
 
-static bool construct();
 static void mainloop();
 
 const struct Component RECV_comp = {
 	.description = "RECV",
-	.onConstruct = &construct,
 	.main = &mainloop,
 	.dependencies = { &BUF_comp, &INPUT_comp, &FILTER_comp, NULL }
 };
-
-static bool construct()
-{
-	INPUT_init();
-
-	FILTER_init();
-
-	return true;
-}
 
 static void cleanup(struct OPENSKY_RawFrame ** frame)
 {
