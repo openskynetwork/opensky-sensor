@@ -140,7 +140,6 @@ static void cleanup()
 
 static void cleanupMain()
 {
-	pthread_mutex_unlock(&mutex);
 	if (connState == CONN_STATE_CONNECTED) {
 		switch (transState) {
 		case TRANSIT_NONE:
@@ -157,6 +156,7 @@ static void cleanupMain()
 		}
 	}
 	connState = CONN_STATE_SHUTDOWN;
+	pthread_mutex_unlock(&mutex);
 }
 
 static void cleanupSend()
