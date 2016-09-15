@@ -428,8 +428,8 @@ END_TEST
 START_TEST(test_dynamic_exhaust)
 {
 	struct rlimit limit;
-	limit.rlim_cur = 20 << 20;
-	limit.rlim_max = 20 << 20;
+	limit.rlim_cur = 2 << 20;
+	limit.rlim_max = 2 << 20;
 	setrlimit(RLIMIT_AS, &limit);
 
 	CFG_setInteger("BUFFER", "StaticBacklog", 10);
