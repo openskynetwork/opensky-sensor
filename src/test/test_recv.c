@@ -29,9 +29,9 @@ static void setup()
 	CFG_setInteger("BUFFER", "DynamicBacklog", 100);
 	CFG_setInteger("BUFFER", "DynamicIncrements", 10);
 
-	CFG_setBoolean("FILTER", "CRC", true);
-	CFG_setBoolean("FILTER", "ModeSExtSquitterOnly", true);
-	CFG_setBoolean("FILTER", "SyncFilter", true);
+	CFG_setBoolean("FILTER", "CRC", false);
+	CFG_setBoolean("FILTER", "ModeSExtSquitterOnly", false);
+	CFG_setBoolean("FILTER", "SyncFilter", false);
 
 	COMP_setSilent(true);
 }
@@ -77,6 +77,8 @@ START_TEST(test_filter_unsynchronized)
 	test.nBuffers = 1;
 	test.noRet = true;
 
+	CFG_setBoolean("FILTER", "SyncFilter", true);
+
 	COMP_initAll();
 	COMP_startAll();
 
@@ -103,6 +105,8 @@ START_TEST(test_filter_synchronized)
 	test.nBuffers = 2;
 	test.noRet = true;
 
+	CFG_setBoolean("FILTER", "SyncFilter", true);
+
 	COMP_initAll();
 	COMP_startAll();
 
@@ -128,6 +132,8 @@ START_TEST(test_filter_modeac)
 	test.nBuffers = 1;
 	test.noRet = true;
 
+	CFG_setBoolean("FILTER", "SyncFilter", true);
+
 	COMP_initAll();
 	COMP_startAll();
 
@@ -144,12 +150,14 @@ START_TEST(test_filter_type)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
-		"abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+		0xdeadbe, 0, "abcdefghijklmn", 14);
 	buf.length = len;
 	test.buffers = &buf;
 	test.nBuffers = 1;
 	test.noRet = true;
+
+	CFG_setBoolean("FILTER", "ModeSExtSquitterOnly", true);
 
 	COMP_initAll();
 	COMP_startAll();
@@ -170,12 +178,14 @@ START_TEST(test_filter_extsquitter)
 	struct TEST_Buffer buf = { .payload = frm };
 	char payload[14] = "abcdefghijklmn";
 	payload[0] = _i << 3;
-	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe, 0,
-		payload, 14);
+	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+		0xdeadbe, 0, payload, 14);
 	buf.length = len;
 	test.buffers = &buf;
 	test.nBuffers = 1;
 	test.noRet = true;
+
+	CFG_setBoolean("FILTER", "ModeSExtSquitterOnly", true);
 
 	COMP_initAll();
 	COMP_startAll();
