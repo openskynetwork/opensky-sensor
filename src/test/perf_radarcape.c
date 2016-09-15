@@ -37,6 +37,9 @@ int main()
 	}
 	clock_gettime(CLOCK_REALTIME, &end);
 
+	COMP_stopAll();
+	COMP_destructAll();
+
 	int64_t s = end.tv_sec - start.tv_sec;
 	int64_t ns = end.tv_nsec - start.tv_nsec;
 	if (ns < 0) {
