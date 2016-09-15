@@ -7,6 +7,7 @@
 #include <endian.h>
 #include <ctype.h>
 #include <string.h>
+#include <pthread.h>
 #include "input_perf.h"
 #include "../input.h"
 
@@ -42,6 +43,7 @@ size_t RC_INPUT_read(uint8_t * buf, size_t len)
 		else
 			curPtr += len;
 	} else {
+		pthread_testcancel();
 		size_t endlen = buffer + bufLen - curPtr;
 		memcpy(buf, curPtr, endlen);
 		len -= endlen;
