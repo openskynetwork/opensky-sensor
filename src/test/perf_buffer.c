@@ -17,8 +17,8 @@
 int main()
 {
 	uint8_t buf[46];
-	size_t len = RC_INPUT_buildFrame(buf, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
-		-10, "abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(buf, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+		0xdeadbe, -10, "abcdefghijklmn", 14);
 	RC_INPUT_setBuffer(buf, len);
 
 	COMP_register(&BUF_comp);
@@ -26,9 +26,13 @@ int main()
 	COMP_fixup();
 	COMP_setSilent(true);
 
+	CFG_loadDefaults();
 	CFG_setBoolean("BUFFER", "GC", false);
 	CFG_setBoolean("BUFFER", "History", false);
 	CFG_setInteger("BUFFER", "StaticBacklog", 100);
+	CFG_setBoolean("FILTER", "CRC", false);
+	CFG_setBoolean("FILTER", "ModeSExtSquitterOnly", false);
+	CFG_setBoolean("FILTER", "SyncFilter", false);
 
 	COMP_initAll();
 	COMP_startAll();
@@ -40,6 +44,9 @@ int main()
 		BUF_putFrame(BUF_getFrame());
 	}
 	clock_gettime(CLOCK_REALTIME, &end);
+
+	COMP_stopAll();
+	COMP_destructAll();
 
 	int64_t s = end.tv_sec - start.tv_sec;
 	int64_t ns = end.tv_nsec - start.tv_nsec;
