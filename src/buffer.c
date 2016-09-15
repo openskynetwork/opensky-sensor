@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <time.h>
 #include "log.h"
 #include "buffer.h"
 #include "statistics.h"
