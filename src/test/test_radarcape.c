@@ -19,15 +19,14 @@ static void setup()
 {
 	test.testAck = -1;
 	COMP_register(&INPUT_comp);
+	COMP_register(&FILTER_comp);
 	COMP_fixup();
-	FILTER_register();
-	FILTER_init();
 	CFG_loadDefaults();
 }
 
 START_TEST(test_init_destruct)
 {
-	INPUT_init();
+	COMP_initAll();
 	ck_assert(test.init);
 	INPUT_disconnect();
 	ck_assert(test.destruct);
@@ -36,7 +35,8 @@ END_TEST
 
 START_TEST(test_connect)
 {
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	ck_assert(test.init);
 	INPUT_connect();
 	ck_assert_uint_eq(test.write, 10);
@@ -49,7 +49,8 @@ static void configAssert(char testC)
 	bool expect = testC == lower ? false : true;
 
 	test.params[lower - 'c'] = !expect;
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	ck_assert(test.init);
 	INPUT_connect();
 	ck_assert_uint_eq(test.write, 10);
@@ -137,7 +138,8 @@ END_TEST
 START_TEST(test_config_fail)
 {
 	test.testAck = 3;
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	ck_assert(test.init);
 	INPUT_connect();
 	ck_assert_uint_eq(test.write, 10);
@@ -155,7 +157,8 @@ START_TEST(test_decode_modeac)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -182,7 +185,8 @@ START_TEST(test_decode_modesshort)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -209,7 +213,8 @@ START_TEST(test_decode_modeslong)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -236,7 +241,8 @@ START_TEST(test_decode_status)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -263,7 +269,8 @@ START_TEST(test_decode_unknown)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -286,7 +293,8 @@ START_TEST(test_decode_unknown_next)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -315,7 +323,8 @@ START_TEST(test_decode_escape)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -342,7 +351,8 @@ START_TEST(test_decode_unsynchronized_start)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -372,7 +382,8 @@ START_TEST(test_decode_unsynchronized_type)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -402,7 +413,8 @@ START_TEST(test_decode_unsynchronized_header)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -432,7 +444,8 @@ START_TEST(test_decode_unsynchronized_payload)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -463,7 +476,8 @@ START_TEST(test_buffer_two_frames)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -500,7 +514,8 @@ START_TEST(test_buffer_fail_start)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -520,7 +535,8 @@ START_TEST(test_buffer_fail_type)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -540,7 +556,8 @@ START_TEST(test_buffer_fail_header)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -560,7 +577,8 @@ START_TEST(test_buffer_fail_payload)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -580,7 +598,8 @@ START_TEST(test_buffer_fail_escape)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -604,7 +623,8 @@ START_TEST(test_buffer_end_start)
 	test.buffers = buf;
 	test.nBuffers = 2;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -644,7 +664,8 @@ START_TEST(test_buffer_end)
 	test.buffers = buf;
 	test.nBuffers = len < _i ? 1 : 2;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -674,7 +695,8 @@ START_TEST(test_buffer_end_escape)
 	test.buffers = buf;
 	test.nBuffers = 2;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -702,7 +724,8 @@ START_TEST(test_buffer_end_escape_fail)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -727,7 +750,8 @@ START_TEST(test_synchronize_peek_unsync)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -761,7 +785,8 @@ START_TEST(test_synchronize_peek_unsync_at_end)
 	test.buffers = buf;
 	test.nBuffers = 2;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -794,7 +819,8 @@ START_TEST(test_synchronize_peek_sync_at_end)
 	test.buffers = buf;
 	test.nBuffers = 2;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
@@ -819,7 +845,8 @@ START_TEST(test_synchronize_fail)
 	test.buffers = &buf;
 	test.nBuffers = 1;
 
-	INPUT_init();
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct OPENSKY_RawFrame frame;
