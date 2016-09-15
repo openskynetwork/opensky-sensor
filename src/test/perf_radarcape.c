@@ -12,17 +12,21 @@
 #include "../input.h"
 #include "../statistics.h"
 #include "../cfgfile.h"
+#include "../component.h"
 
 int main()
 {
 	struct OPENSKY_RawFrame raw;
 	struct OPENSKY_DecodedFrame decoded;
 	uint8_t buf[46];
-	size_t len = RC_INPUT_buildFrame(buf, OPENSKY_FRAME_TYPE_MODE_S_LONG, 0xdeadbe,
-		-10, "abcdefghijklmn", 14);
+	size_t len = RC_INPUT_buildFrame(buf, OPENSKY_FRAME_TYPE_MODE_S_LONG,
+		0xdeadbe, -10, "abcdefghijklmn", 14);
 	RC_INPUT_setBuffer(buf, len);
 
-	INPUT_init(NULL);
+	COMP_setSilent(true);
+	COMP_register(&INPUT_comp);
+	COMP_initAll();
+	COMP_startAll();
 	INPUT_connect();
 
 	struct timespec start, end;
