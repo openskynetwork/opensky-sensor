@@ -451,8 +451,8 @@ void BUF_releaseFrame(const struct OPENSKY_RawFrame * frame)
 
 	pthread_mutex_lock(&mutex);
 	unshift(&pool, currentFrame);
-	pthread_mutex_unlock(&mutex);
 	currentFrame = NULL;
+	pthread_mutex_unlock(&mutex);
 }
 
 /** Put a frame back into the queue.
@@ -469,8 +469,8 @@ void BUF_putFrame(const struct OPENSKY_RawFrame * frame)
 
 	pthread_mutex_lock(&mutex);
 	unshift(&queue, currentFrame);
-	pthread_mutex_unlock(&mutex);
 	currentFrame = NULL;
+	pthread_mutex_unlock(&mutex);
 }
 
 /** Deploy a new pool: allocate frames and append them to the overall pool.
