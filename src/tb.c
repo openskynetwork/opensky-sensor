@@ -286,10 +286,16 @@ static void packetConfigureFilter(const struct TB_Packet * packet)
 
 	uint8_t mask = packet->payload[0];
 	uint8_t cfg = packet->payload[1];
-	if (mask & FILT_SYNC_ONLY)
+	if (mask & FILT_SYNC_ONLY) {
+		LOG_logf(LOG_LEVEL_INFO, PFX, "Setting sync filter: %d",
+					!!(cfg & FILT_SYNC_ONLY));
 		FILTER_setSynchronizedFilter(!!(cfg & FILT_SYNC_ONLY));
-	if (mask & FILT_EXT_SQUITTER_ONLY)
+	}
+	if (mask & FILT_EXT_SQUITTER_ONLY) {
+		LOG_logf(LOG_LEVEL_INFO, PFX, "Setting ext squitter only filter: %d",
+			!!(cfg & FILT_EXT_SQUITTER_ONLY));
 		FILTER_setModeSExtSquitter(!!(cfg & FILT_EXT_SQUITTER_ONLY));
+	}
 	if (mask & FILT_RESET_SYNC)
 		FILTER_reset();
 }
