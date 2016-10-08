@@ -15,7 +15,7 @@ libopensky_la_SOURCES=opensky.hh opensky.cc MessageTypes.h GpsStatus.h \
 	../tb.h ../tb.c ../gps.h ../gps.c ../cfgfile.h ../cfgfile.c
 
 # version info: CURRENT (=iface version) : REVISION (internal changes only) : AGE (delta to last iface supported)
-libopensky_la_LDFLAGS=-version-info 0:1:0
+libopensky_la_LDFLAGS=-version-info 0:2:0
 libopensky_la_CFLAGS=-fvisibility=hidden -DPREFIX=\"OpenSky\" -I$(srcdir)/.. -DLIB
 libopensky_la_CXXFLAGS=-fvisibility=hidden -DPREFIX=\"OpenSky\" -I$(srcdir)/.. -DLIB
 include_HEADERS=opensky.hh
