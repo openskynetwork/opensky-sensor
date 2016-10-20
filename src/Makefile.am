@@ -23,24 +23,27 @@ openskyd_sources = main.c \
 	component.h component.c threads.h \
 	log.h log_stdio.c \
 	gps.h gps.c \
-	watchdog.h statistics.h tb.h recv.h fpga.h
+	statistics.h tb.h recv.h
 
 # common sources of radarcape input
 radarcape_sources = $(openskyd_sources) \
+	radarcape/watchdog.h radarcape/fpga.h \
 	radarcape/rc-input.h radarcape/radarcape.c \
 	gps/gps_recv.h gps/gps_recv.c gps/gps_parser.h gps/gps_parser.c \
 	tb.c recv.c proc.h proc.c statistics.c
 
 # sources for binaries
 openskyd_rc_SOURCES = $(radarcape_sources) radarcape/uart.c \
-	gps/gps_input_uart.c fpga.c watchdog.c gpio.h gpio.c
+	gps/gps_input_uart.c radarcape/fpga.c radarcape/watchdog.c \
+	radarcape/gpio.h radarcape/gpio.c
 openskyd_rcd_net_SOURCES = $(radarcape_sources) radarcape/network.c \
 	gps/gps_input_network.c
 openskyd_rc_dummy_SOURCES = $(radarcape_sources) radarcape/dummy.c \
 	gps/gps_input_dummy.c
 
 rc_wd_SOURCES = wd-main.c \
-	gpio.h gpio.c watchdog.h watchdog.c \
+	radarcape/gpio.h radarcape/gpio.c \
+	radarcape/watchdog.h radarcape/watchdog.c \
 	cfgfile.h cfgfile.c util.h util.c log.h log_stdio.c
 
 # compiler libs

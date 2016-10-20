@@ -21,7 +21,7 @@
 #include "proc.h"
 #include "cfgfile.h"
 #include "filter.h"
-#include "fpga.h"
+#include "radarcape/fpga.h"
 
 static const char PFX[] = "TB";
 

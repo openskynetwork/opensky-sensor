@@ -13,9 +13,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <getopt.h>
-#include "gpio.h"
-#include "watchdog.h"
-#include "fpga.h"
+#include "radarcape/gpio.h"
+#include "radarcape/watchdog.h"
+#include "radarcape/fpga.h"
 #include "buffer.h"
 #include "network.h"
 #include "cfgfile.h"
