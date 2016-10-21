@@ -12,10 +12,10 @@
 #include <stdbool.h>
 #include <assert.h>
 #include "rc-input.h"
-#include "../net_common.h"
-#include "../cfgfile.h"
-#include "../util.h"
-#include "../log.h"
+#include "util/net_common.h"
+#include "util/cfgfile.h"
+#include "util/util.h"
+#include "util/log.h"
 
 static const char PFX[] = "INPUT";
 

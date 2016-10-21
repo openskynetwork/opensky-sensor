@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include "gps_parser.h"
 #include "gps_input.h"
-#include "util.h"
-#include "threads.h"
+#include "util/util.h"
+#include "util/threads.h"
 
 enum DECODE_STATUS {
 	DECODE_STATUS_OK,

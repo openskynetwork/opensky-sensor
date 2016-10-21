@@ -8,11 +8,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "input_perf.h"
-#include "../openskytypes.h"
-#include "../input.h"
-#include "../statistics.h"
-#include "../cfgfile.h"
-#include "../component.h"
+#include "core/openskytypes.h"
+#include "core/input.h"
+#include "util/statistics.h"
+#include "util/cfgfile.h"
+#include "util/component.h"
 
 int main()
 {

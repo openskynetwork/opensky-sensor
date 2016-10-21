@@ -11,9 +11,9 @@
 #include <time.h>
 #include <signal.h>
 #include "statistics.h"
-#include "buffer.h"
 #include "cfgfile.h"
 #include "threads.h"
+#include "core/buffer.h"
 
 volatile struct STAT_Statistics STAT_stats;
 

@@ -8,9 +8,9 @@
 #include "openskytypes.h"
 #include "buffer.h"
 #include "network.h"
-#include "cfgfile.h"
-#include "threads.h"
-#include "util.h"
+#include "util/cfgfile.h"
+#include "util/threads.h"
+#include "util/util.h"
 
 static void mainloop();
 

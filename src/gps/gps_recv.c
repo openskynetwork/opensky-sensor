@@ -9,10 +9,10 @@
 #include "gps_recv.h"
 #include "gps_parser.h"
 #include "gps_input.h"
-#include "../gps.h"
-#include "../network.h"
-#include "../endec.h"
-#include "../threads.h"
+#include "core/gps.h"
+#include "core/network.h"
+#include "util/endec.h"
+#include "util/threads.h"
 
 //static void timeFrame(const uint8_t * buf);
 static void posFrame(const uint8_t * buf);

@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 #include <stdatomic.h>
-#include "component.h"
+#include "util/component.h"
 
 #ifdef __cplusplus
 extern "C" {

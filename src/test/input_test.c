@@ -10,9 +10,9 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include "input_test.h"
-#include "../openskytypes.h"
-#include "../radarcape/rc-input.h"
-#include "../input.h"
+#include "core/openskytypes.h"
+#include "core/input.h"
+#include "radarcape/rc-input.h"
 
 struct TEST test;
 

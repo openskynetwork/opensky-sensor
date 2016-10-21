@@ -5,7 +5,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "component.h"
+#include "util/component.h"
 #include "openskytypes.h"
 
 #ifdef __cplusplus

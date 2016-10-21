@@ -8,9 +8,9 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include "gps.h"
-#include "threads.h"
-#include "endec.h"
 #include "network.h"
+#include "util/threads.h"
+#include "util/endec.h"
 
 static pthread_mutex_t posMutex = PTHREAD_MUTEX_INITIALIZER;
 static struct GPS_RawPosition position;

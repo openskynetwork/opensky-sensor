@@ -9,17 +9,17 @@
 #include <stdlib.h>
 #include "opensky.hh"
 #include "MessageTypes.h"
-#include "../buffer.h"
-#include "../component.h"
-#include "../network.h"
-#include "../relay.h"
-#include "../filter.h"
-#include "../util.h"
-#include "../cfgfile.h"
-#include "../log.h"
-#include "../gps.h"
-#include "../tb.h"
-#include "../openskytypes.h"
+#include "core/buffer.h"
+#include "core/network.h"
+#include "core/relay.h"
+#include "core/filter.h"
+#include "core/gps.h"
+#include "core/tb.h"
+#include "core/openskytypes.h"
+#include "util/component.h"
+#include "util/util.h"
+#include "util/cfgfile.h"
+#include "util/log.h"
 
 extern "C" {
 

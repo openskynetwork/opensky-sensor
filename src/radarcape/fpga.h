@@ -4,7 +4,7 @@
 #define _HAVE_FPGA_H
 
 #include <stdbool.h>
-#include "component.h"
+#include "util/component.h"
 
 #ifdef __cplusplus
 extern "C" {

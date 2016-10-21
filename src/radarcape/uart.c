@@ -12,9 +12,9 @@
 #include <errno.h>
 #include <stdbool.h>
 #include "rc-input.h"
-#include "../cfgfile.h"
-#include "../util.h"
-#include "../log.h"
+#include "util/cfgfile.h"
+#include "util/util.h"
+#include "util/log.h"
 
 static const char PFX[] = "INPUT";
 

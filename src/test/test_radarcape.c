@@ -7,13 +7,13 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include "../openskytypes.h"
-#include "../input.h"
-#include "../filter.h"
-#include "../component.h"
 #include "input_test.h"
-#include "../statistics.h"
-#include "../cfgfile.h"
+#include "core/openskytypes.h"
+#include "core/input.h"
+#include "core/filter.h"
+#include "util/component.h"
+#include "util/statistics.h"
+#include "util/cfgfile.h"
 
 static void setup()
 {

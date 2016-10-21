@@ -16,11 +16,11 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include "tb.h"
-#include "log.h"
-#include "network.h"
-#include "proc.h"
-#include "cfgfile.h"
 #include "filter.h"
+#include "network.h"
+#include "util/log.h"
+#include "util/proc.h"
+#include "util/cfgfile.h"
 #include "radarcape/fpga.h"
 
 static const char PFX[] = "TB";

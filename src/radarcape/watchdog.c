@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include "watchdog.h"
 #include "gpio.h"
-#include "statistics.h"
+#include "util/statistics.h"
 
 /** Watchdog GPIO number */
 #define GPIO 60

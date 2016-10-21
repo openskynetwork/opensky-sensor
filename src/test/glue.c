@@ -1,7 +1,7 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
-#include "../network.h"
-#include "../util.h"
+#include "core/network.h"
+#include "util/util.h"
 
 bool NET_sendPosition(const struct GPS_RawPosition * position)
 {

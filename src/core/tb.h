@@ -3,7 +3,7 @@
 #ifndef _HAVE_TB_H
 #define _HAVE_TB_H
 
-#include "component.h"
+#include "util/component.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -8,13 +8,13 @@ check_PROGRAMS = $(TESTS) perf_radarcape perf_buffer
 check_LIBRARIES = libtest.a
 endif
 
-libtest_a_SOURCES = ../buffer.h ../buffer.c ../cfgfile.h \
-	../statistics.h ../statistics.c ../component.h ../component.c \
-	../util.h ../message.h ../message.c ../input.h ../radarcape/radarcape.c \
-	../recv.h ../recv.c ../gps.h ../gps.c \
-	../filter.h ../filter.c ../log.h ../log_stdio.c glue.c \
-	../cfgfile.h ../cfgfile.c
-libtest_a_CFLAGS = $(AM_CFLAGS)
+libtest_a_SOURCES = ../core/buffer.c \
+	../util/statistics.c ../util/component.c \
+	../util/util.h ../radarcape/radarcape.c \
+	../core/recv.c ../core/gps.c \
+	../core/filter.h ../core/filter.c ../util/log_stdio.c glue.c \
+	../util/cfgfile.c
+libtest_a_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/src
 
 AM_CFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@ -DCHECK
 AM_CXXFLAGS = -I$(top_srcdir)/src @PTHREAD_CFLAGS@ -DCHECK
@@ -32,22 +32,21 @@ test_recv_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 test_gps_SOURCES = test_gps.c
 test_gps_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
-test_lib_SOURCES = test_lib.cc libdummy.c ../lib/opensky.hh ../lib/opensky.cc
-test_lib_CXXFLAGS = @CHECK_CFLAGS@ $(AM_CXXFLAGS) -I$(srcdir)/../lib
+test_lib_SOURCES = test_lib.cc libdummy.c ../radarcape/lib/opensky.cc
+test_lib_CXXFLAGS = @CHECK_CFLAGS@ $(AM_CXXFLAGS) -I$(srcdir)/../radarcape/lib
 
 perf_radarcape_SOURCES = perf_radarcape.c input_perf.h input_perf.c \
-	../statistics.h ../statistics.c ../input.h ../radarcape/radarcape.c \
-	../buffer.h ../buffer.c ../component.h ../component.c \
-	../log.h ../log_stdio.c ../filter.h ../filter.c ../cfgfile.h ../cfgfile.c
+	../util/statistics.c ../core/input.h ../radarcape/radarcape.c \
+	../core/buffer.c ../util/component.c \
+	../util/log_stdio.c ../core/filter.h ../core/filter.c ../util/cfgfile.c
 perf_radarcape_CFLAGS = $(AM_CFLAGS)
 perf_radarcape_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@
 perf_radarcape_LDFLAGS =
 
 perf_buffer_SOURCES = perf_buffer.c input_perf.h input_perf.c \
-	../statistics.h ../statistics.c ../input.h ../radarcape/radarcape.c \
-	../buffer.h ../buffer.c ../component.h ../component.c \
-	../recv.h ../recv.c ../filter.h ../filter.c \
-	../log.h ../log_stdio.c ../cfgfile.h ../cfgfile.c
+	../util/statistics.c ../core/input.h ../radarcape/radarcape.c \
+	../core/buffer.c ../util/component.c ../core/recv.c \
+	../util/log_stdio.c ../core/filter.h ../core/filter.c ../util/cfgfile.c
 perf_buffer_CFLAGS = $(AM_CFLAGS)
 perf_buffer_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@
 perf_buffer_LDFLAGS = 

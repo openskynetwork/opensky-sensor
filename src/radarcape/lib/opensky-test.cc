@@ -5,10 +5,10 @@
 #include <endian.h>
 #include <stdint.h>
 #include "opensky.hh"
-#include "../cfgfile.h"
-#include "../openskytypes.h"
-#include "../input.h"
-#include "../component.h"
+#include "core/openskytypes.h"
+#include "core/input.h"
+#include "util/cfgfile.h"
+#include "util/component.h"
 
 extern "C" {
 

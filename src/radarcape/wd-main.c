@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "gpio.h"
 #include "watchdog.h"
-#include "util.h"
+#include "util/util.h"
 
 static struct option opts[] = {
 	{ .name = "help", .has_arg = no_argument, .val = 'h' },

@@ -4,7 +4,7 @@ AC_INIT(openskyd, 1.1.1)
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR(m4)
-AC_CONFIG_SRCDIR(src/main.c)
+AC_CONFIG_SRCDIR(src/core/buffer.c)
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
 dnl initialize automake
@@ -195,4 +195,5 @@ AS_IF([test x"$with_pacman" != x"no"],
   [AC_DEFINE([WITH_PACMAN], [1], [Enable pacman integration])])
 
 dnl output directive
-AC_OUTPUT([Makefile src/Makefile src/lib/Makefile src/test/Makefile])
+AC_OUTPUT([Makefile src/Makefile src/core/Makefile src/util/Makefile
+	src/radarcape/Makefile src/radarcape/lib/Makefile src/test/Makefile])

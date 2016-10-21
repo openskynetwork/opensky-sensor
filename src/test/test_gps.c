@@ -6,9 +6,9 @@
 #include <check.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "../gps.h"
-#include "../gps/gps_parser.h"
-#include "../endec.h"
+#include "core/gps.h"
+#include "gps/gps_parser.h"
+#include "util/endec.h"
 
 static bool sendPositionCalled;
 static bool sendPositionRet;

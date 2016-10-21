@@ -17,8 +17,8 @@
 #include <assert.h>
 #include "gpio.h"
 #include "fpga.h"
-#include "log.h"
-#include "cfgfile.h"
+#include "util/log.h"
+#include "util/cfgfile.h"
 
 static const char PFX[] = "FPGA";
 

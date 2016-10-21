@@ -8,10 +8,10 @@
 #include <sys/resource.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include "../buffer.h"
-#include "../statistics.h"
-#include "../component.h"
-#include "../cfgfile.h"
+#include "core/buffer.h"
+#include "util/statistics.h"
+#include "util/component.h"
+#include "util/cfgfile.h"
 
 static void setup()
 {

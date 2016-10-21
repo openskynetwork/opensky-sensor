@@ -13,9 +13,9 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include "gps_input.h"
-#include "../cfgfile.h"
-#include "../util.h"
-#include "../log.h"
+#include "util/cfgfile.h"
+#include "util/util.h"
+#include "util/log.h"
 
 #define PFX "GPS"
 

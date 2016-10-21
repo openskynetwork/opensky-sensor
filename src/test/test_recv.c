@@ -9,12 +9,12 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include "../openskytypes.h"
-#include "../recv.h"
-#include "../buffer.h"
 #include "input_test.h"
-#include "../statistics.h"
-#include "../cfgfile.h"
+#include "core/openskytypes.h"
+#include "core/recv.h"
+#include "core/buffer.h"
+#include "util/statistics.h"
+#include "util/cfgfile.h"
 
 static void setup()
 {

@@ -6,12 +6,11 @@
 #include <stdbool.h>
 #include "recv.h"
 #include "input.h"
-#include "message.h"
 #include "openskytypes.h"
 #include "buffer.h"
-#include "threads.h"
-#include "util.h"
 #include "filter.h"
+#include "util/threads.h"
+#include "util/util.h"
 
 static void mainloop();
 

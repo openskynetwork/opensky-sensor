@@ -13,19 +13,19 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <getopt.h>
-#include "radarcape/gpio.h"
-#include "radarcape/watchdog.h"
-#include "radarcape/fpga.h"
-#include "buffer.h"
-#include "network.h"
-#include "cfgfile.h"
-#include "statistics.h"
-#include "tb.h"
-#include "recv.h"
-#include "relay.h"
-#include "log.h"
-#include "gps.h"
-#include "util.h"
+#include "gpio.h"
+#include "watchdog.h"
+#include "fpga.h"
+#include "core/buffer.h"
+#include "core/network.h"
+#include "core/tb.h"
+#include "core/recv.h"
+#include "core/relay.h"
+#include "core/gps.h"
+#include "util/cfgfile.h"
+#include "util/statistics.h"
+#include "util/log.h"
+#include "util/util.h"
 
 static const char PFX[] = "MAIN";
 

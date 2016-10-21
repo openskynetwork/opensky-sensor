@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "../openskytypes.h"
+#include "core/openskytypes.h"
 
 struct TEST_Buffer {
 	uint8_t * payload;

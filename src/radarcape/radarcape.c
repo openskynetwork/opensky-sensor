@@ -12,13 +12,13 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include "rc-input.h"
-#include "../openskytypes.h"
-#include "../statistics.h"
-#include "../log.h"
-#include "../cfgfile.h"
-#include "../threads.h"
-#include "../util.h"
-#include "../filter.h"
+#include "core/openskytypes.h"
+#include "core/filter.h"
+#include "util/statistics.h"
+#include "util/log.h"
+#include "util/cfgfile.h"
+#include "util/threads.h"
+#include "util/util.h"
 
 static const char PFX[] = "RC";
 

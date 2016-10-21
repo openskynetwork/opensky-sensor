@@ -12,8 +12,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "gpio.h"
-#include "util.h"
-#include "log.h"
+#include "util/util.h"
+#include "util/log.h"
 
 static const char PFX[] = "GPIO";
 

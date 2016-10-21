@@ -9,7 +9,7 @@
 #include <string.h>
 #include <pthread.h>
 #include "input_perf.h"
-#include "../input.h"
+#include "core/input.h"
 
 static uint8_t * buffer;
 static size_t bufLen;

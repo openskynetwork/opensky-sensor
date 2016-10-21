@@ -10,12 +10,12 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <time.h>
-#include "log.h"
 #include "buffer.h"
-#include "statistics.h"
-#include "cfgfile.h"
-#include "threads.h"
-#include "util.h"
+#include "util/log.h"
+#include "util/statistics.h"
+#include "util/cfgfile.h"
+#include "util/threads.h"
+#include "util/util.h"
 
 static const char PFX[] = "BUF";
 

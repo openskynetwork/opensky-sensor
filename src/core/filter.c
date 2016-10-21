@@ -5,10 +5,10 @@
 #endif
 #include <stdbool.h>
 #include "filter.h"
-#include "statistics.h"
-#include "cfgfile.h"
-#include "util.h"
 #include "input.h"
+#include "util/statistics.h"
+#include "util/cfgfile.h"
+#include "util/util.h"
 
 enum MODES_TYPE {
 	MODES_TYPE_NONE = 0,

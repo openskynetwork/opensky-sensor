@@ -7,10 +7,10 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include "../log.h"
 #include "opensky.hh"
-#include "../threads.h"
-#include "../util.h"
+#include "util/log.h"
+#include "util/threads.h"
+#include "util/util.h"
 
 namespace OpenSky {
 

@@ -8,9 +8,9 @@
 #include <check.h>
 #include <unistd.h>
 #include <endian.h>
-#include "../lib/opensky.hh"
-#include "../buffer.h"
-#include "../openskytypes.h"
+#include "radarcape/lib/opensky.hh"
+#include "core/buffer.h"
+#include "core/openskytypes.h"
 
 static void setup()
 {

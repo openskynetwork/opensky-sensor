@@ -12,15 +12,13 @@
 #include <endian.h>
 #include <stdbool.h>
 #include "network.h"
-#include "log.h"
-#include "net_common.h"
-#include "statistics.h"
-#include "cfgfile.h"
-#include "util.h"
 #include "gps.h"
-#include "threads.h"
-#include "statistics.h"
-#include "cfgfile.h"
+#include "util/log.h"
+#include "util/net_common.h"
+#include "util/statistics.h"
+#include "util/cfgfile.h"
+#include "util/util.h"
+#include "util/threads.h"
 
 //#define DEBUG
 
