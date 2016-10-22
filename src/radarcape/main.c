@@ -16,6 +16,7 @@
 #include "gpio.h"
 #include "watchdog.h"
 #include "fpga.h"
+#include "tb_standalone.h"
 #include "core/buffer.h"
 #include "core/network.h"
 #include "core/tb.h"
@@ -121,6 +122,17 @@ int main(int argc, char * argv[])
 		CFG_unregisterAll();
 		return EXIT_SUCCESS;
 	}
+
+#ifdef STANDALONE
+	TB_register(TB_PACKET_TYPE_REVERSE_SHELL, 6, &TB_reverseShell);
+	TB_register(TB_PACKET_TYPE_RESTART, 0, &TB_restartDaemon);
+#ifdef WITH_SYSTEMD
+	TB_register(TB_PACKET_TYPE_REBOOT, 0, &TB_rebootSystem);
+#endif
+#ifdef WITH_PACMAN
+	TB_register(TB_PACKET_TYPE_UPGRADE_DAEMON, 0, &TB_upgradeDaemon);
+#endif
+#endif
 
 	if (!COMP_initAll()) {
 		LOG_log(LOG_LEVEL_EMERG, PFX, "Could not initialize all components, "

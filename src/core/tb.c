@@ -5,23 +5,13 @@
 #endif
 #include <stdbool.h>
 #include <inttypes.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <string.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <stdio.h>
+#include <assert.h>
 #include "tb.h"
 #include "filter.h"
 #include "network.h"
 #include "util/log.h"
-#include "util/proc.h"
-#include "util/cfgfile.h"
-#include "radarcape/fpga.h"
+#include "util/util.h"
 
 static const char PFX[] = "TB";
 
@@ -66,39 +56,26 @@ const struct Component TB_comp = {
 
 static void processPacket(const struct TB_Packet * packet);
 
-#ifndef LIB
-#ifdef STANDALONE
-static void packetShell(const struct TB_Packet * packet);
-static void packetRestartDaemon(const struct TB_Packet * packet);
-#endif
-#ifdef WITH_SYSTEMD
-static void packetRebootSystem(const struct TB_Packet * packet);
-#endif
-#ifdef WITH_PACMAN
-static void packetUpgradeDaemon(const struct TB_Packet * packet);
-#endif
-#endif
-static void packetConfigureFilter(const struct TB_Packet * packet);
+static void packetConfigureFilter(const uint8_t * payload);
 
-/** Packet processor function pointer */
-typedef void (*PacketProcessor)(const struct TB_Packet*);
+struct PacketProcessor {
+	TB_ProcessorFn fn;
+	size_t payloadLen;
+};
 
 /** All packet processors in order of their type */
-static PacketProcessor processors[] = {
-#ifndef LIB
-#ifdef STANDALONE
-	[0] = &packetShell,
-	[1] = &packetRestartDaemon,
-#endif
-#ifdef WITH_SYSTEMD
-	[2] = &packetRebootSystem,
-#endif
-#ifdef WITH_PACMAN
-	[3] = &packetUpgradeDaemon,
-#endif
-#endif
-	[4] = &packetConfigureFilter,
+static struct PacketProcessor processors[TB_PACKET_TYPE_N] = {
+	[TB_PACKET_TYPE_FILTER] = { .payloadLen = 2, .fn = packetConfigureFilter }
 };
+
+void TB_register(uint32_t type, size_t payloadLen, TB_ProcessorFn fn)
+{
+	struct PacketProcessor * processor = &processors[type];
+	assert(ARRAY_SIZE(processors) < type);
+	assert(!processor->fn);
+	processor->payloadLen = payloadLen;
+	processor->fn = fn;
+}
 
 /** Mainloop of the TB. */
 static void mainloop()
@@ -156,136 +133,37 @@ static void mainloop()
  */
 static void processPacket(const struct TB_Packet * packet)
 {
-	static const uint_fast32_t n_processors = sizeof(processors)
-		/ sizeof(*processors);
+	static const uint_fast32_t n_processors = ARRAY_SIZE(processors);
+	const struct PacketProcessor * processor = &processors[packet->type];
 
-	if (packet->type >= n_processors || !processors[packet->type]) {
+	if (packet->type >= n_processors || !processor->fn) {
 		/* packet type unknown */
 		LOG_logf(LOG_LEVEL_WARN, PFX, "Unknown packet type (type=%"
 			PRIuFAST16 ", len=%" PRIuFAST16 ")", packet->type, packet->len);
 		return;
-	}
-
-	/* call processor */
-	processors[packet->type](packet);
-}
-
-static void warnTooShort(const struct TB_Packet * packet)
-{
-	LOG_logf(LOG_LEVEL_WARN, PFX, "packet of type %" PRIuFAST16 " too "
-		"short (len=%" PRIuFAST16 "), discarding", packet->type,
-		packet->len);
-}
-
-#ifndef LIB
-#ifdef STANDALONE
-/** Start reverse connect to given server
- * \param packet packet containing the server address */
-static void packetShell(const struct TB_Packet * packet)
-{
-	/* sanity check */
-	if (packet->len != 10) {
-		warnTooShort(packet);
-		return;
-	}
-
-	/* extract ip and port */
-	const struct {
-		in_addr_t ip;
-		in_port_t port;
-	} __attribute__((packed)) * revShell = (const void*)packet->payload;
-
-	char ip[INET_ADDRSTRLEN];
-	uint16_t port;
-
-	struct in_addr ipaddr;
-	ipaddr.s_addr = revShell->ip;
-	inet_ntop(AF_INET, &ipaddr, ip, INET_ADDRSTRLEN);
-	port = ntohs(revShell->port);
-
-	char addr[INET_ADDRSTRLEN + 6];
-	snprintf(addr, sizeof addr, "%s:%" PRIu16, ip, port);
-
-	/* start rcc in background */
-	LOG_logf(LOG_LEVEL_INFO, PFX, "Starting rcc to %s", addr);
-
-	char * argv[] = { "/usr/bin/rcc", "-t", ":22", "-r", addr, "-n", NULL };
-	PROC_forkAndExec(argv); /* returns while executing in the background */
-}
-
-/** Restart Daemon.
- * \param packet packet */
-static void packetRestartDaemon(const struct TB_Packet * packet)
-{
-	LOG_log(LOG_LEVEL_INFO, PFX, "restarting daemon");
-	LOG_flush();
-
-	extern char * MAIN_progName;
-
-	char * argv[] = {
-		MAIN_progName,
-		NULL
-	};
-	char * argvBlack[] = {
-		MAIN_progName,
-		"--black",
-		NULL
-	};
-
-	/* replace daemon by new instance */
-	PROC_execRaw(FPGA_bbwhite ? argv : argvBlack);
-}
-#endif
-
-#ifdef WITH_SYSTEMD
-/** Reboot system using systemd.
- * \param packet packet */
-static void packetRebootSystem(const struct TB_Packet * packet)
-{
-	char *argv[] = { WITH_SYSTEMD "/systemctl", "reboot", NULL };
-	PROC_forkAndExec(argv); /* returns while executing in the background */
-}
-#endif
-
-#ifdef WITH_PACMAN
-/** Upgrade daemon using pacman and restart daemon using systemd.
- * \param packet packet */
-static void packetUpgradeDaemon(const struct TB_Packet * frame)
-{
-	if (!PROC_fork())
-		return; /* parent: return immediately */
-
-	char *argv[] = { "/usr/bin/pacman", "--noconfirm", "--needed", "-Sy",
-		"openskyd", "rcc", NULL };
-	if (!PROC_execAndReturn(argv)) {
-		LOG_log(LOG_LEVEL_WARN, PFX, "Upgrade failed");
 	} else {
-		char *argv1[] = { "/bin/systemctl", "daemon-reload", NULL };
-		PROC_execAndReturn(argv1);
-
-		char *argv2[] = { "/bin/systemctl", "restart", "openskyd", NULL };
-		PROC_execAndFinalize(argv2);
+		size_t payloadLen = packet->len - 4;
+		if (payloadLen != processor->payloadLen) {
+			LOG_logf(LOG_LEVEL_WARN, PFX, "Packet of type %" PRIuFAST16 " has "
+				"a size mismatch (payload len=%" PRIuFAST16 "), discarding",
+				packet->type, payloadLen);
+		} else {
+			/* call processor */
+			processor->fn(packet->payload);
+		}
 	}
 }
-#endif
-#endif
 
-static void packetConfigureFilter(const struct TB_Packet * packet)
+static void packetConfigureFilter(const uint8_t * payload)
 {
-	/* sanity check */
-	if (packet->len != 6) {
-		warnTooShort(packet);
-		return;
-	}
-
 	enum FILT {
 		FILT_SYNC_ONLY = 1 << 0,
 		FILT_EXT_SQUITTER_ONLY = 1 << 1,
 		FILT_RESET_SYNC = 1 << 7
 	};
 
-	uint8_t mask = packet->payload[0];
-	uint8_t cfg = packet->payload[1];
+	uint8_t mask = payload[0];
+	uint8_t cfg = payload[1];
 	if (mask & FILT_SYNC_ONLY) {
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Setting sync filter: %d",
 					!!(cfg & FILT_SYNC_ONLY));
