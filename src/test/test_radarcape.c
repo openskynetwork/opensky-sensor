@@ -11,6 +11,7 @@
 #include "core/openskytypes.h"
 #include "core/input.h"
 #include "core/filter.h"
+#include "core/buffer.h"
 #include "util/component.h"
 #include "util/statistics.h"
 #include "util/cfgfile.h"

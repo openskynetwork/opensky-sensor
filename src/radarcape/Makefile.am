@@ -23,7 +23,7 @@ radarcape_sources = main.c \
 # sources for binaries
 openskyd_rc_SOURCES = $(radarcape_sources) uart.c \
 	../gps/gps_input_uart.c fpga.c watchdog.c \
-	gpio.h gpio.c tb_stanalone.h tb_standalone.c
+	gpio.h gpio.c tb_standalone.h tb_standalone.c
 openskyd_rcd_net_SOURCES = $(radarcape_sources) network.c \
 	../gps/gps_input_network.c
 openskyd_rc_dummy_SOURCES = $(radarcape_sources) dummy.c \

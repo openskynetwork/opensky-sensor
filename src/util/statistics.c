@@ -13,7 +13,6 @@
 #include "statistics.h"
 #include "cfgfile.h"
 #include "threads.h"
-#include "core/buffer.h"
 
 volatile struct STAT_Statistics STAT_stats;
 
@@ -157,7 +156,7 @@ static void printStatistics(struct Snapshot * lastSnapshot)
 	snapshot.delta =
 		lastSnapshot ? snapshot.timestamp - lastSnapshot->timestamp : 0;
 
-	BUF_fillStatistics();
+	// TODO: BUF_fillStatistics();
 	memcpy(&snapshot.stats, (void*)&STAT_stats, sizeof snapshot.stats);
 
 	snapshot.secs = snapshot.timestamp - start;
