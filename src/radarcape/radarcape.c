@@ -125,7 +125,7 @@ static bool construct()
 /** Setup ADSB receiver with some options. */
 static bool configure()
 {
-#if 1 || defined(INPUT_RADARCAPE_UART) || defined(CHECK)
+#if defined(INPUT_RADARCAPE_UART) || defined(CHECK)
 	const struct FILTER_Configuration * filterCfg = FILTER_getConfiguration();
 	/* setup ADSB */
 	return setOption(RADARCAPE_OPTION_OUTPUT_FORMAT_BIN) &&
@@ -150,7 +150,7 @@ static bool configure()
 
 void INPUT_reconfigure()
 {
-#ifndef INPUT_RADARCAPE_UART
+#ifdef INPUT_RADARCAPE_UART
 	const struct FILTER_Configuration * filterCfg = FILTER_getConfiguration();
 	setOption(filterCfg->extSquitter ?
 		RADARCAPE_OPTION_FRAME_FILTER_DF_11_17_18_ONLY :
