@@ -10,8 +10,11 @@
 #include <stdio.h>
 #include "gps_parser.h"
 #include "gps_input.h"
+#include "util/log.h"
 #include "util/util.h"
 #include "util/threads.h"
+
+#define PFX "GPS"
 
 enum DECODE_STATUS {
 	DECODE_STATUS_OK,
@@ -40,11 +43,6 @@ void GPS_PARSER_init()
 /** Setup GPS receiver with some options. */
 static bool configure()
 {
-/*#ifndef NETWORK
-	const struct CFG_GPS * cfg = &CFG_config.gps;
-#else
-	return true;
-#endif*/
 	const uint8_t setutc[] = { 0x10, 0x35, 0x04, 0x00, 0x01, 0x08, 0x10, 0x03 };
 	return GPS_INPUT_write(setutc, sizeof setutc) == sizeof setutc;
 }
@@ -79,8 +77,8 @@ size_t GPS_PARSER_getFrame(uint8_t * buf, size_t bufLen)
 		if (unlikely(!next(&sync)))
 			return false;
 		if (unlikely(sync != 0x10)) {
-			NOC_fprintf(stderr, "GPS: Out of Sync: got 0x%2" PRIx8
-				" instead of 0x10\n", sync);
+			LOG_logf(LOG_LEVEL_WARN, PFX, "Out of Sync: got 0x%02" PRIx8
+				" instead of 0x10", sync);
 			//++STAT_stats.ADSB_outOfSync;
 synchronize:
 			if (unlikely(!synchronize()))
@@ -93,8 +91,8 @@ decode_frame:
 		if (unlikely(!next(buf)))
 			return false;
 		if (unlikely(*buf == 0x03)) {
-			NOC_puts("GPS: Out of Sync: got unescaped 0x03 in frame, "
-				"resynchronizing");
+			LOG_log(LOG_LEVEL_WARN, PFX, "Out of Sync: got unescaped 0x1a in "
+				"frame, resynchronizing");
 			//++STAT_stats.ADSB_outOfSync;
 			goto synchronize;
 		}
