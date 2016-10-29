@@ -36,9 +36,9 @@ rc_wd_SOURCES = wd-main.c \
 
 # compiler libs
 openskyd_rc_LIBS = @PTHREAD_LIBS@
-openskyd_rc_LDADD = -lm ../core/libcore.a ../util/libutil.a
+openskyd_rc_LDADD = ../core/libcore.a ../util/libutil.a
 openskyd_rcd_net_LIBS = @PTHREAD_LIBS@
-openskyd_rcd_net_LDADD = -lm ../core/libcore.a ../util/libutil.a
+openskyd_rcd_net_LDADD = ../core/libcore.a ../util/libutil.a
 openskyd_rc_dummy_LIBS = @PTHREAD_LIBS@
 openskyd_rc_dummy_LDADD = -lm ../core/libcore.a ../util/libutil.a
 rc_wd_LDADD = ../core/libcore.a ../util/libutil.a
