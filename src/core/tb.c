@@ -70,11 +70,13 @@ static struct PacketProcessor processors[TB_PACKET_TYPE_N] = {
 
 void TB_register(uint32_t type, size_t payloadLen, TB_ProcessorFn fn)
 {
-	struct PacketProcessor * processor = &processors[type];
-	assert(ARRAY_SIZE(processors) < type);
-	assert(!processor->fn);
-	processor->payloadLen = payloadLen;
-	processor->fn = fn;
+	if (type < TB_PACKET_TYPE_N) {
+		// assertion would be enough, but not for shitty old debian gcc
+		struct PacketProcessor * processor = &processors[type];
+		assert(!processor->fn);
+		processor->payloadLen = payloadLen;
+		processor->fn = fn;
+	}
 }
 
 /** Mainloop of the TB. */
