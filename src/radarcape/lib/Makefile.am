@@ -2,6 +2,7 @@
 # libraries and binary programs
 if RADARCAPE_LIBRARY
 lib_LTLIBRARIES=libopensky.la
+include_HEADERS=opensky.hh
 endif
 if RADARCAPE_LIBRARY_EXAMPLES
 bin_PROGRAMS = opensky-lib-example opensky-lib-test
@@ -26,7 +27,6 @@ libopensky_la_SOURCES=opensky.hh opensky.cc MessageTypes.h GpsStatus.h \
 libopensky_la_LDFLAGS=-version-info 0:2:0
 libopensky_la_CFLAGS=-fvisibility=hidden -DPREFIX=\"OpenSky\" -I$(top_srcdir)/src -DLIB
 libopensky_la_CXXFLAGS=-fvisibility=hidden -DPREFIX=\"OpenSky\" -I$(top_srcdir)/src -DLIB
-include_HEADERS=opensky.hh
 
 opensky_lib_example_SOURCES=opensky-example.cc
 opensky_lib_example_AM_CXXFLAGS=@PTHREAD_CFLAGS@
