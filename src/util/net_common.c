@@ -114,7 +114,7 @@ int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 			host->ai_protocol);
 		if (sock < 0)
 			LOG_errno(LOG_LEVEL_ERROR, prefix, "could not create socket");
-// TODO: log level
+
 		/* connect socket */
 		rc = connect(sock, addr, host->ai_addrlen);
 		if (rc < 0) {
