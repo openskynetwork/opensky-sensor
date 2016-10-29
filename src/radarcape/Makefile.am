@@ -18,6 +18,7 @@ endif
 radarcape_sources = main.c \
 	watchdog.h fpga.h \
 	rc-input.h radarcape.c \
+	../gps/gps_input.h \
 	../gps/gps_recv.h ../gps/gps_recv.c ../gps/gps_parser.h ../gps/gps_parser.c
 
 # sources for binaries
