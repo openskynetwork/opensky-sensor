@@ -138,11 +138,11 @@ AM_CONDITIONAL([RADARCAPE_WATCHDOG], [test x$enableval = xyes])
 
 AC_ARG_ENABLE([radarcape-library],
   [AS_HELP_STRING([--enable-radarcape-library],
-  [Build library for rcd integration @<:@yes@:>@])],
+  [Build library for rcd integration @<:@no@:>@])],
   [case "${enableval}" in
     yes|no) ;;
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-library]) ;;
-   esac], [enableval=yes])
+   esac], [enableval=no])
 AM_CONDITIONAL([RADARCAPE_LIBRARY], [test x$enableval = xyes])
 
 AC_ARG_ENABLE([radarcape-library-examples],
