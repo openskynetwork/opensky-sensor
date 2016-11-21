@@ -258,6 +258,7 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 			 * see the failure) */
 			logDisconnect();
 			shutdown(*mysock, SHUT_RDWR);
+			*mysock = -1;
 			transState = by;
 			connState = CONN_STATE_DISCONNECTED;
 			pthread_cond_broadcast(&cond);
@@ -268,6 +269,7 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 			logDisconnect();
 			shutdown(*mysock, SHUT_RDWR);
 			close(*mysock);
+			*mysock = -1;
 			connState = CONN_STATE_DISCONNECTED;
 			pthread_cond_broadcast(&cond);
 		} else {
@@ -283,6 +285,7 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 		/* we have not been reconnected yet, but the follower has seen the
 		 * failure -> close the stale socket */
 		close(*mysock);
+		*mysock = -1;
 		transState = TRANSIT_NONE;
 	}
 	CLEANUP_POP();
