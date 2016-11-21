@@ -52,6 +52,9 @@ void CFG_loadDefaults();
 bool CFG_readFile(const char * file, bool warnUnknownSection,
 	bool warnUnknownOption, bool onErrorUseDefault);
 void CFG_write(const char * filename);
+bool CFG_readDirectory(const char * path, bool warnUnknownSection,
+	bool warnUnknownOption, bool onErrorUseDefault,
+	bool stopOnFirstError);
 bool CFG_check();
 
 void CFG_setBoolean(const char * section, const char * option, bool value);

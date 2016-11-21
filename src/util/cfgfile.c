@@ -15,6 +15,7 @@
 #include <stdarg.h>
 #include <inttypes.h>
 #include <ctype.h>
+#include <dirent.h>
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
@@ -140,6 +141,76 @@ bool CFG_readFile(const char * file, bool warnUnknownSection,
 		fix();
 
 	return success;
+}
+
+static int filterDirectory(const struct dirent * ent)
+{
+	if (ent->d_type != DT_REG)
+		return 0;
+	char first = ent->d_name[0];
+	if (first < '0' || first > '9')
+		return 0;
+	size_t len = strlen(ent->d_name);
+	if (len < 4)
+		return 0;
+	if (strcmp(ent->d_name + len - 4, ".conf"))
+		return 0;
+	return 1;
+}
+
+static int compareDirectory(const struct dirent ** a, const struct dirent ** b)
+{
+	unsigned long int idx_a = strtoul((*a)->d_name, NULL, 10);
+	unsigned long int idx_b = strtoul((*b)->d_name, NULL, 10);
+	return idx_a < idx_b ? -1 : idx_a == idx_b ? 0 : 1;
+}
+
+bool CFG_readDirectory(const char * path, bool warnUnknownSection,
+	bool warnUnknownOption, bool onErrorUseDefault,
+	bool stopOnFirstError)
+{
+	struct dirent ** namelist;
+	int s = scandir(path, &namelist, &filterDirectory, &compareDirectory);
+	if (s < 0) {
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not traverse path '%s'", path);
+		return false;
+	}
+
+	char filename[PATH_MAX];
+	size_t len = strlen(path);
+	if (len > PATH_MAX - 1) {
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Path '%s' too long", path);
+		return false;
+	}
+	strncpy(filename, path, sizeof filename);
+	filename[len] = '/';
+	char * foffset = filename + len + 1;
+	len = sizeof filename - (len + 1);
+	bool ret = false;
+	int n;
+	for (n = 0; n < s; ++n) {
+		const char * fname = namelist[n]->d_name;
+		size_t flen = strlen(namelist[n]->d_name);
+		if (flen > len) {
+			LOG_logf(LOG_LEVEL_ERROR, PFX, "Path '%s/%s' is too long", path,
+				fname);
+			if (stopOnFirstError)
+				goto ret;
+			continue;
+		}
+		strncpy(foffset, fname, len);
+		if (!CFG_readFile(filename, warnUnknownSection, warnUnknownOption,
+			onErrorUseDefault) && stopOnFirstError)
+			goto ret;
+	}
+	ret = true;
+
+ret:
+	for (n = 0; n < s; ++n)
+		free(namelist[n]);
+	free(namelist);
+
+	return ret;
 }
 
 /** Checks two strings for equality (neglecting the case) where one string is
