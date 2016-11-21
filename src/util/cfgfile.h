@@ -30,6 +30,7 @@ struct CFG_Option {
 	const char * name;
 	enum CFG_VALUE_TYPE type;
 	void * var;
+	bool * given;
 	size_t maxlen;
 	union CFG_Value def;
 };

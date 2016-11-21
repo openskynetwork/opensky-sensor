@@ -466,6 +466,8 @@ static bool parseOption()
 								assignOptionFromDefault(opt);
 							else
 								return false;
+						} else if (opt->given) {
+							*opt->given = true;
 						}
 						goto found;
 					}
@@ -537,6 +539,8 @@ static void assignOptionFromDefault(const struct CFG_Option * opt)
 			((char*)opt->var)[0] = '\0';
 		break;
 	}
+	if (opt->given)
+		*opt->given = false;
 }
 
 /** Load default values. */
