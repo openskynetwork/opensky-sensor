@@ -12,10 +12,12 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <inttypes.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 #include <assert.h>
 #include "log.h"
 #include "cfgfile.h"
@@ -25,8 +27,13 @@ static const char PFX[] = "CFG";
 
 //#define DEBUG
 
-static size_t n_sections;
-static struct CFG_Section const ** sections;
+static size_t n_sections = 0;
+static struct CFG_Section const ** sections = NULL;
+
+/** silent options */
+static bool optWarnUnknownSection = true;
+static bool optWarnUnknownOption = true;
+static bool optOnErrorUseDefault = true;
 
 /** Current begin of parser */
 static const char * bufferInput;
@@ -39,14 +46,17 @@ enum SECTION_STATE {
 	SECTION_STATE_NOSECTION,
 	SECTION_STATE_UNKNOWN,
 	SECTION_STATE_VALID,
+	SECTION_STATE_UNRECOVERABLE
 };
 
+static const char * fileName;
 static enum SECTION_STATE sectionState;
 static const char * sectionName;
 static size_t sectionNameLen;
 
-static void readCfg(const char * cfgStr, off_t size);
+static bool readCfg();
 static void fix();
+static void assignOptionFromDefault(const struct CFG_Option * opt);
 
 void CFG_registerSection(const struct CFG_Section * section)
 {
@@ -84,8 +94,13 @@ void CFG_unregisterAll()
  * \param file configuration file name to be read
  * \return true if reading succeeded, false otherwise
  */
-bool CFG_readFile(const char * file)
+bool CFG_readFile(const char * file, bool warnUnknownSection,
+	bool warnUnknownOption, bool onErrorUseDefault)
 {
+	optWarnUnknownSection = warnUnknownSection;
+	optWarnUnknownOption = warnUnknownOption;
+	optOnErrorUseDefault = onErrorUseDefault;
+
 	/* open input file */
 	int fd = open(file, O_RDONLY | O_CLOEXEC);
 	if (fd < 0) {
@@ -102,23 +117,29 @@ bool CFG_readFile(const char * file)
 	}
 
 	/* mmap input file */
-	char * cfgStr = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+	char * buffer = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 	close(fd);
-	if (cfgStr == MAP_FAILED) {
+	if (buffer == MAP_FAILED) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not mmap '%s'", file);
 		return false;
 	}
 
+	bufferInput = buffer;
+	bufferSize = st.st_size;
+	bufferLine = 0;
+	fileName = file;
+
 	/* actually read configuration */
-	readCfg(cfgStr, st.st_size);
+	bool success = readCfg();
 
 	/* unmap file */
-	munmap(cfgStr, st.st_size);
+	munmap(buffer, st.st_size);
 
 	/* fix configuration */
-	fix();
+	if (success)
+		fix();
 
-	return true;
+	return success;
 }
 
 /** Checks two strings for equality (neglecting the case) where one string is
@@ -134,6 +155,19 @@ static bool isSame(const char * str1, const char * str2, size_t str2len)
 	return str1len == str2len && !strncasecmp(str2, str1, str2len);
 }
 
+__attribute__((format(printf, 2, 3)))
+static void err(enum LOG_LEVEL logLevel, const char * fmt, ...) {
+	char buf[512];
+
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(buf, sizeof buf, fmt, ap);
+	va_end(ap);
+
+	LOG_logf(logLevel, PFX, "FILE '%s', Line %" PRIuFAST32 ": %s",
+		fileName, bufferLine, buf);
+}
+
 /** Parse a section name.
  * \return section
  */
@@ -147,12 +181,14 @@ static enum SECTION_STATE parseSection()
 		n = bufferInput + bufferSize - 1;
 
 	/* sanity checks */
-	if (!c || n < c)
-		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": ] expected "
-			"before end of line", bufferLine);
-	if (c != n - 1)
-		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": newline after ] "
-			"expected", bufferLine);
+	if (!c || n < c) {
+		err(LOG_LEVEL_ERROR, "] expected before end of line");
+		return SECTION_STATE_UNRECOVERABLE;
+	}
+	if (c != n - 1) {
+		err(LOG_LEVEL_ERROR, "newline after ] expected");
+		return SECTION_STATE_UNRECOVERABLE;
+	}
 
 	/* calculate length */
 	const ptrdiff_t len = c - bufferInput - 1;
@@ -170,8 +206,8 @@ static enum SECTION_STATE parseSection()
 	++bufferLine;
 
 	if (section > n_sections) {
-		LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": Section %.*s is "
-			"unknown", bufferLine, (int)len, buf);
+		if (optWarnUnknownSection)
+			err(LOG_LEVEL_WARN, "Section %.*s is unknown", (int)len, buf);
 		return SECTION_STATE_UNKNOWN;
 	}
 
@@ -203,8 +239,7 @@ static inline bool parseInt(const char * value, size_t valLen, uint32_t * ret)
 {
 	char buf[20];
 	if (valLen + 1 > sizeof buf || valLen == 0) {
-		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": Number expected",
-			bufferLine);
+		err(LOG_LEVEL_ERROR, "Number expected");
 		return false;
 	}
 	strncpy(buf, value, valLen);
@@ -212,11 +247,8 @@ static inline bool parseInt(const char * value, size_t valLen, uint32_t * ret)
 
 	char * end;
 	unsigned long int n = strtoul(buf, &end, 0);
-	if (*end != '\0') {
-		LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": Garbage after "
-			"number ignored", bufferLine);
-
-	}
+	if (*end != '\0')
+		err(LOG_LEVEL_WARN, "Garbage after number ignored");
 	*ret = n;
 
 	return true;
@@ -233,8 +265,7 @@ static inline bool parsePort(const char * value, size_t valLen,
 	uint32_t n;
 	if (parseInt(value, valLen, &n)) {
 		if (n > 0xffff) {
-			LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32
-				": port must be < 65536", bufferLine);
+			err(LOG_LEVEL_ERROR, "Port must be < 65536");
 		} else {
 			*ret = n;
 			return true;
@@ -259,8 +290,8 @@ static inline bool parseBool(const char * value, size_t valLen, bool * ret)
 		return true;
 	}
 
-	LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": boolean option has "
-		"unexpected value '%.*s'", bufferLine, (int)valLen, value);
+	err(LOG_LEVEL_ERROR, "Boolean option has unexpected value '%.*s'",
+		(int)valLen, value);
 	return false;
 }
 
@@ -275,8 +306,8 @@ static inline bool parseString(const char * value, size_t valLen, char * str,
 	size_t sz)
 {
 	if (valLen > sz - 1) {
-		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": Value too long "
-			"(max. length %zu expected)", bufferLine, sz - 1);
+		err(LOG_LEVEL_ERROR, "Value too long (max. length %zu expected)",
+			sz - 1);
 		return false;
 	}
 	memcpy(str, value, valLen);
@@ -289,8 +320,7 @@ static inline bool parseString(const char * value, size_t valLen, char * str,
  */
 static inline void unknownKey(const char * key, size_t keyLen)
 {
-	LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": unknown key '%.*s'",
-		bufferLine, (int)keyLen, key);
+	err(LOG_LEVEL_WARN, "Unknown key '%.*s'", (int)keyLen, key);
 }
 
 static bool assignOptionFromString(const struct CFG_Option * option,
@@ -326,27 +356,32 @@ static bool parseOption()
 	const char * n = memchr(bufferInput, '\n', bufferSize);
 	if (n == NULL)
 		n = bufferInput + bufferSize - 1;
+
+	/* advance buffer */
+	bufferSize -= n + 1 - bufferInput;
+	bufferInput = n + 1;
+
 	/* sanity check */
 	if (unlikely(n < e)) {
-		LOG_logf(LOG_LEVEL_ERROR, PFX, "Line %" PRIuFAST32 ": '=' before end "
-			"of line expected", bufferLine);
+		err(LOG_LEVEL_ERROR, "'=' expected before end of line");
+		++bufferLine;
 		return false;
 	}
 
-	/* eliminate whitespaces at the end of the key */
-	const char * l = e - 1;
-	while (l > bufferInput && isspace(*l))
-		--l;
-	const char * key = bufferInput;
-	size_t keyLen = l + 1 - key;
-
-	/* eliminate whitespaces at the beginning of the value */
-	const char * value = e + 1;
-	while (value < n && isspace(*value))
-		++value;
-	size_t valLen = n - value;
-
 	if (sectionState == SECTION_STATE_VALID) {
+		/* eliminate whitespaces at the end of the key */
+		const char * l = e - 1;
+		while (l > bufferInput && isspace(*l))
+			--l;
+		const char * key = bufferInput;
+		size_t keyLen = l + 1 - key;
+
+		/* eliminate whitespaces at the beginning of the value */
+		const char * value = e + 1;
+		while (value < n && isspace(*value))
+			++value;
+		size_t valLen = n - value;
+
 		size_t sectidx;
 		for (sectidx = 0; sectidx < n_sections; ++sectidx) {
 			const struct CFG_Section * section = sections[sectidx];
@@ -354,21 +389,23 @@ static bool parseOption()
 				size_t i;
 				for (i = 0; i < section->n_opt; ++i) {
 					if (isSame(section->options[i].name, key, keyLen)) {
-						assignOptionFromString(&section->options[i], value,
-							valLen);
+						const struct CFG_Option * opt = &section->options[i];
+						if (!assignOptionFromString(opt, value, valLen)) {
+							if (optOnErrorUseDefault)
+								assignOptionFromDefault(opt);
+							else
+								return false;
+						}
 						goto found;
 					}
 				}
 			}
 		}
-		if (sectidx >= n_sections)
+		if (sectidx >= n_sections && optWarnUnknownOption)
 			unknownKey(key, keyLen);
 	}
 
 found:
-	/* advance buffer */
-	bufferSize -= n + 1 - bufferInput;
-	bufferInput = n + 1;
 	++bufferLine;
 
 	return true;
@@ -379,19 +416,16 @@ found:
  * \param size size of the configuration
  * \param cfg configuration structure to be filled
  */
-static void readCfg(const char * cfgStr, off_t size)
+static bool readCfg()
 {
 	sectionState = SECTION_STATE_UNKNOWN;
-
-	/* initialize parser buffer */
-	bufferInput = cfgStr;
-	bufferSize = size;
-	bufferLine = 1;
 
 	while (bufferSize) {
 		switch (bufferInput[0]) {
 		case '[':
 			sectionState = parseSection();
+			if (sectionState == SECTION_STATE_UNRECOVERABLE)
+				return false;
 		break;
 		case '\n':
 			++bufferInput;
@@ -403,64 +437,45 @@ static void readCfg(const char * cfgStr, off_t size)
 			skipComment();
 		break;
 		default:
-			if (sectionState == SECTION_STATE_NOSECTION)
+			if (sectionState == SECTION_STATE_NOSECTION && optWarnUnknownOption)
 				LOG_logf(LOG_LEVEL_WARN, PFX, "Line %" PRIuFAST32 ": "
 					"Unexpected option outside any section", bufferLine);
 			parseOption();
 		}
+	}
+	return true;
+}
+
+static void assignOptionFromDefault(const struct CFG_Option * opt)
+{
+	union CFG_Value * val = opt->var;
+	switch (opt->type) {
+	case CFG_VALUE_TYPE_BOOL:
+		val->boolean = opt->def.boolean;
+		break;
+	case CFG_VALUE_TYPE_INT:
+		val->integer = opt->def.integer;
+		break;
+	case CFG_VALUE_TYPE_PORT:
+		val->port = opt->def.port;
+		break;
+	case CFG_VALUE_TYPE_STRING:
+		if (opt->def.string)
+			strncpy(opt->var, opt->def.string, opt->maxlen);
+		else
+			((char*)opt->var)[0] = '\0';
+		break;
 	}
 }
 
 /** Load default values. */
 void CFG_loadDefaults()
 {
-	size_t sect;
+	size_t sect, i;
 
-	for (sect = 0; sect < n_sections; ++sect) {
-		size_t i;
-		for (i = 0; i < sections[sect]->n_opt; ++i) {
-			const struct CFG_Option * opt = &sections[sect]->options[i];
-			union CFG_Value * val = opt->var;
-			switch (opt->type) {
-			case CFG_VALUE_TYPE_BOOL:
-#ifdef DEBUG
-				LOG_logf(LOG_LEVEL_INFO, PFX, "bool %s.%s = %s",
-					sections[sect]->name, opt->name, opt->def.boolean ? "true" :
-						"false");
-#endif
-				val->boolean = opt->def.boolean;
-				break;
-			case CFG_VALUE_TYPE_INT:
-#ifdef DEBUG
-				LOG_logf(LOG_LEVEL_INFO, PFX, "int %s.%s = %" PRIu32,
-					sections[sect]->name, opt->name, opt->def.integer);
-#endif
-				val->integer = opt->def.integer;
-				break;
-			case CFG_VALUE_TYPE_PORT:
-#ifdef DEBUG
-				LOG_logf(LOG_LEVEL_INFO, PFX, "port %s.%s = %" PRIuFAST16,
-					sections[sect]->name, opt->name, opt->def.port);
-#endif
-				val->port = opt->def.port;
-				break;
-			case CFG_VALUE_TYPE_STRING:
-#ifdef DEBUG
-				if (opt->def.string)
-					LOG_logf(LOG_LEVEL_INFO, PFX, "string %s.%s = \"%s\"",
-						sections[sect]->name, opt->name, opt->def.string);
-				else
-					LOG_logf(LOG_LEVEL_INFO, PFX, "string %s.%s = NULL",
-						sections[sect]->name, opt->name);
-#endif
-				if (opt->def.string)
-					strncpy(opt->var, opt->def.string, opt->maxlen);
-				else
-					((char*)opt->var)[0] = '\0';
-				break;
-			}
-		}
-	}
+	for (sect = 0; sect < n_sections; ++sect)
+		for (i = 0; i < sections[sect]->n_opt; ++i)
+			assignOptionFromDefault(&sections[sect]->options[i]);
 }
 
 static const struct CFG_Option * getOption(const char * section,

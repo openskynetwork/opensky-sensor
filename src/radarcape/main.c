@@ -105,7 +105,7 @@ int main(int argc, char * argv[])
 
 	/* read & check configuration */
 	CFG_loadDefaults();
-	if (!CFG_readFile(SYSCONFDIR "/openskyd.conf")) {
+	if (!CFG_readFile(SYSCONFDIR "/openskyd.conf", true, true, false)) {
 		LOG_log(LOG_LEVEL_WARN, PFX,
 			"Could not read configuration, using defaults");
 	}

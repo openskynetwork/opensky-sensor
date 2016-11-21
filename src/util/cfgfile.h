@@ -45,8 +45,12 @@ struct CFG_Section {
 void CFG_registerSection(const struct CFG_Section * section);
 void CFG_unregisterAll();
 
+void CFG_setOptions(bool warnUnknownSection, bool warnUnknownOption,
+	bool onErrorUseDefault);
+
 void CFG_loadDefaults();
-bool CFG_readFile(const char * file);
+bool CFG_readFile(const char * file, bool warnUnknownSection,
+	bool warnUnknownOption, bool onErrorUseDefault);
 void CFG_write(const char * filename);
 bool CFG_check();
 
