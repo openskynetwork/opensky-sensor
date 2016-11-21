@@ -77,6 +77,7 @@ void CFG_registerSection(const struct CFG_Section * section)
 			[CFG_VALUE_TYPE_INT] = "int",
 			[CFG_VALUE_TYPE_STRING] = "string",
 			[CFG_VALUE_TYPE_PORT] = "port",
+			[CFG_VALUE_TYPE_DOUBLE] = "double",
 		};
 		LOG_logf(LOG_LEVEL_INFO, PFX, " - %s: %s", opt->name, types[opt->type]);
 	}
@@ -386,6 +387,29 @@ static inline bool parseString(const char * value, size_t valLen, char * str,
 	return true;
 }
 
+/** Parse a double. Garbage after the number is ignored.
+ * \param opt option to be parsed
+ * \return true if parsing was successful, false otherwise
+ */
+static inline bool parseDouble(const char * value, size_t valLen, double * ret)
+{
+	char buf[60];
+	if (valLen + 1 > sizeof buf || valLen == 0) {
+		err(LOG_LEVEL_ERROR, "Number expected");
+		return false;
+	}
+	strncpy(buf, value, valLen);
+	buf[valLen] = '\0';
+
+	char * end;
+	double d = strtod(buf, &end);
+	if (*end != '\0')
+		err(LOG_LEVEL_WARN, "Garbage after number ignored");
+	*ret = d;
+
+	return true;
+}
+
 /** Stop on unknown key.
  * \param opt option which couldn't be recognized
  */
@@ -409,6 +433,9 @@ static bool assignOptionFromString(const struct CFG_Option * option,
 		break;
 	case CFG_VALUE_TYPE_PORT:
 		return parsePort(value, valLen, option->var);
+		break;
+	case CFG_VALUE_TYPE_DOUBLE:
+		return parseDouble(value, valLen, option->var);
 		break;
 	default:
 		assert(false);
@@ -538,6 +565,9 @@ static void assignOptionFromDefault(const struct CFG_Option * opt)
 		else
 			((char*)opt->var)[0] = '\0';
 		break;
+	case CFG_VALUE_TYPE_DOUBLE:
+		val->dbl = opt->def.dbl;
+		break;
 	}
 	if (opt->given)
 		*opt->given = false;
@@ -611,6 +641,15 @@ void CFG_setString(const char * section, const char * option,
 	}
 }
 
+void CFG_setDouble(const char * section, const char * option, double value)
+{
+	const struct CFG_Option * opt = getOption(section, option);
+	if (opt) {
+		assert(opt->type == CFG_VALUE_TYPE_DOUBLE);
+		((union CFG_Value*)opt->var)->dbl = value;
+	}
+}
+
 static void fix()
 {
 	size_t sect;
@@ -657,6 +696,9 @@ static void writeOptions(FILE * file, const struct CFG_Section * section)
 			break;
 		case CFG_VALUE_TYPE_STRING:
 			fprintf(file, "%s\n", (const char*)opt->var);
+			break;
+		case CFG_VALUE_TYPE_DOUBLE:
+			fprintf(file, "%f\n", val->dbl);
 			break;
 		}
 	}

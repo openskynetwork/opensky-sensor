@@ -17,6 +17,7 @@ enum CFG_VALUE_TYPE {
 	CFG_VALUE_TYPE_INT,
 	CFG_VALUE_TYPE_PORT,
 	CFG_VALUE_TYPE_BOOL,
+	CFG_VALUE_TYPE_DOUBLE,
 };
 
 union CFG_Value {
@@ -24,6 +25,7 @@ union CFG_Value {
 	uint32_t integer;
 	uint_fast16_t port;
 	bool boolean;
+	double dbl;
 };
 
 struct CFG_Option {
@@ -64,6 +66,7 @@ void CFG_setPort(const char * section, const char * option,
 	uint_fast16_t value);
 void CFG_setString(const char * section, const char * option,
 	const char * value);
+void CFG_setDouble(const char * section, const char * option, double value);
 
 #ifdef __cplusplus
 }
