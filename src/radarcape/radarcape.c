@@ -14,6 +14,7 @@
 #include "rc-input.h"
 #include "core/openskytypes.h"
 #include "core/filter.h"
+#include "core/beast.h"
 #include "util/statistics.h"
 #include "util/log.h"
 #include "util/cfgfile.h"
@@ -164,7 +165,7 @@ void INPUT_reconfigure()
 __attribute__((unused))
 static inline bool setOption(enum RADARCAPE_OPTION option)
 {
-	uint8_t w[3] = { '\x1a', '1', (uint8_t)option };
+	uint8_t w[3] = { BEAST_SYNC, '1', (uint8_t)option };
 	return RC_INPUT_write(w, sizeof w) == sizeof w;
 }
 
@@ -192,16 +193,16 @@ void INPUT_disconnect()
 bool INPUT_getFrame(struct OPENSKY_RawFrame * raw,
 	struct OPENSKY_DecodedFrame * decoded)
 {
-	raw->raw[0] = 0x1a;
+	raw->raw[0] = BEAST_SYNC;
 
 	while (true) {
 		/* synchronize */
 		uint8_t sync;
 		if (unlikely(!next(&sync)))
 			return false;
-		if (unlikely(sync != 0x1a)) {
+		if (unlikely(sync != BEAST_SYNC)) {
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Out of Sync: got 0x%02" PRIx8
-				" instead of 0x1a", sync);
+				" instead of 0x%02x", sync, BEAST_SYNC);
 			++STAT_stats.RECV_outOfSync;
 synchronize:
 			if (unlikely(!synchronize()))
@@ -215,21 +216,21 @@ decode_frame:
 			return false;
 		size_t payload_len;
 		switch (type) {
-		case '1': /* mode-ac */
+		case BEAST_TYPE_MODE_AC: /* mode-ac */
 			payload_len = 2;
 		break;
-		case '2': /* mode-s short */
+		case BEAST_TYPE_MODE_S_SHORT: /* mode-s short */
 			payload_len = 7;
 		break;
-		case '3': /* mode-s long */
+		case BEAST_TYPE_MODE_S_LONG: /* mode-s long */
 			payload_len = 14;
 		break;
-		case '4': /* status frame */
+		case BEAST_TYPE_STATUS: /* status frame */
 			payload_len = 14;
 		break;
-		case '\x1a': /* resynchronize */
-			LOG_log(LOG_LEVEL_WARN, PFX, "Out of Sync: got unescaped 0x1a in "
-				"frame, resynchronizing");
+		case BEAST_SYNC: /* resynchronize */
+			LOG_logf(LOG_LEVEL_WARN, PFX, "Out of Sync: got unescaped 0x%02x "
+				"in frame, resynchronizing", BEAST_SYNC);
 			++STAT_stats.RECV_outOfSync;
 			goto synchronize;
 		default:
@@ -289,7 +290,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 		 * length */
 		size_t rbuf = bufEnd - bufCur;
 		size_t mlen = rbuf <= len ? rbuf : len;
-		uint8_t * esc = memchr(bufCur, '\x1a', mlen);
+		uint8_t * esc = memchr(bufCur, BEAST_SYNC, mlen);
 		if (unlikely(esc)) {
 			/* escape found: copy buffer up to escape, if applicable */
 			memcpy(rawPtr, bufCur, esc + 1 - bufCur);
@@ -308,10 +309,10 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 			/* Peek the next symbol. */
 			if (unlikely(bufCur == bufEnd && !discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
-			if (likely(*bufCur == '\x1a')) {
+			if (likely(*bufCur == BEAST_SYNC)) {
 				/* it's another escape -> append escape */
-				*dst++ = '\x1a';
-				*rawPtr++ = '\x1a';
+				*dst++ = BEAST_SYNC;
+				*rawPtr++ = BEAST_SYNC;
 				++raw->raw_len;
 				--len;
 				++bufCur;
@@ -366,14 +367,15 @@ static inline bool next(uint8_t * ch)
  * \return false if reading new data failed, true otherwise
  * \note After calling that, *bufCur will be the first byte of the frame
  * \note It is also guaranteed, that bufCur != bufEnd
- * \note Furthermore, *bufCur != 0x1a, because a frame cannot start with \x1a
+ * \note Furthermore, *bufCur != BEAST_SYNC, because a frame cannot start
+ *  with BEAST_SYNC
  */
 static inline bool synchronize()
 {
 	do {
 		uint8_t * sync;
 redo:
-		sync = memchr(bufCur, 0x1a, bufEnd - bufCur);
+		sync = memchr(bufCur, BEAST_SYNC, bufEnd - bufCur);
 		if (likely(sync)) {
 			/* found sync symbol, discard everything including the sync */
 			bufCur = sync + 1;
@@ -385,7 +387,7 @@ redo:
 					return false;
 			}
 
-			if (unlikely(*bufCur == 0x1a)) {
+			if (unlikely(*bufCur == BEAST_SYNC)) {
 				/* next symbol is an escaped sync
 				 * -> discard it and try again */
 				++bufCur;

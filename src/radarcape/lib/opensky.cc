@@ -16,6 +16,7 @@
 #include "core/gps.h"
 #include "core/tb.h"
 #include "core/openskytypes.h"
+#include "core/beast.h"
 #include "util/component.h"
 #include "util/util.h"
 #include "util/cfgfile.h"
@@ -30,8 +31,6 @@ void INPUT_reconfigure() {}
 namespace OpenSky {
 
 static const char PFX[] = "OpenSky";
-
-static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len);
 
 static bool configured = false;
 static bool running = false;
@@ -133,7 +132,7 @@ void output_message(const unsigned char * const msg,
 	assert(out);
 	out->raw[0] = '\x1a';
 	out->raw[1] = (uint8_t) messageType;
-	out->raw_len = encode(out->raw + 2, msg, msgLen) + 2;
+	out->raw_len = BEAST_encode(out->raw + 2, msg, msgLen) + 2;
 
 	BUF_commitFrame(out);
 }
@@ -141,50 +140,6 @@ void output_message(const unsigned char * const msg,
 void setGpsPosition(double latitude, double longitude, double altitude)
 {
 	GPS_setPosition(latitude, longitude, altitude);
-}
-
-#pragma GCC visibility pop
-
-/** Escape all \x1a characters in a packet to comply with the beast frame
- *   format.
- * \param out output buffer, must be large enough (twice the length)
- * \param in input buffer
- * \param len input buffer length
- * \note input and output buffers may not overlap
- */
-static inline size_t encode(uint8_t * __restrict out,
-	const uint8_t * __restrict in, size_t len)
-{
-	if (unlikely(!len))
-		return 0;
-
-	uint8_t * ptr = out;
-	const uint8_t * end = in + len;
-
-	/* first time: search for escape from in up to len */
-	const uint8_t * esc = (uint8_t*) memchr(in, '\x1a', len);
-	while (true) {
-		if (unlikely(esc)) {
-			/* if esc found: copy up to (including) esc */
-			memcpy(ptr, in, esc + 1 - in);
-			ptr += esc + 1 - in;
-			in = esc; /* important: in points to the esc now */
-		} else {
-			/* no esc found: copy rest, fast return */
-			memcpy(ptr, in, end - in);
-			return ptr + (end - in) - out;
-		}
-		if (likely(in + 1 != end)) {
-			esc = (uint8_t*) memchr(in + 1, '\x1a', end - in - 1);
-		} else {
-			/* nothing more to do, but the last \x1a is still to be copied.
-			 * instead of setting esc = NULL and re-iterating, we do things
-			 * faster here.
-			 */
-			*ptr = '\x1a';
-			return ptr + 1 - out;
-		}
-	}
 }
 
 }
