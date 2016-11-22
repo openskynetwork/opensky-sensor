@@ -12,12 +12,10 @@
 #include <endian.h>
 #include <stdbool.h>
 #include "network.h"
-#include "gps.h"
 #include "util/log.h"
 #include "util/net_common.h"
 #include "util/statistics.h"
 #include "util/cfgfile.h"
-#include "util/util.h"
 #include "util/threads.h"
 
 //#define DEBUG
@@ -106,9 +104,6 @@ static int tryConnect();
 static enum ACTION emitDisconnect(enum EMIT_BY by);
 static bool trySendSock(int sock, const void * buf, size_t len);
 static bool trySend(const void * buf, size_t len);
-static bool trySendLocked(const void * buf, size_t len);
-static bool sendSerial(int sock);
-static bool sendPosition(int sock);
 
 const struct Component NET_comp = {
 	.description = PFX,
@@ -180,15 +175,6 @@ static void mainloop()
 
 		/* connection established */
 		++STAT_stats.NET_connectsSuccess;
-
-		if (!sendSerial(sock) || !sendPosition(sock)) {
-			/* special case: sending the serial number does not trigger the
-			 * failure handling, so we have to do it manually here */
-			shutdown(sock, SHUT_RDWR);
-			close(sock);
-			connState = CONN_STATE_DISCONNECTED;
-			continue;
-		}
 
 		switch (transState) {
 		case TRANSIT_NONE:
@@ -345,7 +331,7 @@ static bool trySend(const void * buf, size_t len)
 	return false;
 }
 
-static bool trySendLocked(const void * buf, size_t len)
+bool NET_send(const void * buf, size_t len)
 {
 	pthread_mutex_lock(&sendMutex);
 	bool rc;
@@ -368,110 +354,4 @@ ssize_t NET_receive(uint8_t * buf, size_t len)
 		++STAT_stats.NET_msgsRecvFailed;
 	} while (emitDisconnect(EMIT_BY_RECV) == ACTION_RETRY);
 	return 0;
-}
-
-/** Send a raw frame to the server.
- * \return true if sending succeeded, false otherwise (e.g. connection lost)
- */
-bool NET_sendFrame(const struct OPENSKY_RawFrame * frame)
-{
-	return trySendLocked(frame->raw, frame->raw_len);
-}
-
-/** Send a timeout message to the server.
- * \return true if sending succeeded, false otherwise (e.g. connection lost)
- */
-bool NET_sendTimeout()
-{
-	char buf[] = { '\x1a', '\x36' };
-	++STAT_stats.NET_keepAlives;
-	return trySendLocked(buf, sizeof buf);
-}
-
-static inline size_t encode(uint8_t * out, const uint8_t * in, size_t len)
-{
-	if (unlikely(!len))
-		return 0;
-
-	uint8_t * ptr = out;
-	const uint8_t * end = in + len;
-
-	/* first time: search for escape from in up to len */
-	const uint8_t * esc = (uint8_t*) memchr(in, '\x1a', len);
-	while (true) {
-		if (unlikely(esc)) {
-			/* if esc found: copy up to (including) esc */
-			memcpy(ptr, in, esc + 1 - in);
-			ptr += esc + 1 - in;
-			in = esc; /* important: in points to the esc now */
-		} else {
-			/* no esc found: copy rest, fast return */
-			memcpy(ptr, in, end - in);
-			return ptr + (end - in) - out;
-		}
-		if (likely(end != in + 1)) {
-			esc = (uint8_t*) memchr(in + 1, '\x1a', end - in - 1);
-		} else {
-			/* nothing more to do, but the last \x1a is still to be copied.
-			 * instead of setting esc = NULL and re-iterating, we do things
-			 * faster here.
-			 */
-			*ptr = '\x1a';
-			return ptr + 1 - out;
-		}
-	}
-}
-
-/** Send the serial number of the device to the server.
- * \return true if sending succeeded, false otherwise (e.g. connection lost)
- */
-static bool sendSerial(int sock)
-{
-	uint8_t buf[10] = { '\x1a', '\x35' };
-
-	uint32_t serialno;
-	if (!UTIL_getSerial(&serialno)) {
-		LOG_log(LOG_LEVEL_ERROR, PFX, "No serial number configured");
-	}
-
-	union {
-		uint8_t ca[4];
-		uint32_t serialbe;
-	} serial;
-	serial.serialbe = htobe32(serialno);
-	size_t len = 2 + encode(buf + 2, serial.ca, sizeof serial.ca);
-
-	return trySendSock(sock, buf, len);
-}
-
-static size_t positionToPacket(uint8_t * buf,
-	const struct GPS_RawPosition * pos)
-{
-	buf[0] = '\x1a';
-	buf[1] = '\x37';
-	return 2 + encode(buf + 2, (const uint8_t*)pos, sizeof *pos);
-}
-
-bool NET_sendPosition(const struct GPS_RawPosition * position)
-{
-	uint8_t buf[2 + 3 * 2 * 8];
-	size_t len = positionToPacket(buf, position);
-	return trySendLocked(buf, len);
-}
-
-static bool sendPosition(int sock)
-{
-	static_assert(sizeof(struct GPS_RawPosition) == 3 * 8,
-		"GPS_RawPosition has unexpected size");
-
-	uint8_t buf[2 + 3 * 2 * 8];
-	struct GPS_RawPosition pos;
-
-	if (GPS_getRawPosition(&pos)) {
-		size_t len = positionToPacket(buf, &pos);
-		return trySendSock(sock, buf, len);
-	} else {
-		GPS_setNeedPosition();
-		return true;
-	}
 }

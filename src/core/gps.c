@@ -7,8 +7,10 @@
 #include <pthread.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <assert.h>
 #include "gps.h"
 #include "network.h"
+#include "beast.h"
 #include "util/threads.h"
 #include "util/endec.h"
 
@@ -16,6 +18,8 @@ static pthread_mutex_t posMutex = PTHREAD_MUTEX_INITIALIZER;
 static struct GPS_RawPosition position;
 static bool hasPosition = false;
 static bool needPosition = false;
+
+static bool sendPosition(const struct GPS_RawPosition * position);
 
 void GPS_reset()
 {
@@ -36,26 +40,39 @@ void GPS_setPosition(double latitude, double longitude, double altitude)
 	hasPosition = true;
 
 	if (needPosition) {
-		needPosition = !NET_sendPosition(&position);
+		needPosition = !sendPosition(&position);
 	}
 	pthread_mutex_unlock(&posMutex);
 }
 
-bool GPS_getRawPosition(struct GPS_RawPosition * rawPos)
+static size_t positionToPacket(uint8_t * buf,
+	const struct GPS_RawPosition * pos)
 {
+	buf[0] = BEAST_SYNC;
+	buf[1] = BEAST_TYPE_GPS_POSITION;
+	return 2 + BEAST_encode(buf + 2, (const uint8_t*)pos, sizeof *pos);
+}
+
+static bool sendPosition(const struct GPS_RawPosition * position)
+{
+	uint8_t buf[2 + 3 * 2 * 8];
+	size_t len = positionToPacket(buf, position);
+	return NET_send(buf, len);
+}
+
+bool GPS_sendPosition()
+{
+	static_assert(sizeof(struct GPS_RawPosition) == 3 * 8,
+		"GPS_RawPosition has unexpected size");
+
+	struct GPS_RawPosition pos;
 	pthread_mutex_lock(&posMutex);
 	if (!hasPosition) {
+		needPosition = true;
 		pthread_mutex_unlock(&posMutex);
-		return false;
+		return true;
 	}
-	memcpy(rawPos, &position, sizeof *rawPos);
+	memcpy(&pos, &position, sizeof pos);
 	pthread_mutex_unlock(&posMutex);
-	return true;
-}
-
-void GPS_setNeedPosition()
-{
-	pthread_mutex_lock(&posMutex);
-	needPosition = true;
-	pthread_mutex_unlock(&posMutex);
+	return sendPosition(&pos);
 }

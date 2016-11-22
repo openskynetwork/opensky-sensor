@@ -22,9 +22,7 @@ void GPS_reset();
 
 void GPS_setPosition(double latitude, double longitude, double altitude);
 
-bool GPS_getRawPosition(struct GPS_RawPosition * rawPos);
-
-void GPS_setNeedPosition();
+bool GPS_sendPosition();
 
 #ifdef __cplusplus
 }

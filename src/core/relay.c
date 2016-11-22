@@ -8,9 +8,12 @@
 #include "openskytypes.h"
 #include "buffer.h"
 #include "network.h"
+#include "login.h"
+#include "beast.h"
 #include "util/cfgfile.h"
 #include "util/threads.h"
 #include "util/util.h"
+#include "util/statistics.h"
 
 static void mainloop();
 
@@ -41,6 +44,18 @@ static void cleanup(struct OPENSKY_RawFrame * frame)
 	BUF_putFrame(frame);
 }
 
+static inline bool sendFrame(const struct OPENSKY_RawFrame * frame)
+{
+	return NET_send(frame->raw, frame->raw_len);
+}
+
+static inline bool sendKeepalive()
+{
+	char buf[] = { BEAST_SYNC, BEAST_TYPE_KEEP_ALIVE };
+	++STAT_stats.NET_keepAlives;
+	return NET_send(buf, sizeof buf);
+}
+
 static void mainloop()
 {
 	while (true) {
@@ -48,6 +63,10 @@ static void mainloop()
 		NET_waitConnected();
 
 		/* Now we have a new connection to the server */
+
+		/* Log into the network */
+		if (unlikely(!LOGIN_login()))
+			continue;
 
 		if (!BUF_cfgHistory) /* flush buffer if history is disabled */
 			BUF_flush();
@@ -59,11 +78,11 @@ static void mainloop()
 				BUF_getFrameTimeout(cfgTimeout);
 			if (!frame) {
 				/* timeout */
-				success = NET_sendTimeout();
+				success = sendKeepalive();
 			} else {
 				CLEANUP_PUSH(&cleanup, frame);
 				/* got a message */
-				success = NET_sendFrame(frame);
+				success = sendFrame(frame);
 				if (likely(success))
 					BUF_releaseFrame(frame);
 				else

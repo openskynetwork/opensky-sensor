@@ -6,8 +6,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "gps.h"
-#include "openskytypes.h"
 #include "util/component.h"
 
 extern const struct Component NET_comp;
@@ -18,9 +16,7 @@ extern "C" {
 
 void NET_waitConnected();
 
-bool NET_sendFrame(const struct OPENSKY_RawFrame * frame);
-bool NET_sendTimeout();
-bool NET_sendPosition(const struct GPS_RawPosition * position);
+bool NET_send(const void * buf, size_t len);
 
 ssize_t NET_receive(uint8_t * buf, size_t len);
 

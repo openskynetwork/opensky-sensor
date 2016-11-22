@@ -15,6 +15,8 @@ libopensky_la_SOURCES=opensky.hh opensky.cc MessageTypes.h GpsStatus.h \
 	../../core/network.h ../../core/network.c \
 	../../core/gps.h ../../core/gps.c \
 	../../core/tb.h ../../core/tb.c \
+	../../core/login.h ../../core/login.c \
+	../../core/beast.h ../../core/beast.c \
 	../../util/net_common.h ../../util/net_common.c \
 	../../util/statistics.h ../../util/statistics.c \
 	../../util/component.h ../../util/component.c \

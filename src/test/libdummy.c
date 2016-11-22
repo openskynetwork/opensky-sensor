@@ -7,3 +7,8 @@
 struct Component TB_comp = { .description = "TB_D", .dependencies = { NULL } };
 struct Component RELAY_comp = { .description = "RELAY_D",
 	.dependencies = { &BUF_comp, NULL } };
+
+void GPS_reset() {}
+
+void GPS_setPosition(double latitude, double longitude, double altitude) {}
+

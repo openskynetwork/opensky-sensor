@@ -7,25 +7,35 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "core/gps.h"
+#include "core/beast.h"
 #include "gps/gps_parser.h"
+#include "core/network.h"
 #include "util/endec.h"
 
-static bool sendPositionCalled;
-static bool sendPositionRet;
-static struct GPS_RawPosition sendPositionPos;
+static bool sent;
+static bool sendRC;
+static struct GPS_RawPosition sentPosition;
+
+bool NET_send(const void * buf, size_t len)
+{
+	ck_assert_uint_eq(len, 2 + sizeof(struct GPS_RawPosition));
+
+	const uint8_t * b = buf;
+	ck_assert_uint_eq(b[0], BEAST_SYNC);
+	ck_assert_uint_eq(b[1], BEAST_TYPE_GPS_POSITION);
+
+	memcpy(&sentPosition, b + 2, len - 2);
+
+	sent = true;
+
+	return sendRC;
+}
 
 void setup()
 {
-	sendPositionCalled = false;
-	sendPositionRet = true;
+	sent = false;
+	sendRC = true;
 	GPS_reset();
-}
-
-bool NET_sendPosition(const struct GPS_RawPosition * pos)
-{
-	sendPositionCalled = true;
-	memcpy(&sendPositionPos, pos, sizeof sendPositionPos);
-	return sendPositionRet;
 }
 
 static void getRawPos(double latitude, double longitude, double altitude,
@@ -43,113 +53,133 @@ static void setAndGetRawPos(double latitude, double longitude, double altitude,
 	GPS_setPosition(latitude, longitude, altitude);
 }
 
-START_TEST(test_get_position_without_pos)
+START_TEST(test_send_position_without_pos)
 {
-	struct GPS_RawPosition pos;
-	bool hasPosition = GPS_getRawPosition(&pos);
-	ck_assert(!hasPosition);
+	ck_assert(GPS_sendPosition());
+	ck_assert(!sent);
 }
 END_TEST
 
-START_TEST(test_get_position_with_pos)
+START_TEST(test_send_position_with_need)
 {
-	struct GPS_RawPosition pos;
-	struct GPS_RawPosition rawPos;
+	ck_assert(GPS_sendPosition());
+	ck_assert(!sent);
 
+	struct GPS_RawPosition rawPos;
 	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
 
-	bool hasPosition = GPS_getRawPosition(&pos);
-	ck_assert(hasPosition);
-
-	ck_assert(!memcmp(&pos, &rawPos, sizeof pos));
+	ck_assert(sent);
+	ck_assert(!memcmp(&sentPosition, &rawPos, sizeof rawPos));
 }
 END_TEST
 
-START_TEST(test_gps_nosendWithoutNeed)
-{
-	GPS_setPosition(10.0, 20.0, 100.0);
-
-	ck_assert(!sendPositionCalled);
-}
-END_TEST
-
-START_TEST(test_gps_sendWithNeedOnce)
+START_TEST(test_nosend_position_without_need)
 {
 	struct GPS_RawPosition rawPos;
-
-	GPS_setNeedPosition();
 	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
-	ck_assert(sendPositionCalled);
 
-	ck_assert(!memcmp(&rawPos, &sendPositionPos, sizeof rawPos));
-
-	sendPositionCalled = false;
-	GPS_setPosition(10.0, 20.0, 100.0);
-	ck_assert(!sendPositionCalled);
+	ck_assert(!sent);
 }
 END_TEST
 
-START_TEST(test_gps_sendWithNeedUntilSuccess)
+START_TEST(test_send_position_with_pos)
 {
 	struct GPS_RawPosition rawPos;
-
-	sendPositionRet = false;
-	GPS_setNeedPosition();
 	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
-	ck_assert(sendPositionCalled);
-	ck_assert(!memcmp(&rawPos, &sendPositionPos, sizeof rawPos));
+	ck_assert(!sent);
 
-	sendPositionCalled = false;
-	GPS_setPosition(10.0, 20.0, 100.0);
-	ck_assert(sendPositionCalled);
-	ck_assert(!memcmp(&rawPos, &sendPositionPos, sizeof rawPos));
-
-	sendPositionCalled = false;
-	sendPositionRet = true;
-	GPS_setPosition(10.0, 20.0, 100.0);
-	ck_assert(sendPositionCalled);
-	ck_assert(!memcmp(&rawPos, &sendPositionPos, sizeof rawPos));
-
-	sendPositionCalled = false;
-	GPS_setPosition(10.0, 20.0, 100.0);
-	ck_assert(!sendPositionCalled);
+	ck_assert(GPS_sendPosition());
+	ck_assert(sent);
+	ck_assert(!memcmp(&sentPosition, &rawPos, sizeof rawPos));
 }
 END_TEST
 
-START_TEST(test_gps_resendAfterReset)
+START_TEST(test_send_position_until_success)
 {
 	struct GPS_RawPosition rawPos;
-
-	GPS_setNeedPosition();
 	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
-	ck_assert(sendPositionCalled);
-	ck_assert(!memcmp(&rawPos, &sendPositionPos, sizeof rawPos));
+	ck_assert(!sent);
 
-	sendPositionCalled = false;
+	sendRC = false;
+	ck_assert(!GPS_sendPosition());
+	ck_assert(sent);
+
+	sent = false;
+	ck_assert(!GPS_sendPosition());
+	ck_assert(sent);
+
+	sent = false;
+	sendRC = true;
+	ck_assert(GPS_sendPosition());
+	ck_assert(sent);
+
+	ck_assert(!memcmp(&sentPosition, &rawPos, sizeof rawPos));
+}
+END_TEST
+
+START_TEST(test_send_position_with_need_reset)
+{
+	ck_assert(GPS_sendPosition());
+	ck_assert(!sent);
+
+	struct GPS_RawPosition rawPos;
+	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
+
+	ck_assert(sent);
+	ck_assert(!memcmp(&sentPosition, &rawPos, sizeof rawPos));
+
+	sent = false;
+	GPS_setPosition(10.0, 20.0, 100.0);
+	ck_assert(!sent);
+}
+END_TEST
+
+START_TEST(test_send_after_reset)
+{
+	ck_assert(GPS_sendPosition());
+	ck_assert(!sent);
+
+	struct GPS_RawPosition rawPos;
+	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
+	ck_assert(sent);
+	ck_assert(!memcmp(&rawPos, &sentPosition, sizeof rawPos));
+
+	sent = false;
 	GPS_reset();
 
-	GPS_setNeedPosition();
+	ck_assert(GPS_sendPosition());
+	ck_assert(!sent);
+
 	GPS_setPosition(10.0, 20.0, 100.0);
-	ck_assert(sendPositionCalled);
-	ck_assert(!memcmp(&rawPos, &sendPositionPos, sizeof rawPos));
+	ck_assert(sent);
+	ck_assert(!memcmp(&rawPos, &sentPosition, sizeof rawPos));
 }
 END_TEST
 
-START_TEST(test_gps_needMulti)
+START_TEST(test_send_without_pos_twice)
 {
+	ck_assert(GPS_sendPosition());
+	ck_assert(!sent);
+
+	ck_assert(GPS_sendPosition());
+	ck_assert(!sent);
+}
+END_TEST
+
+START_TEST(test_send_with_pos_twice)
+{
+	ck_assert(GPS_sendPosition());
+	ck_assert(!sent);
+
 	struct GPS_RawPosition rawPos;
-
-	GPS_setNeedPosition();
 	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
-	ck_assert(sendPositionCalled);
-	ck_assert(!memcmp(&rawPos, &sendPositionPos, sizeof rawPos));
+	ck_assert(sent);
+	ck_assert(!memcmp(&rawPos, &sentPosition, sizeof rawPos));
 
-	sendPositionCalled = false;
-
-	GPS_setNeedPosition();
-	GPS_setPosition(10.0, 20.0, 100.0);
-	ck_assert(sendPositionCalled);
-	ck_assert(!memcmp(&rawPos, &sendPositionPos, sizeof rawPos));
+	sent = false;
+	ck_assert(GPS_sendPosition());
+	ck_assert(sent);
+	ck_assert(!memcmp(&rawPos, &sentPosition, sizeof rawPos));
 }
 END_TEST
 
@@ -157,19 +187,17 @@ static Suite * gps_suite()
 {
 	Suite * s = suite_create("GPS");
 
-	TCase * tc = tcase_create("setget");
+	TCase * tc = tcase_create("sendOnDemand");
 	tcase_add_checked_fixture(tc, &setup, NULL);
-	tcase_add_test(tc, test_get_position_without_pos);
-	tcase_add_test(tc, test_get_position_with_pos);
-	suite_add_tcase(s, tc);
-
-	tc = tcase_create("need");
-	tcase_add_checked_fixture(tc, &setup, NULL);
-	tcase_add_test(tc, test_gps_nosendWithoutNeed);
-	tcase_add_test(tc, test_gps_sendWithNeedOnce);
-	tcase_add_test(tc, test_gps_sendWithNeedUntilSuccess);
-	tcase_add_test(tc, test_gps_resendAfterReset);
-	tcase_add_test(tc, test_gps_needMulti);
+	tcase_add_test(tc, test_send_position_without_pos);
+	tcase_add_test(tc, test_send_position_with_need);
+	tcase_add_test(tc, test_nosend_position_without_need);
+	tcase_add_test(tc, test_send_position_with_pos);
+	tcase_add_test(tc, test_send_position_until_success);
+	tcase_add_test(tc, test_send_position_with_need_reset);
+	tcase_add_test(tc, test_send_after_reset);
+	tcase_add_test(tc, test_send_without_pos_twice);
+	tcase_add_test(tc, test_send_with_pos_twice);
 	suite_add_tcase(s, tc);
 
 	return s;
