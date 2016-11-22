@@ -23,6 +23,7 @@
 #include "core/recv.h"
 #include "core/relay.h"
 #include "core/gps.h"
+#include "core/login.h"
 #include "util/cfgfile.h"
 #include "util/statistics.h"
 #include "util/log.h"
@@ -90,6 +91,16 @@ int main(int argc, char * argv[])
 
 	if (!UTIL_getSerial(NULL))
 		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
+
+#if defined(INPUT_RADARCAPE_UART)
+	LOGIN_setDeviceID(LOGIN_DEVICE_ID_RADARCAPE);
+#elif defined(INPUT_RADARCAPE_NETWORK)
+	LOGIN_setDeviceID(LOGIN_DEVICE_ID_RADARCAPE_NET);
+#elif defined(INPUT_RADARCAPE_DUMMY)
+	LOGIN_setDeviceID(LOGIN_DEVICE_ID_BOGUS);
+#else
+#error "Input Layer unknown"
+#endif
 
 #ifdef STANDALONE
 	COMP_register(&FPGA_comp);

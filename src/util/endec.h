@@ -74,9 +74,15 @@ static inline double ENDEC_todouble(const uint8_t * buf)
 	return c.d;
 }
 
-static inline void ENDEC_fromu64(uint_fast64_t u, uint8_t * buf)
+static inline void ENDEC_fromu32(uint32_t u, uint8_t * buf)
 {
-	u = be64toh(u);
+	u = htobe32(u);
+	memcpy(buf, &u, sizeof u);
+}
+
+static inline void ENDEC_fromu64(uint64_t u, uint8_t * buf)
+{
+	u = htobe64(u);
 	memcpy(buf, &u, sizeof u);
 }
 

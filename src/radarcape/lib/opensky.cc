@@ -17,6 +17,7 @@
 #include "core/tb.h"
 #include "core/openskytypes.h"
 #include "core/beast.h"
+#include "core/login.h"
 #include "util/component.h"
 #include "util/util.h"
 #include "util/cfgfile.h"
@@ -45,6 +46,8 @@ void init()
 	COMP_register(&RELAY_comp);
 	COMP_register(&FILTER_comp);
 	COMP_fixup();
+
+	LOGIN_setDeviceID(LOGIN_DEVICE_ID_RADARCAPE_LIB);
 
 	CFG_loadDefaults();
 

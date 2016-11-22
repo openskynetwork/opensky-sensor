@@ -22,7 +22,9 @@ enum BEAST_TYPE {
 
 	BEAST_TYPE_SERIAL = '5',
 	BEAST_TYPE_KEEP_ALIVE = '6',
-	BEAST_TYPE_GPS_POSITION = '7'
+	BEAST_TYPE_GPS_POSITION = '7',
+
+	BEAST_TYPE_DEVICE_ID = 65,
 };
 
 size_t BEAST_encode(uint8_t * __restrict out, const uint8_t * __restrict in,
