@@ -11,8 +11,6 @@
 extern "C" {
 #endif
 
-bool UTIL_getSerial(uint32_t * serial);
-
 void UTIL_dropPrivileges();
 
 #ifndef container_of

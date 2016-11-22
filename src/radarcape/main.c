@@ -24,10 +24,12 @@
 #include "core/relay.h"
 #include "core/gps.h"
 #include "core/login.h"
+#include "core/serial.h"
 #include "util/cfgfile.h"
 #include "util/statistics.h"
 #include "util/log.h"
 #include "util/util.h"
+#include "util/serial_eth.h"
 
 static const char PFX[] = "MAIN";
 
@@ -51,6 +53,11 @@ static struct option opts[] = {
 	{ .name = "help", .has_arg = no_argument, .val = 'h' },
 	{}
 };
+
+bool SERIAL_getSerial(uint32_t * serial)
+{
+	return SERIAL_ETH_getSerial(serial);
+}
 
 int main(int argc, char * argv[])
 {
@@ -89,7 +96,7 @@ int main(int argc, char * argv[])
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_sec + tv.tv_usec);
 
-	if (!UTIL_getSerial(NULL))
+	if (!SERIAL_ETH_getSerial(NULL))
 		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
 
 #if defined(INPUT_RADARCAPE_UART)

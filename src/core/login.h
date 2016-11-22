@@ -3,8 +3,6 @@
 #ifndef _HAVE_LOGIN_H
 #define _HAVE_LOGIN_H
 
-#include <stdbool.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,10 +16,6 @@ enum LOGIN_DEVICE_ID {
 	LOGIN_DEVICE_ID_RADARCAPE_NET = 3,
 	LOGIN_DEVICE_ID_RADARCAPE_LIB = 4,
 	LOGIN_DEVICE_ID_FEEDER = 5,
-};
-
-struct LOGIN_SerialProvider {
-
 };
 
 void LOGIN_setDeviceID(enum LOGIN_DEVICE_ID id);

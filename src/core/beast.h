@@ -25,6 +25,8 @@ enum BEAST_TYPE {
 	BEAST_TYPE_GPS_POSITION = '7',
 
 	BEAST_TYPE_DEVICE_ID = 65,
+	BEAST_TYPE_SERIAL_REQ = 66,
+	BEAST_TYPE_USER = 67,
 };
 
 size_t BEAST_encode(uint8_t * __restrict out, const uint8_t * __restrict in,

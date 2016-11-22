@@ -18,14 +18,21 @@
 #include "core/openskytypes.h"
 #include "core/beast.h"
 #include "core/login.h"
+#include "core/serial.h"
 #include "util/component.h"
 #include "util/util.h"
 #include "util/cfgfile.h"
 #include "util/log.h"
+#include "util/serial_eth.h"
 
 extern "C" {
 
 void INPUT_reconfigure() {}
+
+bool SERIAL_getSerial(uint32_t * serial)
+{
+	return SERIAL_ETH_getSerial(serial);
+}
 
 }
 
@@ -62,7 +69,7 @@ void init()
 
 void configure()
 {
-	if (!UTIL_getSerial(NULL)) {
+	if (!SERIAL_ETH_getSerial(NULL)) {
 		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
 	} else {
 		configured = true;

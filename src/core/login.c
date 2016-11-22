@@ -11,6 +11,7 @@
 #include "network.h"
 #include "beast.h"
 #include "gps.h"
+#include "serial.h"
 #include "util/endec.h"
 #include "util/util.h"
 #include "util/log.h"
@@ -91,17 +92,14 @@ static bool sendSerial()
 {
 	uint8_t buf[2 + 4 * 2] = { BEAST_SYNC, BEAST_TYPE_SERIAL };
 
-	uint32_t serialno;
-	if (!UTIL_getSerial(&serialno)) {
-		LOG_log(LOG_LEVEL_ERROR, PFX, "No serial number configured");
-	}
+	uint32_t serialNumber;
+	if (!SERIAL_getSerial(&serialNumber))
+		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
 
 	uint8_t ca[4];
-	ENDEC_fromu32(serialno, ca);
+	ENDEC_fromu32(serialNumber, ca);
 	size_t len = 2 + BEAST_encode(buf + 2, ca, sizeof ca);
 
 	return NET_send(buf, len);
 }
-
-
 
