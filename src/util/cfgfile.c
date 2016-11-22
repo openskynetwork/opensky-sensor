@@ -455,6 +455,8 @@ static bool parseOption()
 	if (n == NULL)
 		n = bufferInput + bufferSize - 1;
 
+	const char * key = bufferInput;
+
 	/* advance buffer */
 	bufferSize -= n + 1 - bufferInput;
 	bufferInput = n + 1;
@@ -469,9 +471,8 @@ static bool parseOption()
 	if (sectionState == SECTION_STATE_VALID) {
 		/* eliminate whitespaces at the end of the key */
 		const char * l = e - 1;
-		while (l > bufferInput && isspace(*l))
+		while (l > key && isspace(*l))
 			--l;
-		const char * key = bufferInput;
 		size_t keyLen = l + 1 - key;
 
 		/* eliminate whitespaces at the beginning of the value */
