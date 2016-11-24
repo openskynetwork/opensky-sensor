@@ -1,2 +1,2 @@
 
-SUBDIRS = core util radarcape test
+SUBDIRS = core util radarcape dump1090 test

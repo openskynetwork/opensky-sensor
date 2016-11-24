@@ -154,6 +154,15 @@ AC_ARG_ENABLE([radarcape-library-examples],
    esac], [enableval=false])
 AM_CONDITIONAL([RADARCAPE_LIBRARY_EXAMPLES], [test x$enableval = xyes])
 
+AC_ARG_ENABLE([dump1090],
+  [AS_HELP_STRING([--enable-dump1090],
+    [Build daemon to connect to dump1090 feeder @<:@no@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-dump1090]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([DUMP1090], [test x$enableval = xyes])
+
 AC_ARG_VAR([ETHER_DEV], [Set the name of the ethernet device @<:@eth0@:>@])
 AS_IF([test x${ETHER_DEV} != x],
   [AC_DEFINE_UNQUOTED([ETHER_DEV], ["${ETHER_DEV}"],
@@ -196,4 +205,5 @@ AS_IF([test x"$with_pacman" != x"no"],
 
 dnl output directive
 AC_OUTPUT([Makefile src/Makefile src/core/Makefile src/util/Makefile
-	src/radarcape/Makefile src/radarcape/lib/Makefile src/test/Makefile])
+	src/radarcape/Makefile src/radarcape/lib/Makefile src/dump1090/Makefile
+	src/test/Makefile])
