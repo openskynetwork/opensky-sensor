@@ -737,3 +737,18 @@ void CFG_write(const char * filename)
 	}
 	fclose(file);
 }
+
+void CFG_writeSection(const char * filename, const struct CFG_Section * section)
+{
+	FILE * file = fopen(filename, "w");
+	if (!file) {
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not write configuration file "
+			"'%s'", filename);
+		return;
+	}
+
+	fprintf(file, "[%s]\n", section->name);
+	writeOptions(file, section);
+
+	fclose(file);
+}

@@ -55,6 +55,7 @@ void CFG_loadDefaults();
 bool CFG_readFile(const char * file, bool warnUnknownSection,
 	bool warnUnknownOption, bool onErrorUseDefault);
 void CFG_write(const char * filename);
+void CFG_writeSection(const char * filename, const struct CFG_Section * section);
 bool CFG_readDirectory(const char * path, bool warnUnknownSection,
 	bool warnUnknownOption, bool onErrorUseDefault,
 	bool stopOnFirstError);
