@@ -11,6 +11,18 @@
 #include "radarcape/lib/opensky.hh"
 #include "core/buffer.h"
 #include "core/openskytypes.h"
+#include "core/login.h"
+
+static enum LOGIN_DEVICE_ID deviceID;
+
+extern "C" {
+
+void LOGIN_setDeviceID(enum LOGIN_DEVICE_ID id)
+{
+	deviceID = id;
+}
+
+}
 
 static void setup()
 {
@@ -111,6 +123,13 @@ START_TEST(test_start_fail)
 {
 	OpenSky::enable();
 	ck_abort_msg("Test should have failed earlier");
+}
+END_TEST
+
+START_TEST(test_deviceId)
+{
+	OpenSky::init();
+	ck_assert_uint_eq(deviceID, LOGIN_DEVICE_ID_RADARCAPE_LIB);
 }
 END_TEST
 
@@ -331,6 +350,7 @@ static Suite * lib_suite()
 	TCase * tc = tcase_create("StartStop");
 	tcase_add_exit_test(tc, test_start_fail, 1);
 	tcase_add_test(tc, test_start_stop);
+	tcase_add_test(tc, test_deviceId);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("Frames");
