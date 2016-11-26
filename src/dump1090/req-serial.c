@@ -3,6 +3,10 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <stdbool.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <pthread.h>
 #include "core/serial.h"
 #include "core/beast.h"
 #include "core/network.h"
@@ -10,11 +14,17 @@
 #include "util/threads.h"
 #include "util/cfgfile.h"
 #include "util/endec.h"
+#include "util/log.h"
 #include "req-serial.h"
 
 #define PFX "SERIAL"
 
+#if (defined(ECLIPSE) || defined(LOCAL_FILES)) && !defined(LOCALSTATEDIR)
+#define LOCALSTATEDIR "var"
+#endif
+
 static bool construct();
+static void destruct();
 static bool sendSerialRequest();
 
 static pthread_mutex_t serialMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -41,6 +51,7 @@ const struct Component SERIAL_comp =
 	.description = PFX,
 
 	.onConstruct = &construct,
+	.onDestruct = &destruct,
 
 	.config = &cfg,
 
@@ -51,6 +62,7 @@ bool SERIAL_getSerial(uint32_t * serial)
 {
 	pthread_mutex_lock(&serialMutex);
 	if (!hasSerial) {
+		LOG_log(LOG_LEVEL_INFO, PFX, "Requesting new serial number");
 		if (!sendSerialRequest()) {
 			pthread_mutex_unlock(&serialMutex);
 			return false;
@@ -58,8 +70,16 @@ bool SERIAL_getSerial(uint32_t * serial)
 		while (!hasSerial)
 			pthread_cond_wait(&serialReqCond, &serialMutex);
 
+		LOG_logf(LOG_LEVEL_INFO, PFX, "Got a new serial number: %" PRIu32,
+			serialNumber);
+
 		/* got a new serial number -> save it */
-		CFG_writeSection("/var/lib/openskyd/conf.d/10-serial.conf", &cfg);
+		if (!CFG_writeSection(LOCALSTATEDIR "/conf.d/10-serial.conf", &cfg)) {
+			LOG_log(LOG_LEVEL_ERROR, PFX, "Could not write serial number, "
+				"refusing to work");
+			/* TODO: emergency */
+			LOG_log(LOG_LEVEL_EMERG, PFX, "This should be fixed");
+		}
 	}
 	*serial = serialNumber;
 	pthread_mutex_unlock(&serialMutex);
@@ -85,4 +105,9 @@ static bool construct()
 {
 	TB_register(TB_PACKET_TYPE_SERIAL_RES, 4, &serialResponse);
 	return true;
+}
+
+static void destruct()
+{
+	TB_unregister(TB_PACKET_TYPE_SERIAL_RES);
 }
