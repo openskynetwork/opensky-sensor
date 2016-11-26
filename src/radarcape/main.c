@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <getopt.h>
+#include <unistd.h>
 #include "gpio.h"
 #include "watchdog.h"
 #include "fpga.h"
@@ -38,10 +39,6 @@ static const char PFX[] = "MAIN";
 #endif
 
 static void sigint(int sig);
-
-static bool run;
-static pthread_mutex_t sigmutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t sigcond = PTHREAD_COND_INITIALIZER;
 
 const char * MAIN_progName;
 
@@ -100,11 +97,11 @@ int main(int argc, char * argv[])
 		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
 
 #if defined(INPUT_RADARCAPE_UART)
-	LOGIN_setDeviceID(LOGIN_DEVICE_ID_RADARCAPE);
+	LOGIN_setDeviceType(LOGIN_DEVICE_TYPE_RADARCAPE);
 #elif defined(INPUT_RADARCAPE_NETWORK)
-	LOGIN_setDeviceID(LOGIN_DEVICE_ID_RADARCAPE_NET);
+	LOGIN_setDeviceType(LOGIN_DEVICE_TYPE_RADARCAPE_NET);
 #elif defined(INPUT_RADARCAPE_DUMMY)
-	LOGIN_setDeviceID(LOGIN_DEVICE_ID_BOGUS);
+	LOGIN_setDeviceType(LOGIN_DEVICE_TYPE_BOGUS);
 #else
 #error "Input Layer unknown"
 #endif
@@ -162,15 +159,11 @@ int main(int argc, char * argv[])
 			"quitting");
 	}
 
-	run = true;
-	pthread_mutex_lock(&sigmutex);
 #ifdef CLEANUP_ROUTINES
 	signal(SIGINT, &sigint);
 #endif
-	while (run)
-		pthread_cond_wait(&sigcond, &sigmutex);
+	pause();
 	signal(SIGINT, SIG_DFL);
-	pthread_mutex_unlock(&sigmutex);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -184,9 +177,5 @@ int main(int argc, char * argv[])
 #ifdef CLEANUP_ROUTINES
 static void sigint(int sig)
 {
-	pthread_mutex_lock(&sigmutex);
-	run = false;
-	pthread_cond_broadcast(&sigcond);
-	pthread_mutex_unlock(&sigmutex);
 }
 #endif
