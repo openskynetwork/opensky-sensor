@@ -83,8 +83,6 @@ int main(int argc, char * argv[])
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
 
-	pthread_setname_np(pthread_self(), "MAIN");
-
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_sec + tv.tv_usec);

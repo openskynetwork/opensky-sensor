@@ -59,8 +59,6 @@ int main(int argc, char * argv[])
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
 
-	pthread_setname_np(pthread_self(), "MAIN");
-
 	MAIN_progName = argv[0];
 
 #ifdef STANDALONE
