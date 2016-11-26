@@ -97,11 +97,11 @@ int main(int argc, char * argv[])
 		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
 
 #if defined(INPUT_RADARCAPE_UART)
-	LOGIN_setDeviceType(LOGIN_DEVICE_TYPE_RADARCAPE);
+	LOGIN_setDeviceType(BEAST_DEVICE_TYPE_RADARCAPE);
 #elif defined(INPUT_RADARCAPE_NETWORK)
-	LOGIN_setDeviceType(LOGIN_DEVICE_TYPE_RADARCAPE_NET);
+	LOGIN_setDeviceType(BEAST_DEVICE_TYPE_RADARCAPE_NET);
 #elif defined(INPUT_RADARCAPE_DUMMY)
-	LOGIN_setDeviceType(LOGIN_DEVICE_TYPE_BOGUS);
+	LOGIN_setDeviceType(BEAST_DEVICE_TYPE_BOGUS);
 #else
 #error "Input Layer unknown"
 #endif

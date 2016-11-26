@@ -91,7 +91,7 @@ int main(int argc, char * argv[])
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_sec + tv.tv_usec);
 
-	LOGIN_setDeviceType(LOGIN_DEVICE_TYPE_FEEDER);
+	LOGIN_setDeviceType(BEAST_DEVICE_TYPE_FEEDER);
 	LOGIN_setUsername(username);
 
 	COMP_register(&TB_comp);

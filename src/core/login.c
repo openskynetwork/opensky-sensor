@@ -19,7 +19,7 @@
 
 #define PFX "LOGIN"
 
-static enum LOGIN_DEVICE_TYPE deviceType = LOGIN_DEVICE_TYPE_INVALID;
+static enum BEAST_DEVICE_TYPE deviceType = BEAST_DEVICE_TYPE_INVALID;
 static char user[BEAST_MAX_USERNAME + 1];
 
 struct Version {
@@ -41,9 +41,9 @@ bool LOGIN_login()
 	return rc;
 }
 
-void LOGIN_setDeviceType(enum LOGIN_DEVICE_TYPE type)
+void LOGIN_setDeviceType(enum BEAST_DEVICE_TYPE type)
 {
-	assert (deviceType == LOGIN_DEVICE_TYPE_INVALID);
+	assert (deviceType == BEAST_DEVICE_TYPE_INVALID);
 	deviceType = type;
 }
 
@@ -87,7 +87,7 @@ static void getVersion(struct Version * version)
 
 static bool sendDeviceId()
 {
-	assert (deviceType != LOGIN_DEVICE_TYPE_INVALID);
+	assert (deviceType != BEAST_DEVICE_TYPE_INVALID);
 
 	uint8_t buf[2 + 4 * 4 * 2] = { BEAST_SYNC, BEAST_TYPE_DEVICE_ID };
 
