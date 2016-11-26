@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-bool SERIAL_ETH_getSerial(uint32_t * serial);
+enum SERIAL_RETURN SERIAL_ETH_getSerial(uint32_t * serial);
 
 #ifdef __cplusplus
 }

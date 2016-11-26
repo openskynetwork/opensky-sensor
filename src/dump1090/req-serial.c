@@ -58,14 +58,14 @@ const struct Component SERIAL_comp =
 	.dependencies = { &TB_comp, NULL }
 };
 
-bool SERIAL_getSerial(uint32_t * serial)
+enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 {
 	pthread_mutex_lock(&serialMutex);
 	if (!hasSerial) {
 		LOG_log(LOG_LEVEL_INFO, PFX, "Requesting new serial number");
 		if (!sendSerialRequest()) {
 			pthread_mutex_unlock(&serialMutex);
-			return false;
+			return SERIAL_RETURN_FAIL_NET;
 		}
 		while (!hasSerial)
 			pthread_cond_wait(&serialReqCond, &serialMutex);
@@ -83,7 +83,7 @@ bool SERIAL_getSerial(uint32_t * serial)
 	}
 	*serial = serialNumber;
 	pthread_mutex_unlock(&serialMutex);
-	return true;
+	return SERIAL_RETURN_SUCCESS;
 }
 
 static bool sendSerialRequest()

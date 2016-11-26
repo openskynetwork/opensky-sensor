@@ -51,7 +51,7 @@ static struct option opts[] = {
 	{}
 };
 
-bool SERIAL_getSerial(uint32_t * serial)
+enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 {
 	return SERIAL_ETH_getSerial(serial);
 }

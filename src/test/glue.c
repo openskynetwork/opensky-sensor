@@ -2,7 +2,7 @@
 
 #include "util/serial_eth.h"
 
-bool SERIAL_ETH_getSerial(uint32_t * serial)
+enum SERIAL_RETURN SERIAL_ETH_getSerial(uint32_t * serial)
 {
 	if (serial)
 		*serial = 0xdeadbeef;

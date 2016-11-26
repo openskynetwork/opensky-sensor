@@ -115,8 +115,21 @@ static bool sendSerial()
 	uint8_t buf[2 + 4 * 2] = { BEAST_SYNC, BEAST_TYPE_SERIAL };
 
 	uint32_t serialNumber;
-	if (!SERIAL_getSerial(&serialNumber)) // TODO: handle errors
+	enum SERIAL_RETURN rc = SERIAL_getSerial(&serialNumber);
+	switch (rc) {
+	case SERIAL_RETURN_FAIL_NET:
+		/* network failure */
+		return false;
+	case SERIAL_RETURN_FAIL_TEMP:
+		/* temporary failure */
+	case SERIAL_RETURN_FAIL_PERM:
+		/* permanent failure */
 		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
+		break;
+	case SERIAL_RETURN_SUCCESS:
+		/* success */
+		break;
+	}
 
 	uint8_t ca[4];
 	ENDEC_fromu32(serialNumber, ca);

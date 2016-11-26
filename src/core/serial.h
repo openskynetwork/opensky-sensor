@@ -10,7 +10,14 @@
 extern "C" {
 #endif
 
-bool SERIAL_getSerial(uint32_t * serial);
+enum SERIAL_RETURN {
+	SERIAL_RETURN_FAIL_TEMP,
+	SERIAL_RETURN_FAIL_NET,
+	SERIAL_RETURN_FAIL_PERM,
+	SERIAL_RETURN_SUCCESS
+};
+
+enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial);
 
 #ifdef __cplusplus
 }

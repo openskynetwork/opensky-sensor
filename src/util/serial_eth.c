@@ -80,12 +80,12 @@ static bool getMacBySysfs(const char * dev, uint8_t mac[IFHWADDRLEN])
  *  return value is true.
  * \return true if operation succeeded, false otherwise
  */
-bool SERIAL_ETH_getSerial(uint32_t * serial)
+enum SERIAL_RETURN SERIAL_ETH_getSerial(uint32_t * serial)
 {
 	if (cachedSerial) {
 		if (serial)
 			*serial = serialNo;
-		return true;
+		return SERIAL_RETURN_SUCCESS;
 	}
 
 	const char * device = ETHERNET_DEVICE_NAME;
@@ -106,7 +106,7 @@ bool SERIAL_ETH_getSerial(uint32_t * serial)
 		LOG_log(LOG_LEVEL_WARN, PFX, "Could not get MAC by Socket API");
 		if (!getMacBySysfs(device, mac)) {
 			LOG_log(LOG_LEVEL_WARN, PFX, "Could not get MAC by Sysfs");
-			return false;
+			return SERIAL_RETURN_FAIL_PERM;
 		}
 	}
 
@@ -124,5 +124,5 @@ bool SERIAL_ETH_getSerial(uint32_t * serial)
 
 	cachedSerial = true;
 
-	return true;
+	return SERIAL_RETURN_SUCCESS;
 }
