@@ -5,6 +5,7 @@
 #endif
 #include <stdbool.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <assert.h>
 #include "login.h"
@@ -18,7 +19,8 @@
 
 #define PFX "LOGIN"
 
-static enum LOGIN_DEVICE_ID deviceId = LOGIN_DEVICE_ID_INVALID;
+static enum LOGIN_DEVICE_TYPE deviceType = LOGIN_DEVICE_TYPE_INVALID;
+static char user[BEAST_MAX_USERNAME + 1];
 
 struct Version {
 	uint32_t major;
@@ -28,16 +30,32 @@ struct Version {
 
 static bool sendDeviceId();
 static bool sendSerial();
+static bool sendUsername();
 
 bool LOGIN_login()
 {
-	return sendDeviceId() && sendSerial() && GPS_sendPosition();
+	bool rc = sendDeviceId() && sendSerial() && GPS_sendPosition() &&
+		sendUsername();
+	if (!rc)
+		LOG_log(LOG_LEVEL_WARN, PFX, "Login failed");
+	return rc;
 }
 
-void LOGIN_setDeviceID(enum LOGIN_DEVICE_ID id)
+void LOGIN_setDeviceType(enum LOGIN_DEVICE_TYPE type)
 {
-	assert (deviceId == LOGIN_DEVICE_ID_INVALID);
-	deviceId = id;
+	assert (deviceType == LOGIN_DEVICE_TYPE_INVALID);
+	deviceType = type;
+}
+
+void LOGIN_setUsername(const char * username)
+{
+	size_t len = strlen(username);
+	if (len > BEAST_MAX_USERNAME) {
+		LOG_logf(LOG_LEVEL_WARN, PFX,
+			"Username '%s' is too long, not sending any", username);
+		return;
+	}
+	strncpy(user, username, sizeof user);
 }
 
 static void getVersion(struct Version * version)
@@ -69,13 +87,13 @@ static void getVersion(struct Version * version)
 
 static bool sendDeviceId()
 {
-	assert (deviceId != LOGIN_DEVICE_ID_INVALID);
+	assert (deviceType != LOGIN_DEVICE_TYPE_INVALID);
 
 	uint8_t buf[2 + 4 * 4 * 2] = { BEAST_SYNC, BEAST_TYPE_DEVICE_ID };
 
 	uint8_t * ptr = buf + 2;
 	uint8_t tmp[4 * 3];
-	ENDEC_fromu32(deviceId, tmp);
+	ENDEC_fromu32(deviceType, tmp);
 	ptr += BEAST_encode(ptr, tmp, sizeof(uint32_t));
 
 	struct Version ver;
@@ -85,6 +103,10 @@ static bool sendDeviceId()
 	ENDEC_fromu32(ver.release, tmp + 8);
 	ptr += BEAST_encode(ptr, tmp, 3 * sizeof(uint32_t));
 
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Device ID %" PRIu32 ", "
+		"Version %" PRIu32 ".%" PRIu32 ".%" PRIu32,
+		deviceType, ver.major, ver.minor, ver.release);
+
 	return NET_send(buf, ptr - buf);
 }
 
@@ -93,12 +115,32 @@ static bool sendSerial()
 	uint8_t buf[2 + 4 * 2] = { BEAST_SYNC, BEAST_TYPE_SERIAL };
 
 	uint32_t serialNumber;
-	if (!SERIAL_getSerial(&serialNumber))
+	if (!SERIAL_getSerial(&serialNumber)) // TODO: handle errors
 		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
 
 	uint8_t ca[4];
 	ENDEC_fromu32(serialNumber, ca);
 	size_t len = 2 + BEAST_encode(buf + 2, ca, sizeof ca);
+
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Serial Number %" PRIu32,
+		serialNumber);
+
+	return NET_send(buf, len);
+}
+
+static bool sendUsername()
+{
+	if (!*user)
+		return true;
+
+	char tmp[BEAST_MAX_USERNAME];
+	memset(tmp, '\0', sizeof tmp);
+	strncpy(tmp, user, sizeof tmp);
+
+	uint8_t buf[2 + 2 * BEAST_MAX_USERNAME] = { BEAST_SYNC, BEAST_TYPE_USER };
+	size_t len = 2 + BEAST_encode(buf + 2, (uint8_t*)tmp, sizeof tmp);
+
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Username '%s'", user);
 
 	return NET_send(buf, len);
 }

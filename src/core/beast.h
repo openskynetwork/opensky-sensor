@@ -29,6 +29,8 @@ enum BEAST_TYPE {
 	BEAST_TYPE_USER = 67,
 };
 
+#define BEAST_MAX_USERNAME 20
+
 size_t BEAST_encode(uint8_t * __restrict out, const uint8_t * __restrict in,
 	size_t len);
 
