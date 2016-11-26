@@ -31,6 +31,7 @@
 #include "util/log.h"
 #include "util/util.h"
 #include "req-serial.h"
+#include "position.h"
 
 static const char PFX[] = "MAIN";
 
@@ -95,6 +96,7 @@ int main(int argc, char * argv[])
 	COMP_register(&RECV_comp);
 	COMP_register(&STAT_comp);
 	COMP_register(&SERIAL_comp);
+	COMP_register(&GPS_comp);
 
 	COMP_fixup();
 

@@ -6,6 +6,7 @@ bin_PROGRAMS += openskyd-dump1090
 endif
 
 openskyd_dump1090_SOURCES = dump1090.c req-serial.h req-serial.c \
+	position.h position.c \
 	../radarcape/radarcape.c ../radarcape/network.c
 
 # compiler libs
