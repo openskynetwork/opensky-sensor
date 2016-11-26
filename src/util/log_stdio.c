@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
+#include <pthread.h>
 #include "log.h"
 #include "threads.h"
 #include "util.h"
@@ -17,12 +18,15 @@ static const char * levelNames[] = {
 	[LOG_LEVEL_EMERG] = "EMERG"
 };
 
+static pthread_mutex_t stdioMutex = PTHREAD_MUTEX_INITIALIZER;
+
 __attribute__((format(printf, 3, 4)))
 void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 {
 	int r;
 	CANCEL_DISABLE(&r);
 
+	pthread_mutex_lock(&stdioMutex);
 	printf("[%s] ", levelNames[level]);
 	if (prefix)
 		printf("[%s] ", prefix);
@@ -32,6 +36,7 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 	vprintf(fmt, ap);
 	va_end(ap);
 	putchar('\n');
+	pthread_mutex_unlock(&stdioMutex);
 
 	CANCEL_RESTORE(&r);
 
@@ -46,11 +51,13 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 	int r;
 	CANCEL_DISABLE(&r);
 
+	pthread_mutex_lock(&stdioMutex);
 	printf("[%s] ", levelNames[level]);
 	if (prefix)
 		printf("[%s] ", prefix);
 
 	puts(str);
+	pthread_mutex_unlock(&stdioMutex);
 
 	CANCEL_RESTORE(&r);
 
@@ -66,6 +73,7 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	int r;
 	CANCEL_DISABLE(&r);
 
+	pthread_mutex_lock(&stdioMutex);
 	printf("[%s] ", levelNames[level]);
 	if (prefix)
 		printf("[%s] ", prefix);
@@ -89,6 +97,7 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	else
 		printf(": Unknown Error (%d)", err);
 	putchar('\n');
+	pthread_mutex_unlock(&stdioMutex);
 
 	CANCEL_RESTORE(&r);
 
