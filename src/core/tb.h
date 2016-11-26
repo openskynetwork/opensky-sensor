@@ -27,6 +27,7 @@ enum TB_PACKET_TYPE {
 typedef void (*TB_ProcessorFn)(const uint8_t *);
 
 void TB_register(uint32_t type, size_t payloadLen, TB_ProcessorFn fn);
+void TB_unregister(uint32_t type);
 
 #ifdef __cplusplus
 }

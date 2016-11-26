@@ -79,6 +79,15 @@ void TB_register(uint32_t type, size_t payloadLen, TB_ProcessorFn fn)
 	}
 }
 
+void TB_unregister(uint32_t type)
+{
+	if (type < TB_PACKET_TYPE_N) {
+		struct PacketProcessor * processor = &processors[type];
+		assert(processor->fn);
+		processor->fn = NULL;
+	}
+}
+
 /** Mainloop of the TB. */
 static void mainloop()
 {
