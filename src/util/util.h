@@ -32,6 +32,8 @@ void UTIL_dropPrivileges();
 
 uint32_t UTIL_randInt(uint32_t n);
 
+void UTIL_waitSigInt();
+
 #ifdef __cplusplus
 }
 #endif

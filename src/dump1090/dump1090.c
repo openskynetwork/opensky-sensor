@@ -41,8 +41,6 @@ static const char PFX[] = "MAIN";
 #define LOCALSTATEDIR "var"
 #endif
 
-static void sigint(int sig);
-
 static char username[BEAST_MAX_USERNAME + 1];
 
 static struct CFG_Section cfg =
@@ -133,11 +131,7 @@ int main(int argc, char * argv[])
 			"quitting");
 	}
 
-#ifdef CLEANUP_ROUTINES
-	signal(SIGINT, &sigint);
-#endif
-	pause();
-	signal(SIGINT, SIG_DFL);
+	UTIL_waitSigInt();
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -147,9 +141,3 @@ int main(int argc, char * argv[])
 
 	return EXIT_SUCCESS;
 }
-
-#ifdef CLEANUP_ROUTINES
-static void sigint(int sig)
-{
-}
-#endif

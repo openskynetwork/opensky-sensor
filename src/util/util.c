@@ -10,6 +10,7 @@
 #include <grp.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <signal.h>
 #include "util.h"
 #include "log.h"
 
@@ -55,9 +56,37 @@ void UTIL_dropPrivileges()
 
 uint32_t UTIL_randInt(uint32_t n)
 {
-  uint32_t limit = RAND_MAX - RAND_MAX % n;
-  uint32_t rnd;
+	uint32_t limit = RAND_MAX - RAND_MAX % n;
+	uint32_t rnd;
 
-  do rnd = rand(); while (rnd >= limit);
-  return rnd % n;
+	do rnd = rand(); while (rnd >= limit);
+	return rnd % n;
+}
+
+void UTIL_waitSigInt()
+{
+#ifdef CLEANUP_ROUTINES
+	sigset_t set, oldset;
+	sigemptyset(&set);
+	sigaddset(&set, SIGINT);
+	int err = pthread_sigmask(SIG_BLOCK, &set, &oldset);
+	if (err)
+		LOG_errno(LOG_LEVEL_EMERG, PFX, "Could not install signal handler");
+
+	int sig;
+	err = sigwait(&set, &sig);
+	if (err)
+		LOG_errno2(LOG_LEVEL_EMERG, err, PFX, "Could not wait for signal");
+
+	if (sig == SIGINT)
+		LOG_log(LOG_LEVEL_INFO, PFX, "Caught SIGINT, cleaning up");
+	else
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Caught signal %d (%s), handling it "
+			"as SIGINT", sig, strsignal(sig));
+	pthread_sigmask(SIG_SETMASK, &oldset, NULL);
+#else
+	/* never return */
+	while (true)
+		pause();
+#endif
 }

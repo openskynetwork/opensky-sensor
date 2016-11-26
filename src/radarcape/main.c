@@ -38,8 +38,6 @@ static const char PFX[] = "MAIN";
 #define SYSCONFDIR "."
 #endif
 
-static void sigint(int sig);
-
 const char * MAIN_progName;
 
 static struct option opts[] = {
@@ -159,11 +157,7 @@ int main(int argc, char * argv[])
 			"quitting");
 	}
 
-#ifdef CLEANUP_ROUTINES
-	signal(SIGINT, &sigint);
-#endif
-	pause();
-	signal(SIGINT, SIG_DFL);
+	UTIL_waitSigInt();
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -174,8 +168,3 @@ int main(int argc, char * argv[])
 	return EXIT_SUCCESS;
 }
 
-#ifdef CLEANUP_ROUTINES
-static void sigint(int sig)
-{
-}
-#endif
