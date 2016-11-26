@@ -62,7 +62,7 @@ static bool sendPosition(const struct GPS_Position * position)
 {
 	uint8_t buf[2 + 3 * 8 * 2] = { BEAST_SYNC, BEAST_TYPE_GPS_POSITION };
 
-	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending position %+7.4f, %+7.4f, %+5.2fm",
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending position %+.4f°, %+.4f°, %+.2fm",
 		position->latitude, position->longitute, position->altitude);
 
 	uint64_t rawPos[3];
