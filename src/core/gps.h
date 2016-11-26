@@ -12,10 +12,10 @@ extern "C" {
 
 extern struct Component GPS_RECV_comp;
 
-struct GPS_RawPosition {
-	uint64_t latitude;
-	uint64_t longitute;
-	uint64_t altitude;
+struct GPS_Position {
+	double latitude;
+	double longitute;
+	double altitude;
 };
 
 void GPS_reset();

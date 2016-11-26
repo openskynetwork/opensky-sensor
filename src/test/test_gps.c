@@ -14,17 +14,17 @@
 
 static bool sent;
 static bool sendRC;
-static struct GPS_RawPosition sentPosition;
+static uint64_t sentPosition[3];
 
 bool NET_send(const void * buf, size_t len)
 {
-	ck_assert_uint_eq(len, 2 + sizeof(struct GPS_RawPosition));
+	ck_assert_uint_eq(len, 2 + sizeof(uint64_t) * 3);
 
 	const uint8_t * b = buf;
 	ck_assert_uint_eq(b[0], BEAST_SYNC);
 	ck_assert_uint_eq(b[1], BEAST_TYPE_GPS_POSITION);
 
-	memcpy(&sentPosition, b + 2, len - 2);
+	memcpy(sentPosition, b + 2, len - 2);
 
 	sent = true;
 
@@ -39,15 +39,15 @@ void setup()
 }
 
 static void getRawPos(double latitude, double longitude, double altitude,
-	struct GPS_RawPosition * pos)
+	uint64_t * pos)
 {
-	ENDEC_fromdouble(latitude, (uint8_t*)&pos->latitude);
-	ENDEC_fromdouble(longitude, (uint8_t*)&pos->longitute);
-	ENDEC_fromdouble(altitude, (uint8_t*)&pos->altitude);
+	ENDEC_fromdouble(latitude, (uint8_t*)pos);
+	ENDEC_fromdouble(longitude, (uint8_t*)&pos[1]);
+	ENDEC_fromdouble(altitude, (uint8_t*)&pos[2]);
 }
 
 static void setAndGetRawPos(double latitude, double longitude, double altitude,
-	struct GPS_RawPosition * pos)
+	uint64_t * pos)
 {
 	getRawPos(latitude, longitude, altitude, pos);
 	GPS_setPosition(latitude, longitude, altitude);
@@ -65,18 +65,18 @@ START_TEST(test_send_position_with_need)
 	ck_assert(GPS_sendPosition());
 	ck_assert(!sent);
 
-	struct GPS_RawPosition rawPos;
-	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
+	uint64_t rawPos[3];
+	setAndGetRawPos(10.0, 20.0, 100.0, rawPos);
 
 	ck_assert(sent);
-	ck_assert(!memcmp(&sentPosition, &rawPos, sizeof rawPos));
+	ck_assert(!memcmp(sentPosition, rawPos, sizeof rawPos));
 }
 END_TEST
 
 START_TEST(test_nosend_position_without_need)
 {
-	struct GPS_RawPosition rawPos;
-	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
+	uint64_t rawPos[3];
+	setAndGetRawPos(10.0, 20.0, 100.0, rawPos);
 
 	ck_assert(!sent);
 }
@@ -84,20 +84,20 @@ END_TEST
 
 START_TEST(test_send_position_with_pos)
 {
-	struct GPS_RawPosition rawPos;
-	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
+	uint64_t rawPos[3];
+	setAndGetRawPos(10.0, 20.0, 100.0, rawPos);
 	ck_assert(!sent);
 
 	ck_assert(GPS_sendPosition());
 	ck_assert(sent);
-	ck_assert(!memcmp(&sentPosition, &rawPos, sizeof rawPos));
+	ck_assert(!memcmp(sentPosition, rawPos, sizeof rawPos));
 }
 END_TEST
 
 START_TEST(test_send_position_until_success)
 {
-	struct GPS_RawPosition rawPos;
-	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
+	uint64_t rawPos[3];
+	setAndGetRawPos(10.0, 20.0, 100.0, rawPos);
 	ck_assert(!sent);
 
 	sendRC = false;
@@ -113,7 +113,7 @@ START_TEST(test_send_position_until_success)
 	ck_assert(GPS_sendPosition());
 	ck_assert(sent);
 
-	ck_assert(!memcmp(&sentPosition, &rawPos, sizeof rawPos));
+	ck_assert(!memcmp(sentPosition, rawPos, sizeof rawPos));
 }
 END_TEST
 
@@ -122,11 +122,11 @@ START_TEST(test_send_position_with_need_reset)
 	ck_assert(GPS_sendPosition());
 	ck_assert(!sent);
 
-	struct GPS_RawPosition rawPos;
-	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
+	uint64_t rawPos[3];
+	setAndGetRawPos(10.0, 20.0, 100.0, rawPos);
 
 	ck_assert(sent);
-	ck_assert(!memcmp(&sentPosition, &rawPos, sizeof rawPos));
+	ck_assert(!memcmp(sentPosition, rawPos, sizeof rawPos));
 
 	sent = false;
 	GPS_setPosition(10.0, 20.0, 100.0);
@@ -139,10 +139,10 @@ START_TEST(test_send_after_reset)
 	ck_assert(GPS_sendPosition());
 	ck_assert(!sent);
 
-	struct GPS_RawPosition rawPos;
-	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
+	uint64_t rawPos[3];
+	setAndGetRawPos(10.0, 20.0, 100.0, rawPos);
 	ck_assert(sent);
-	ck_assert(!memcmp(&rawPos, &sentPosition, sizeof rawPos));
+	ck_assert(!memcmp(sentPosition, rawPos, sizeof rawPos));
 
 	sent = false;
 	GPS_reset();
@@ -152,7 +152,7 @@ START_TEST(test_send_after_reset)
 
 	GPS_setPosition(10.0, 20.0, 100.0);
 	ck_assert(sent);
-	ck_assert(!memcmp(&rawPos, &sentPosition, sizeof rawPos));
+	ck_assert(!memcmp(sentPosition, rawPos, sizeof rawPos));
 }
 END_TEST
 
@@ -171,15 +171,15 @@ START_TEST(test_send_with_pos_twice)
 	ck_assert(GPS_sendPosition());
 	ck_assert(!sent);
 
-	struct GPS_RawPosition rawPos;
-	setAndGetRawPos(10.0, 20.0, 100.0, &rawPos);
+	uint64_t rawPos[3];
+	setAndGetRawPos(10.0, 20.0, 100.0, rawPos);
 	ck_assert(sent);
-	ck_assert(!memcmp(&rawPos, &sentPosition, sizeof rawPos));
+	ck_assert(!memcmp(sentPosition, rawPos, sizeof rawPos));
 
 	sent = false;
 	ck_assert(GPS_sendPosition());
 	ck_assert(sent);
-	ck_assert(!memcmp(&rawPos, &sentPosition, sizeof rawPos));
+	ck_assert(!memcmp(sentPosition, rawPos, sizeof rawPos));
 }
 END_TEST
 
