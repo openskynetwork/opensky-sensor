@@ -152,9 +152,9 @@ static int filterDirectory(const struct dirent * ent)
 	if (first < '0' || first > '9')
 		return 0;
 	size_t len = strlen(ent->d_name);
-	if (len < 4)
+	if (len < 5)
 		return 0;
-	if (strcmp(ent->d_name + len - 4, ".conf"))
+	if (strcmp(ent->d_name + len - 5, ".conf"))
 		return 0;
 	return 1;
 }
@@ -678,7 +678,7 @@ bool CFG_check()
 	return true;
 }
 
-static void writeOptions(FILE * file, const struct CFG_Section * section)
+static bool writeOptions(FILE * file, const struct CFG_Section * section)
 {
 	size_t n;
 	for (n = 0; n < section->n_opt; ++n) {
