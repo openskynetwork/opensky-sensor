@@ -173,7 +173,7 @@ bool CFG_readDirectory(const char * path, bool warnUnknownSection,
 	struct dirent ** namelist;
 	int s = scandir(path, &namelist, &filterDirectory, &compareDirectory);
 	if (s < 0) {
-		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not traverse path '%s'", path);
+		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not traverse path '%s'", path);
 		return false;
 	}
 
@@ -687,33 +687,32 @@ static bool writeOptions(FILE * file, const struct CFG_Section * section)
 		fprintf(file, "%s = ", opt->name);
 		switch (opt->type) {
 		case CFG_VALUE_TYPE_BOOL:
-			fprintf(file, "%s\n", val->boolean ? "true" : "false");
+			if (fprintf(file, "%s\n", val->boolean ? "true" : "false") < 0)
+				return false;
 			break;
 		case CFG_VALUE_TYPE_INT:
-			fprintf(file, "%" PRIu32 "\n", val->integer);
+			if (fprintf(file, "%" PRIu32 "\n", val->integer) < 0)
+				return false;
 			break;
 		case CFG_VALUE_TYPE_PORT:
-			fprintf(file, "%" PRIuFAST16 "\n", val->port);
+			if (fprintf(file, "%" PRIuFAST16 "\n", val->port) < 0)
+				return false;
 			break;
 		case CFG_VALUE_TYPE_STRING:
-			fprintf(file, "%s\n", (const char*)opt->var);
+			if (fprintf(file, "%s\n", (const char*)opt->var) < 0)
+				return false;
 			break;
 		case CFG_VALUE_TYPE_DOUBLE:
-			fprintf(file, "%f\n", val->dbl);
+			if (fprintf(file, "%f\n", val->dbl) < 0)
+				return false;
 			break;
 		}
 	}
+	return true;
 }
 
-void CFG_write(const char * filename)
+static bool writeSections(FILE * file)
 {
-	FILE * file = fopen(filename, "w");
-	if (!file) {
-		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not write configuration file "
-			"'%s'", filename);
-		return;
-	}
-
 	bool first = true;
 	size_t s;
 	for (s = 0; s < n_sections; ++s) {
@@ -725,30 +724,51 @@ void CFG_write(const char * filename)
 		if (prev < s)
 			continue;
 		if (!first)
-			fprintf(file, "\n\n");
+			if (fprintf(file, "\n\n") < 0)
+				return false;
 		first = false;
-		fprintf(file, "[%s]\n", sect->name);
-		writeOptions(file, sect);
+		if (fprintf(file, "[%s]\n", sect->name) < 0)
+			return false;
+		if (writeOptions(file, sect))
+			return false;
 
 		size_t next;
 		for (next = s + 1; next < n_sections; ++next)
 			if (!strcasecmp(sect->name, sections[next]->name))
-				writeOptions(file, sections[next]);
+				if (!writeOptions(file, sections[next]))
+					return false;
 	}
-	fclose(file);
+	return true;
 }
 
-void CFG_writeSection(const char * filename, const struct CFG_Section * section)
+bool CFG_write(const char * filename)
 {
 	FILE * file = fopen(filename, "w");
 	if (!file) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not write configuration file "
 			"'%s'", filename);
-		return;
+		return false;
 	}
 
-	fprintf(file, "[%s]\n", section->name);
-	writeOptions(file, section);
+	bool rc = writeSections(file);
+	fclose(file);
+
+	return rc;
+}
+
+bool CFG_writeSection(const char * filename, const struct CFG_Section * section)
+{
+	FILE * file = fopen(filename, "w");
+	if (!file) {
+		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not open configuration file "
+			"'%s' for writing", filename);
+		return false;
+	}
+
+	bool rc = fprintf(file, "[%s]\n", section->name) >= 0 &&
+		writeOptions(file, section);
 
 	fclose(file);
+
+	return rc;
 }
