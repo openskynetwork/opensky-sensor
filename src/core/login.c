@@ -17,7 +17,7 @@
 #include "util/util.h"
 #include "util/log.h"
 
-#define PFX "LOGIN"
+static const char PFX[] = "LOGIN";
 
 static enum BEAST_DEVICE_TYPE deviceType = BEAST_DEVICE_TYPE_INVALID;
 static char user[BEAST_MAX_USERNAME + 1];

@@ -17,7 +17,7 @@
 #include "util/log.h"
 #include "req-serial.h"
 
-#define PFX "SERIAL"
+static const char PFX[] = "SERIAL";
 
 #if (defined(ECLIPSE) || defined(LOCAL_FILES)) && !defined(LOCALSTATEDIR)
 #define LOCALSTATEDIR "var"
@@ -55,7 +55,7 @@ const struct Component SERIAL_comp =
 
 	.config = &cfg,
 
-	.dependencies = { &TB_comp, NULL}
+	.dependencies = { &TB_comp, NULL }
 };
 
 bool SERIAL_getSerial(uint32_t * serial)
