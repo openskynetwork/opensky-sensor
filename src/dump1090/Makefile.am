@@ -21,7 +21,7 @@ openskyd_rcd_net_CFLAGS = $(AM_CFLAGS) -DINPUT_RADARCAPE \
 
 # compile flags for development
 if !LOCAL_FILES
-AM_CFLAGS += -DSYSCONFDIR='"$(sysconfdir)"'
+AM_CFLAGS += -DSYSCONFDIR='"$(sysconfdir)"' -DLOCALSTATEDIR='"$(localstatedir)"'
 endif
 
 clean-local:
