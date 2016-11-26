@@ -54,7 +54,7 @@ void init()
 	COMP_register(&FILTER_comp);
 	COMP_fixup();
 
-	LOGIN_setDeviceID(LOGIN_DEVICE_ID_RADARCAPE_LIB);
+	LOGIN_setDeviceType(LOGIN_DEVICE_TYPE_RADARCAPE_LIB);
 
 	CFG_loadDefaults();
 

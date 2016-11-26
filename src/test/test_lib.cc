@@ -13,13 +13,13 @@
 #include "core/openskytypes.h"
 #include "core/login.h"
 
-static enum LOGIN_DEVICE_ID deviceID;
+static enum LOGIN_DEVICE_TYPE deviceType;
 
 extern "C" {
 
-void LOGIN_setDeviceID(enum LOGIN_DEVICE_ID id)
+void LOGIN_setDeviceType(enum LOGIN_DEVICE_TYPE type)
 {
-	deviceID = id;
+	deviceType = type;
 }
 
 }
@@ -129,7 +129,7 @@ END_TEST
 START_TEST(test_deviceId)
 {
 	OpenSky::init();
-	ck_assert_uint_eq(deviceID, LOGIN_DEVICE_ID_RADARCAPE_LIB);
+	ck_assert_uint_eq(deviceType, LOGIN_DEVICE_TYPE_RADARCAPE_LIB);
 }
 END_TEST
 
