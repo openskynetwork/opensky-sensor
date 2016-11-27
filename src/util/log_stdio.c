@@ -25,8 +25,8 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 {
 	int r;
 	CANCEL_DISABLE(&r);
-
 	pthread_mutex_lock(&stdioMutex);
+
 	printf("[%s] ", levelNames[level]);
 	if (prefix)
 		printf("[%s] ", prefix);
@@ -36,8 +36,8 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 	vprintf(fmt, ap);
 	va_end(ap);
 	putchar('\n');
-	pthread_mutex_unlock(&stdioMutex);
 
+	pthread_mutex_unlock(&stdioMutex);
 	CANCEL_RESTORE(&r);
 
 	if (unlikely(level == LOG_LEVEL_EMERG)) {
@@ -50,15 +50,15 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 {
 	int r;
 	CANCEL_DISABLE(&r);
-
 	pthread_mutex_lock(&stdioMutex);
+
 	printf("[%s] ", levelNames[level]);
 	if (prefix)
 		printf("[%s] ", prefix);
 
 	puts(str);
-	pthread_mutex_unlock(&stdioMutex);
 
+	pthread_mutex_unlock(&stdioMutex);
 	CANCEL_RESTORE(&r);
 
 	if (unlikely(level == LOG_LEVEL_EMERG)) {
@@ -72,8 +72,8 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 {
 	int r;
 	CANCEL_DISABLE(&r);
-
 	pthread_mutex_lock(&stdioMutex);
+
 	printf("[%s] ", levelNames[level]);
 	if (prefix)
 		printf("[%s] ", prefix);
@@ -97,8 +97,8 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	else
 		printf(": Unknown Error (%d)", err);
 	putchar('\n');
-	pthread_mutex_unlock(&stdioMutex);
 
+	pthread_mutex_unlock(&stdioMutex);
 	CANCEL_RESTORE(&r);
 
 	if (unlikely(level == LOG_LEVEL_EMERG)) {
