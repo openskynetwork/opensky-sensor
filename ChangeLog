@@ -1,3 +1,6 @@
+2016-11-27 Markus Engel <engel@opensky-network.org>
+	* Feeder: added dump1090 feeder with serial number protocol
+
 2016-06-02 Markus Engel <engel@opensky-network.org>
 	* GPS: report GPS position in degrees instead of radians
 

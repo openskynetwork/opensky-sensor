@@ -1,5 +1,5 @@
 dnl initialize autoconf
-AC_INIT(openskyd, 1.1.1)
+AC_INIT(openskyd, 2.0.0)
 
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR([build-aux])
@@ -27,11 +27,14 @@ dnl test for std headers
 AC_HEADER_STDC
 
 AC_SEARCH_LIBS([clock_gettime],[rt posix4])
-AC_CHECK_FUNCS([clock_gettime])
+AC_CHECK_FUNCS([clock_gettime gettimeofday mkdir strcasecmp])
+AC_FUNC_REALLOC
+AC_FUNC_STRERROR_R
+AC_FUNC_STRTOD
 
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h limits.h netdb.h netinet/in.h])
 AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h])
-AC_CHECK_HEADERS([termios.h unistd.h])
+AC_CHECK_HEADERS([termios.h unistd.h sys/time.h])
 
 AC_CHECK_HEADER_STDBOOL
 AC_C_INLINE
