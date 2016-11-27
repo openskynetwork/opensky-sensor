@@ -16,10 +16,6 @@ openskyd_dump1090_LDADD = ../core/libcore.a ../util/libutil.a
 # common compile flags
 AM_CFLAGS = @PTHREAD_CFLAGS@ -I$(top_srcdir)/src
 
-# compiler flags
-openskyd_rcd_net_CFLAGS = $(AM_CFLAGS) -DINPUT_RADARCAPE \
-	-DINPUT_RADARCAPE_NETWORK
-
 # compile flags for development
 if !LOCAL_FILES
 AM_CFLAGS += -DSYSCONFDIR='"$(sysconfdir)"' -DLOCALSTATEDIR='"$(localstatedir)"'
