@@ -102,7 +102,6 @@ static enum TRANSIT_STATE transState;
 static void mainloop();
 static int tryConnect();
 static enum ACTION emitDisconnect(enum EMIT_BY by);
-static bool trySendSock(int sock, const void * buf, size_t len);
 static bool trySend(const void * buf, size_t len);
 
 const struct Component NET_comp = {
@@ -293,13 +292,13 @@ void NET_waitConnected()
  * \param len length of data
  * \return true if sending succeeded, false otherwise (e.g. connection lost)
  */
-static bool trySendSock(int sock, const void * buf, size_t len)
+static bool trySend(const void * buf, size_t len)
 {
 	const char * ptr = buf;
 	const char * end = ptr + len;
 
 	do {
-		ssize_t rc = send(sock, ptr, len, MSG_NOSIGNAL);
+		ssize_t rc = send(sendsock, ptr, len, MSG_NOSIGNAL);
 		if (rc <= 0) {
 #ifdef DEBUG
 			LOG_logf(LOG_LEVEL_DEBUG, PFX, "could not send: %s",
@@ -307,6 +306,7 @@ static bool trySendSock(int sock, const void * buf, size_t len)
 				strerror(errno));
 #endif
 			++STAT_stats.NET_msgsFailed;
+			emitDisconnect(EMIT_BY_SEND);
 			return false;
 		}
 		ptr += rc;
@@ -315,20 +315,6 @@ static bool trySendSock(int sock, const void * buf, size_t len)
 	++STAT_stats.NET_msgsSent;
 
 	return true;
-}
-
-/** Send some data through the socket.
- * \param data data to be sent
- * \param len length of data
- * \return true if sending succeeded, false otherwise (e.g. connection lost)
- */
-static bool trySend(const void * buf, size_t len)
-{
-	do {
-		if (trySendSock(sendsock, buf, len))
-			return true;
-	} while (emitDisconnect(EMIT_BY_SEND) == ACTION_RETRY);
-	return false;
 }
 
 bool NET_send(const void * buf, size_t len)
