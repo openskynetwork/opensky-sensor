@@ -104,6 +104,7 @@ int main(int argc, char * argv[])
 
 	/* read & check configuration */
 	CFG_loadDefaults();
+	CFG_setPort("INPUT", "Port", 30005);
 	// TODO: test, test, test
 	bool cfgVar = CFG_readDirectory(LOCALSTATEDIR "/conf.d", true, true, true,
 		false);
