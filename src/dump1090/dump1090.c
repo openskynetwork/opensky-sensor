@@ -88,9 +88,6 @@ int main(int argc, char * argv[])
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_sec + tv.tv_usec);
 
-	LOGIN_setDeviceType(BEAST_DEVICE_TYPE_FEEDER);
-	LOGIN_setUsername(username);
-
 	COMP_register(&TB_comp);
 	COMP_register(&RELAY_comp);
 	COMP_register(&RECV_comp);
@@ -125,6 +122,9 @@ int main(int argc, char * argv[])
 		LOG_log(LOG_LEVEL_EMERG, PFX, "Could not initialize all components, "
 			"quitting");
 	}
+
+	LOGIN_setDeviceType(BEAST_DEVICE_TYPE_FEEDER);
+	LOGIN_setUsername(username);
 
 	if (!COMP_startAll()) {
 		LOG_log(LOG_LEVEL_EMERG, PFX, "Could not start all components, "

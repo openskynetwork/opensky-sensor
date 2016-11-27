@@ -49,13 +49,18 @@ void LOGIN_setDeviceType(enum BEAST_DEVICE_TYPE type)
 
 void LOGIN_setUsername(const char * username)
 {
-	size_t len = strlen(username);
-	if (len > BEAST_MAX_USERNAME) {
-		LOG_logf(LOG_LEVEL_WARN, PFX,
-			"Username '%s' is too long, not sending any", username);
-		return;
+	memset(user, '\0', sizeof user);
+
+	if (username) {
+		size_t len = strlen(username);
+		if (len > BEAST_MAX_USERNAME) {
+			LOG_logf(LOG_LEVEL_WARN, PFX,
+				"Username '%s' is too long, not sending any", username);
+			return;
+		} else {
+			strncpy(user, username, len);
+		}
 	}
-	strncpy(user, username, sizeof user);
 }
 
 static void getVersion(struct Version * version)
@@ -146,12 +151,8 @@ static bool sendUsername()
 	if (!*user)
 		return true;
 
-	char tmp[BEAST_MAX_USERNAME];
-	memset(tmp, '\0', sizeof tmp);
-	strncpy(tmp, user, sizeof tmp);
-
 	uint8_t buf[2 + 2 * BEAST_MAX_USERNAME] = { BEAST_SYNC, BEAST_TYPE_USER };
-	size_t len = 2 + BEAST_encode(buf + 2, (uint8_t*)tmp, sizeof tmp);
+	size_t len = 2 + BEAST_encode(buf + 2, (uint8_t*)user, BEAST_MAX_USERNAME);
 
 	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Username '%s'", user);
 
