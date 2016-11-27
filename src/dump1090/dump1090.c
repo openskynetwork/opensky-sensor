@@ -46,11 +46,11 @@ static char username[BEAST_MAX_USERNAME + 1];
 
 static struct CFG_Section cfg =
 {
-	.name = "Ident",
+	.name = "IDENT",
 	.n_opt = 1,
 	.options = {
 		{
-			.name = "user",
+			.name = "Username",
 			.type = CFG_VALUE_TYPE_STRING,
 			.var = &username,
 			.maxlen = BEAST_MAX_USERNAME,
