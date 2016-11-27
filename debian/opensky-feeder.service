@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenSky Daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/openskyd-dump1090
+Restart=always
+RestartSec=5
+User=openskyd
+Group=openskyd
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Debconf::Client::ConfModule ':all';
+use Tie::IxHash;
+
+# make hash order preserving
+tie my %cfg, 'Tie::IxHash';
+%cfg = (latitude => {range => 90}, longitude => {range => 180},
+	altitude => {check => 1}, username => {});
+
+version '2.0';
+settitle 'openskyd/title';
+
+# reset all wrong values
+reset "openskyd/$_" foreach (grep { !&check($_) } keys %cfg);
+
+# ask all values
+beginblock();
+input(high => "openskyd/$_") foreach keys %cfg;
+endblock();
+go();
+
+# check if it's a rational number
+sub checkRational {
+	my $v = shift;
+	return 0 unless defined $v;
+	return 0 if $v eq "";
+	return 0 unless $v=~/^([+-]?)(?=\d|\.\d)\d*(\.\d*)?$/;
+	return 1;
+}
+
+sub check {
+	my $k = shift;
+	
+	# get value
+	my ($rc, $val) = get "openskyd/$k";
+	
+	if (exists($cfg{$k}->{range}) || (exists($cfg{$k}->{check}) && $cfg{$k}->{check})) {
+		# intended to be a rational number, check range
+		return 0 unless &checkRational($val);
+		return 0 if exists($cfg{$k}->{range}) &&
+			($val < -$cfg{$k}->{range} || $val > $cfg{$k}->{range});
+	}
+	return 1;
+}
+
+# get and check values, ask again the failing ones, until all values pass
+while (1) {
+	my @nok = grep { !&check($_); } keys %cfg;
+	if (@nok) {
+		# some values failed the test, display message and ask again
+		reset $_ foreach (@nok);
+		beginblock();
+		foreach (@nok) {
+			input(high => "openskyd/${_}format");
+			input(high => "openskyd/$_");
+		}
+		endblock();
+		go();
+	} else {
+		# done
+		last;
+	}
+}
+

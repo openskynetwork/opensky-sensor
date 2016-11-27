@@ -1,0 +1,10 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: openskyd
+Source: http://www.opensky-network.org
+
+Files: *
+Copyright: 2015-2016 Markus Engel <engel@opensky-network.org>
+License: No License
+ No redistribution or modification allowed.
+ .
+

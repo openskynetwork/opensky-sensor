@@ -1,0 +1,43 @@
+Template: openskyd/latitude
+Type: string
+Description: Latitude:
+ .
+ Enter the latitude of the antenna in the format DD.DDDD
+
+Template: openskyd/longitude
+Type: string
+Description: Longitude:
+ .
+ Enter the longitude of the antenna in the format DDD.DDDD
+
+Template: openskyd/altitude
+Type: string
+Description: Altitude:
+ .
+ Enter the altitude of the antenna in meters
+
+Template: openskyd/username
+Type: string
+Description: OpenSky Network Username:
+ .
+ Enter your username at the OpenSky Network.
+ .
+ Leave blank if you haven't registered yet.
+ You can change it, if you decide to register.
+
+Template: openskyd/title
+Type: title
+Description: OpenSky Feeder
+
+Template: openskyd/latitudeformat
+Type: error
+Description: Latitude must be given in format DD.DDDD and must be within +/- 90 degrees
+
+Template: openskyd/longitudeformat
+Type: error
+Description: Longitude must be given in format DDD.DDDD and must be within +/- 180 degrees
+
+Template: openskyd/altitudeformat
+Type: error
+Description: Altitude must be given as number in meters
+

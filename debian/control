@@ -2,11 +2,11 @@ Source: openskyd
 Section: custom
 Priority: optional
 Maintainer: OpenSky Network <contact@opensky-network.org>
-Build-Depends: debhelper (>= 9), autotools-dev, pkg-config
+Build-Depends: debhelper (>= 9), autotools-dev, pkg-config, dh-systemd
 Standards-Version: 3.9.6
 Homepage: http://opensky-network.org
 
-Package: openskyd
-Architecture: armhf
-Depends: ${shlibs:Depends}, ${misc:Depends}, radarcaped
-Description: OpenSky Daemon for client mode
+Package: opensky-feeder
+Architecture: any
+Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, adduser (>= 3.11), libtie-ixhash-perl
+Description: OpenSky Feeder
