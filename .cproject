@@ -14,7 +14,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.base.672002806" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
+				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.base.672002806" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.672002806.72070667" name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1987744206" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.304864246" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
@@ -128,8 +128,8 @@
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
-		<cconfiguration id="cdt.managedbuild.toolchain.gnu.base.672002806.794800620">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.base.672002806.794800620" moduleId="org.eclipse.cdt.core.settings" name="Restruct">
+		<cconfiguration id="cdt.managedbuild.toolchain.gnu.base.672002806.670643090">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.base.672002806.670643090" moduleId="org.eclipse.cdt.core.settings" name="Fast">
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
@@ -141,51 +141,51 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.base.672002806.794800620" name="Restruct" parent="org.eclipse.cdt.build.core.emptycfg">
-					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.672002806.794800620." name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1023251433" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.377720581" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder buildPath="${workspace_loc:/opensky-sensor/build/src}" id="cdt.managedbuild.target.gnu.builder.base.1526242294" incrementalBuildTarget="openskyd_rc-gpio.o" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1036680497" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1515737428" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
-								<option id="gnu.cpp.compiler.option.preprocessor.def.1696874230" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
+				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.base.672002806.670643090" name="Fast" parent="org.eclipse.cdt.build.core.emptycfg">
+					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.672002806.670643090." name="/" resourcePath="">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1536363889" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.730357273" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
+							<builder buildPath="${workspace_loc:/opensky-sensor/build}" id="cdt.managedbuild.target.gnu.builder.base.590334899" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="5" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.2117800598" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1302535960" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1289175999" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_CONFIG_H=1"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.include.paths.1703107245" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+								<option id="gnu.cpp.compiler.option.include.paths.3613074" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/opensky-sensor/build}&quot;"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.205998226" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.610297333" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.793059893" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.116979390" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1440511395" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1808647276" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_Atomic=/**/"/>
 									<listOptionValue builtIn="false" value="__extension__=/**/"/>
 									<listOptionValue builtIn="false" value="&quot;__auto_type=void *&quot;"/>
 									<listOptionValue builtIn="false" value="ECLIPSE=1"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIG_H=1"/>
 								</option>
-								<option id="gnu.c.compiler.option.include.paths.51014952" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+								<option id="gnu.c.compiler.option.include.paths.905030138" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/opensky-sensor/build}&quot;"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.61847569" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.500743909" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.912698050" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base">
-								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.2105887049" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.168213284" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base">
+								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1634913949" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
 								</inputType>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.815914375" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.563408327" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.1202566293" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.237209298" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
 								</inputType>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1701206188" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
-								<option id="gnu.both.asm.option.include.paths.517452739" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1002476043" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
+								<option id="gnu.both.asm.option.include.paths.121542342" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/opensky-sensor/build}&quot;"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1801767757" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1502354641" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
