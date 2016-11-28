@@ -1,66 +1,87 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
 use strict;
+use warnings;
 use Debconf::Client::ConfModule ':all';
-use Tie::IxHash;
-
-# make hash order preserving
-tie my %cfg, 'Tie::IxHash';
-%cfg = (latitude => {range => 90}, longitude => {range => 180},
-	altitude => {check => 1}, username => {});
 
 version '2.0';
 settitle 'openskyd/title';
 
-# reset all wrong values
-reset "openskyd/$_" foreach (grep { !&check($_) } keys %cfg);
+my $first = 1;
+my @skip;
 
-# ask all values
-beginblock();
-input(high => "openskyd/$_") foreach keys %cfg;
-endblock();
-go();
-
-# check if it's a rational number
-sub checkRational {
-	my $v = shift;
-	return 0 unless defined $v;
-	return 0 if $v eq "";
-	return 0 unless $v=~/^([+-]?)(?=\d|\.\d)\d*(\.\d*)?$/;
-	return 1;
-}
-
-sub check {
-	my $k = shift;
-	
-	# get value
-	my ($rc, $val) = get "openskyd/$k";
-	
-	if (exists($cfg{$k}->{range}) || (exists($cfg{$k}->{check}) && $cfg{$k}->{check})) {
-		# intended to be a rational number, check range
-		return 0 unless &checkRational($val);
-		return 0 if exists($cfg{$k}->{range}) &&
-			($val < -$cfg{$k}->{range} || $val > $cfg{$k}->{range});
-	}
-	return 1;
-}
-
-# get and check values, ask again the failing ones, until all values pass
 while (1) {
-	my @nok = grep { !&check($_); } keys %cfg;
-	if (@nok) {
-		# some values failed the test, display message and ask again
-		reset $_ foreach (@nok);
-		beginblock();
-		foreach (@nok) {
-			input(high => "openskyd/${_}format");
-			input(high => "openskyd/$_");
-		}
-		endblock();
-		go();
-	} else {
-		# done
-		last;
+	my @fail = (
+		check(critical => 'latitude', (\&notempty, \&rational, &gen_range(-90, 90))),
+		check(critical => 'longitude', (\&notempty, \&rational, &gen_range(-180, 180))),
+		check(critical => 'altitude', (\&notempty, \&rational)),
+		check(high => 'username'),
+		check(high => 'port', (\&integer, &gen_range(1, 65535))),
+		check(high => 'host'),
+	);
+	
+	last unless @fail;
+
+	do { reset "openskyd/$_->{template}" foreach(@fail); } unless $first;
+	beginblock();
+	do { input high => "openskyd/$_->{template}format" foreach (@fail) }
+		unless $first;
+	input $_->{priority} => "openskyd/$_->{template}" foreach (@fail);
+	endblock();
+	go();
+
+	$first = 0;
+}
+
+# check if value is not empty
+sub notempty {
+	my (undef, $val) = @_;
+	$val ne '';
+}
+
+# check if value is a rational number
+sub rational {
+	my (undef, $val) = @_;
+	return 1 if $val eq '';
+	return 0 unless $val=~/^([+-]?)(?=\d|\.\d)\d*(\.\d*)?$/;
+	return 1;
+}
+
+# check if value is an integer
+sub integer {
+	my (undef, $val) = @_;
+	return 1 if $val eq '';
+	return 0 unless $val=~/^\d+$/;
+	return 1;
+}
+
+# generate a function which checks the range
+sub gen_range {
+	my ($min, $max) = @_;
+	return sub {
+		my (undef, $val) = @_;
+		return 1 if $val eq '';
+		(!defined $min || $val >= $min) && 
+			(!defined $max || $val <= $max);
 	}
+}
+
+# get value for a key, check some predicates
+sub check {
+	my ($priority, $key, @predicates) = @_;
+
+	my $ret = { priority => $priority, template => $key };
+	
+	return $ret if $first;
+
+	# get value
+	my ($rc, $val) = get "openskyd/$key";
+
+	return $ret unless defined $val;
+
+	foreach my $p (@predicates) {
+		&$p($key, $val) || return $ret;
+	}
+	();
 }
 

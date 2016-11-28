@@ -33,10 +33,22 @@ case "$1" in
 	LONG=""
 	ALT=""
 	USER=""
+	PORT=""
+	HOST=""
 	db_get openskyd/latitude && LAT="$RET"
 	db_get openskyd/longitude && LONG="$RET"
 	db_get openskyd/altitude && ALT="$RET"
 	db_get openskyd/username && USER="$RET"
+	db_get openskyd/port && PORT="$RET"
+	db_get openskyd/host && HOST="$RET"
+	
+	if [ -z "$PORT" ]; then
+		PORT="30005"
+	fi
+	
+	if [ -z "$HOST" ]; then
+		HOST="localhost"
+	fi
 
 	echo "[GPS]" > $DAEMON_HOME/conf.d/10-debconf.conf
 	echo "Latitude=$LAT" >> $DAEMON_HOME/conf.d/10-debconf.conf
@@ -44,8 +56,11 @@ case "$1" in
 	echo "Altitude=$ALT" >> $DAEMON_HOME/conf.d/10-debconf.conf
 	echo >> $DAEMON_HOME/conf.d/10-debconf.conf
 	echo "[IDENT]" >> $DAEMON_HOME/conf.d/10-debconf.conf
-	
 	echo "Username=$USER" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "[INPUT]" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "Host=$HOST" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "Port=$PORT" >> $DAEMON_HOME/conf.d/10-debconf.conf
 
 	if ! dpkg-statoverride --list $DAEMON_HOME >/dev/null; then
 		chown -R $DAEMON_USER:adm $DAEMON_HOME
@@ -56,6 +71,7 @@ case "$1" in
 	if [ -n "$USER" ]; then
 		echo "Your Username has been set to $USER"
 	fi
+	echo "Dump1090 host has been set to $HOST:$PORT"
 	
 	if [ -z "$DEBCONF_RECONFIGURE" ] ; then
 		echo "Run 'dpkg-reconfigure opensky-feeder' if you wish to change it."

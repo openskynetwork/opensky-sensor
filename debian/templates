@@ -4,6 +4,14 @@ Description: Latitude:
  .
  Enter the latitude of the antenna in the format DD.DDDD
 
+Template: openskyd/latitudeformat
+Type: error
+Description: Latitude must be given in format DD.DDDD and must be within +/- 90 degrees
+
+Template: openskyd/longitudeformat
+Type: error
+Description: Longitude must be given in format DDD.DDDD and must be within +/- 180 degrees
+
 Template: openskyd/longitude
 Type: string
 Description: Longitude:
@@ -16,6 +24,10 @@ Description: Altitude:
  .
  Enter the altitude of the antenna in meters
 
+Template: openskyd/altitudeformat
+Type: error
+Description: Altitude must be given as number in meters
+
 Template: openskyd/username
 Type: string
 Description: OpenSky Network Username:
@@ -23,21 +35,27 @@ Description: OpenSky Network Username:
  Enter your username at the OpenSky Network.
  .
  Leave blank if you haven't registered yet.
- You can change it, if you decide to register.
+ You can change it later, if you decide to register.
+
+Template: openskyd/port
+Type: string
+Default: 30005
+Description: Dump1090 Feeder Port:
+ .
+ Enter the port of the beast output of dump1090 (use 30005 if in doubt).
+
+Template: openskyd/portformat
+Type: error
+Description: Port must be given as a valid port number.
+
+Template: openskyd/host
+Type: string
+Default: localhost
+Description: Dump1090 Feeder Host:
+ .
+ Enter the host of the beast output of dump1090 (use localhost if in doubt).
 
 Template: openskyd/title
 Type: title
 Description: OpenSky Feeder
-
-Template: openskyd/latitudeformat
-Type: error
-Description: Latitude must be given in format DD.DDDD and must be within +/- 90 degrees
-
-Template: openskyd/longitudeformat
-Type: error
-Description: Longitude must be given in format DDD.DDDD and must be within +/- 180 degrees
-
-Template: openskyd/altitudeformat
-Type: error
-Description: Altitude must be given as number in meters
 
