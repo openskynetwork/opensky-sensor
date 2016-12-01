@@ -82,10 +82,8 @@ enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 
 		/* got a new serial number -> save it */
 		if (!CFG_writeSection(LOCALSTATEDIR "/conf.d/10-serial.conf", &cfg)) {
-			LOG_log(LOG_LEVEL_ERROR, PFX, "Could not write serial number, "
+			LOG_log(LOG_LEVEL_EMERG, PFX, "Could not write serial number, "
 				"refusing to work");
-			/* TODO: emergency */
-			LOG_log(LOG_LEVEL_EMERG, PFX, "This should be fixed");
 		}
 	}
 	*serial = serialNumber;

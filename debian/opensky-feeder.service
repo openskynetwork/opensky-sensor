@@ -5,8 +5,9 @@ After=network.target
 [Service]
 Type=simple
 ExecStart=/usr/bin/openskyd-dump1090
-Restart=always
-RestartSec=5
+Restart=on-failure
+RestartPreventExitStatus=SIGABRT
+RestartSec=10
 User=openskyd
 Group=openskyd
 

@@ -42,7 +42,7 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 
 	if (unlikely(level == LOG_LEVEL_EMERG)) {
 		LOG_flush();
-		exit(EXIT_FAILURE);
+		abort();
 	}
 }
 
@@ -63,7 +63,7 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 
 	if (unlikely(level == LOG_LEVEL_EMERG)) {
 		LOG_flush();
-		exit(EXIT_FAILURE);
+		abort();
 	}
 }
 
@@ -103,7 +103,7 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 
 	if (unlikely(level == LOG_LEVEL_EMERG)) {
 		LOG_flush();
-		exit(EXIT_FAILURE);
+		abort();
 	}
 }
 
