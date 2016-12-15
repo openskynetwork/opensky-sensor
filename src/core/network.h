@@ -16,6 +16,10 @@ extern "C" {
 
 void NET_waitConnected();
 
+void NET_forceDisconnect();
+
+bool NET_checkConnected();
+
 bool NET_send(const void * buf, size_t len);
 
 ssize_t NET_receive(uint8_t * buf, size_t len);

@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <pthread.h>
+#include <time.h>
+#include <errno.h>
 #include "core/serial.h"
 #include "core/beast.h"
 #include "core/network.h"
@@ -74,8 +76,43 @@ enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 			rc = SERIAL_RETURN_FAIL_NET;
 			goto cleanup;
 		}
-		while (!hasSerial)
-			pthread_cond_wait(&serialReqCond, &serialMutex);
+
+		/* Little hack: we could wait 10 seconds and print our message
+		 * but then we would also have to wait up to 10 seconds to see any
+		 * reconnects. Making this a bit cleaner would also raise complexity,
+		 * but it should be a rare condition here.
+		 */
+
+		struct timespec ts;
+		clock_gettime(CLOCK_REALTIME, &ts);
+		ts.tv_sec += 2;
+
+		uint32_t rounds = 1;
+		while (!hasSerial) {
+			int r = pthread_cond_timedwait(&serialReqCond, &serialMutex, &ts);
+			if (r == ETIMEDOUT) {
+				if (!NET_checkConnected()) {
+					rc = SERIAL_RETURN_FAIL_NET;
+					goto cleanup;
+				}
+				if (rounds == 30) {
+					LOG_log(LOG_LEVEL_WARN, PFX, "No serial number after "
+							"one minute, reconnecting");
+					NET_forceDisconnect();
+					rc = SERIAL_RETURN_FAIL_NET;
+					goto cleanup;
+				} else {
+					if (rounds % 5 == 0)
+						LOG_logf(LOG_LEVEL_WARN, PFX, "No serial number after "
+							"%" PRIu32 " seconds, keep waiting", rounds * 2);
+					++rounds;
+					ts.tv_sec += 2;
+				}
+			} else if (r) {
+				LOG_errno2(LOG_LEVEL_EMERG, r, PFX, "pthread_cond_timedwait "
+					"failed");
+			}
+		}
 
 		LOG_logf(LOG_LEVEL_INFO, PFX, "Got a new serial number: %" PRIu32,
 			serialNumber);

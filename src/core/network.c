@@ -236,7 +236,7 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 #endif
 
 	if (connState == CONN_STATE_CONNECTED) {
-		/* we were connected */
+		/* we are / were connected */
 		if (transState == TRANSIT_NONE) {
 			/* we were normally connected -> we have a new leader */
 			/* shutdown the socket (but leave it open, so the follower can
@@ -315,6 +315,25 @@ static bool trySend(const void * buf, size_t len)
 	++STAT_stats.NET_msgsSent;
 
 	return true;
+}
+
+void NET_forceDisconnect()
+{
+	emitDisconnect(EMIT_BY_SEND);
+}
+
+bool NET_checkConnected()
+{
+	pthread_mutex_lock(&mutex);
+	bool emit = connState != CONN_STATE_CONNECTED ||
+		transState == TRANSIT_SEND;
+	pthread_mutex_unlock(&mutex);
+	if (emit) {
+		emitDisconnect(EMIT_BY_SEND);
+		return false;
+	} else {
+		return true;
+	}
 }
 
 bool NET_send(const void * buf, size_t len)
