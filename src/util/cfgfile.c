@@ -62,7 +62,7 @@ static void assignOptionFromDefault(const struct CFG_Option * opt);
 void CFG_registerSection(const struct CFG_Section * section)
 {
 	struct CFG_Section const ** newSections =
-		realloc(sections, (n_sections + 1) * sizeof(sections));
+		realloc(sections, (n_sections + 1) * sizeof(*sections));
 	if (newSections == NULL)
 		LOG_errno(LOG_LEVEL_EMERG, PFX, "malloc failed");
 	sections = newSections;
