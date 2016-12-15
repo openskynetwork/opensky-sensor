@@ -12,15 +12,12 @@
 extern "C" {
 #endif
 
-extern bool BUF_cfgHistory;
-
 extern const struct Component BUF_comp;
 
 void BUF_flush();
+void BUF_flushUnlessHistoryEnabled();
 
 void BUF_runGC();
-
-void BUF_fillStatistics();
 
 struct OPENSKY_RawFrame * BUF_newFrame();
 void BUF_commitFrame(struct OPENSKY_RawFrame * frame);

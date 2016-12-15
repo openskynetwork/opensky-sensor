@@ -91,7 +91,7 @@ static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 static uint32_t cfgStatBacklog;
 static uint32_t cfgDynBacklog;
 static uint32_t cfgDynIncrement;
-bool BUF_cfgHistory;
+static bool cfgHistory;
 static bool cfgGC;
 static uint32_t cfgGCInterval;
 static uint32_t cfgGCLevel;
@@ -134,7 +134,7 @@ static const struct CFG_Section cfg = {
 		{
 			.name = "History",
 			.type = CFG_VALUE_TYPE_BOOL,
-			.var = &BUF_cfgHistory,
+			.var = &cfgHistory,
 			.def = { .boolean = false }
 		},
 		{
@@ -176,7 +176,7 @@ static void cfgFix(const struct CFG_Section * sect)
 		LOG_log(LOG_LEVEL_WARN, PFX, "BUFFER.staticBacklog was increased to 2");
 	}
 
-	if (cfgGC && !BUF_cfgHistory) {
+	if (cfgGC && !cfgHistory) {
 		cfgGC = false;
 		LOG_log(LOG_LEVEL_WARN, PFX, "Ignoring BUFFER.GC because "
 			"BUFFER.history is not enabled");
@@ -270,16 +270,13 @@ void BUF_flush()
 	append(&pool, &queue);
 	clear(&queue);
 	pthread_mutex_unlock(&mutex);
-	++STAT_stats.BUF_flushes;
+	++stats.flushes;
 }
 
-/** Fill missing statistics */
-void BUF_fillStatistics()
+void BUF_flushUnlessHistoryEnabled()
 {
-	STAT_stats.BUF_pools = dynIncrements;
-	STAT_stats.BUF_queue = queue.size;
-	STAT_stats.BUF_pool = pool.size;
-	STAT_stats.BUF_sacrificeMax = overCapacityMax;
+	if (!cfgHistory)
+		BUF_flush();
 }
 
 /** Get a new frame from the pool. Extend the pool if there are more dynamic

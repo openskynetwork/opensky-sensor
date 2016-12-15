@@ -68,8 +68,7 @@ static void mainloop()
 		if (unlikely(!LOGIN_login()))
 			continue;
 
-		if (!BUF_cfgHistory) /* flush buffer if history is disabled */
-			BUF_flush();
+		BUF_flushUnlessHistoryEnabled();
 
 		bool success;
 		do {
