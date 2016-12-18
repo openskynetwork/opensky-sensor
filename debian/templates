@@ -2,31 +2,31 @@ Template: openskyd/latitude
 Type: string
 Description: Latitude:
  .
- Enter the latitude of the antenna in the format DD.DDDD
+ Enter the latitude of the antenna in the format +/-DD.DDDD (4 decimal places)
 
 Template: openskyd/latitudeformat
 Type: error
-Description: Latitude must be given in format DD.DDDD and must be within +/- 90 degrees
-
-Template: openskyd/longitudeformat
-Type: error
-Description: Longitude must be given in format DDD.DDDD and must be within +/- 180 degrees
+Description: Latitude must be given in format +/-DD.DDDD and must be within +/- 90 degrees
 
 Template: openskyd/longitude
 Type: string
 Description: Longitude:
  .
- Enter the longitude of the antenna in the format DDD.DDDD
+ Enter the longitude of the antenna in the format +/-DDD.DDDD (4 decimal places)
+
+Template: openskyd/longitudeformat
+Type: error
+Description: Longitude must be given in format +/-DDD.DDDD and must be within +/- 180 degrees
 
 Template: openskyd/altitude
 Type: string
 Description: Altitude:
  .
- Enter the altitude of the antenna in meters
+ Enter the altitude of the antenna in meters above sealevel
 
 Template: openskyd/altitudeformat
 Type: error
-Description: Altitude must be given as number in meters
+Description: Altitude must be given as number in meters above sealevel
 
 Template: openskyd/username
 Type: string
@@ -37,12 +37,18 @@ Description: OpenSky Network Username:
  Leave blank if you haven't registered yet.
  You can change it later, if you decide to register.
 
+Template: openskyd/usernameformat
+Type: error
+Description: This feeder only allows usernames up to length of 40 characters.
+ Use a shorter name, or leave this field blank for now and send an email to
+ <contact@opensky-network.org>.
+
 Template: openskyd/port
 Type: string
 Default: 30005
 Description: Dump1090 Feeder Port:
  .
- Enter the port of the beast output of dump1090 (use 30005 if in doubt).
+ Enter the port of the beast output of dump1090 (use default port 30005 if in doubt).
 
 Template: openskyd/portformat
 Type: error
@@ -53,7 +59,7 @@ Type: string
 Default: localhost
 Description: Dump1090 Feeder Host:
  .
- Enter the host of the beast output of dump1090 (use localhost if in doubt).
+ Enter the host of the beast output of dump1090 (use 'localhost' if dump1090 runs on the same device).
 
 Template: openskyd/title
 Type: title
