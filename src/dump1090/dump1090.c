@@ -26,6 +26,7 @@
 #include "core/login.h"
 #include "core/serial.h"
 #include "core/beast.h"
+#include "core/filter.h"
 #include "util/cfgfile.h"
 #include "util/statistics.h"
 #include "util/log.h"
@@ -105,7 +106,7 @@ int main(int argc, char * argv[])
 	/* read & check configuration */
 	CFG_loadDefaults();
 	CFG_setPort("INPUT", "Port", 30005);
-	// TODO: test, test, test
+	FILTER_setSynchronizedFilter(false);
 	bool cfgVar = CFG_readDirectory(LOCALSTATEDIR "/conf.d", true, true, true,
 		false);
 	bool cfgEtc = CFG_readDirectory(SYSCONFDIR "/conf.d", true, true, true,
