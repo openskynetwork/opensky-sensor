@@ -9,4 +9,4 @@ Homepage: http://opensky-network.org
 Package: opensky-feeder
 Architecture: any
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, adduser (>= 3.11)
-Description: OpenSky Feeder
+Description: Feed ADSB frames received from dump1090 into the OpenSky Network
