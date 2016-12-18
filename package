@@ -5,6 +5,6 @@ set -e
 git clean -dxi
 ./bootstrap
 ./configure --disable-dependency-tracking
-make distcheck DISTCHECK_CONFIGURE_FLAGS=--disable-dependency-tracking
+make distcheck DISTCHECK_CONFIGURE_FLAGS="--disable-dependency-tracking --enable-radarcape-standalone --enable-radarcape-network --enable-radarcape-dummy --enable-watchdog-daemon --enable-radarcape-library --enable-radarcape-library-examples --enable-dump1090 --with-check"
 make distclean
 
