@@ -8,5 +8,5 @@ Homepage: http://opensky-network.org
 
 Package: opensky-feeder
 Architecture: any
-Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, adduser (>= 3.11), libtie-ixhash-perl
+Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, adduser (>= 3.11)
 Description: OpenSky Feeder
