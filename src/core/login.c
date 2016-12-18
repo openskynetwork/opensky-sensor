@@ -151,10 +151,17 @@ static bool sendUsername()
 	if (!*user)
 		return true;
 
+	size_t ulen = strlen(user);
+	if (ulen > BEAST_MAX_USERNAME) {
+		LOG_logf(LOG_LEVEL_WARN, PFX, "Username '%s' will be truncated to %u "
+			"characters", user, BEAST_MAX_USERNAME);
+	}
+
 	uint8_t buf[2 + 2 * BEAST_MAX_USERNAME] = { BEAST_SYNC, BEAST_TYPE_USER };
 	size_t len = 2 + BEAST_encode(buf + 2, (uint8_t*)user, BEAST_MAX_USERNAME);
 
-	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Username '%s'", user);
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Username '%.*s'", BEAST_MAX_USERNAME,
+		user);
 
 	return NET_send(buf, len);
 }
