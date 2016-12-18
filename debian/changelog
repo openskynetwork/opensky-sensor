@@ -1,8 +1,8 @@
-openskyd (2.0.0-1) UNRELEASED; urgency=medium
+openskyd (2.0.0-1) stable; urgency=medium
 
   * Dump1090 feeder
 
- -- debian <debian@debian>  Sun, 27 Nov 2016 17:44:00 +0100
+ -- Markus Engel <engel@opensky-network.org>  Sun, 18 Dec 2016 14:09:20 +0100
 
 openskyd (1.1.1-1) stable; urgency=medium
 
