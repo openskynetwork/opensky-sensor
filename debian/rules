@@ -31,3 +31,4 @@ override_dh_auto_install:
 	dh_auto_install
 	rm debian/opensky-feeder/etc/openskyd.conf
 	mkdir -p debian/opensky-feeder/etc/openskyd/conf.d
+	mkdir -p debian/opensky-feeder/etc/openskyd/conf.d
