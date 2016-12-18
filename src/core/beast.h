@@ -38,7 +38,7 @@ enum BEAST_DEVICE_TYPE {
 	BEAST_DEVICE_TYPE_FEEDER = 5,
 };
 
-#define BEAST_MAX_USERNAME 20
+#define BEAST_MAX_USERNAME 40
 
 size_t BEAST_encode(uint8_t * __restrict out, const uint8_t * __restrict in,
 	size_t len);
