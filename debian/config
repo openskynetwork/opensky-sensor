@@ -15,7 +15,7 @@ while (1) {
 		check(critical => 'latitude', (\&notempty, \&rational, &gen_range(-90, 90))),
 		check(critical => 'longitude', (\&notempty, \&rational, &gen_range(-180, 180))),
 		check(critical => 'altitude', (\&notempty, \&rational)),
-		check(high => 'username'),
+		check(high => 'username', (&gen_length(40))),
 		check(high => 'port', (\&integer, &gen_range(1, 65535))),
 		check(high => 'host'),
 	);
@@ -63,6 +63,15 @@ sub gen_range {
 		return 1 if $val eq '';
 		(!defined $min || $val >= $min) && 
 			(!defined $max || $val <= $max);
+	}
+}
+
+# generate a function which checks the string length
+sub gen_length {
+	my ($len) = @_;
+	return sub {
+		my (undef, $val) = @_;
+		return !!(length($val) <= $len);
 	}
 }
 
