@@ -15,6 +15,7 @@
 #include "log.h"
 #include "cfgfile.h"
 #include "util.h"
+#include "list.h"
 
 static const char PFX[] = "COMP";
 
@@ -28,18 +29,17 @@ struct ComponentI {
 	const struct Component * comp;
 	pthread_t thread;
 	enum COMPONENT_STATE state;
-	struct ComponentI * next;
-	struct ComponentI * prev;
+	struct LIST_LinkD list;
 };
 
 /** List of all components */
-static struct ComponentI * head = NULL, * tail = NULL;
+static struct LIST_ListD components = LIST_ListD_INIT(components);
 
 static bool exists(const struct Component * comp);
 static void stop(struct ComponentI * c, bool deferred);
 static void destruct(struct ComponentI * ci);
 static void stopUntil(struct ComponentI * end);
-static void destructUntil(const struct ComponentI * end);
+static void destructUntil(struct ComponentI * end);
 static bool startThreaded(struct ComponentI * ci);
 static bool stopThreaded(const struct ComponentI * ci, bool deferred);
 
@@ -70,13 +70,7 @@ void COMP_register(const struct Component * comp)
 		LOG_errno(LOG_LEVEL_EMERG, PFX, "malloc failed");
 	ci->comp = comp;
 	ci->state = COMPONENT_STATE_REGISTERED;
-	ci->next = NULL;
-	if (head == NULL)
-		head = ci;
-	else
-		tail->next = ci;
-	ci->prev = tail;
-	tail = ci;
+	LIST_push(&components, LIST_link(ci, list));
 
 #if 0
 	LOG_logf(LOG_LEVEL_INFO, PFX, "Registered Component %s with config: %d and "
@@ -91,19 +85,19 @@ void COMP_register(const struct Component * comp)
 
 void COMP_unregisterAll()
 {
-	struct ComponentI * ci, * next;
-	for (ci = head; ci; ci = next) {
-		next = ci->next;
+	struct LIST_LinkD * l, * n;
+	LIST_foreachSafe(&components, l, n) {
+		struct ComponentI * ci = LIST_item(l, struct ComponentI, list);
 		assert(ci->state == COMPONENT_STATE_REGISTERED);
 		free(ci);
 	}
-	head = tail = NULL;
+	LIST_init(&components);
 }
 
 static bool exists(const struct Component * comp)
 {
 	struct ComponentI * ci;
-	for (ci = head; ci; ci = ci->next)
+	LIST_foreachItem(&components, ci, list)
 		if (ci->comp == comp)
 			return true;
 	return false;
@@ -113,7 +107,7 @@ static void fixDependencies()
 {
 	struct ComponentI * ci;
 	struct Component const * const * dp;
-	for (ci = head; ci; ci = ci->next)
+	LIST_foreachItem(&components, ci, list)
 		for (dp = ci->comp->dependencies; *dp; ++dp)
 			if (!exists(*dp))
 				COMP_register(*dp);
@@ -123,7 +117,7 @@ static void checkEnabledDependencies()
 {
 	struct ComponentI * ci;
 	struct Component const * const * dp;
-	for (ci = head; ci; ci = ci->next)
+	LIST_foreachItem(&components, ci, list)
 		if (!ci->comp->enabled || *ci->comp->enabled)
 			for (dp = ci->comp->dependencies; *dp; ++dp)
 				if ((*dp)->enabled && !*(*dp)->enabled)
@@ -143,33 +137,21 @@ static bool allDependencies(const struct Component * c)
 
 static void sequentialize()
 {
-	struct ComponentI * oldHead = head;
+	struct LIST_ListD newList = LIST_ListD_INIT(newList);
 
-	head = tail = NULL;
+	LIST_concatenatePush(&newList, &components);
 
-	while (oldHead) {
-		struct ComponentI * ci;
-		for (ci = oldHead; ci; ci = ci->next) {
+	while (!LIST_empty(&newList)) {
+		struct LIST_LinkD * l, * n;
+		LIST_foreachSafe(&newList, l, n) {
+			struct ComponentI * ci = LIST_item(l, struct ComponentI, list);
 			if (allDependencies(ci->comp)) {
-				if (ci == oldHead)
-					oldHead = oldHead->next;
-
-				if (ci->prev)
-					ci->prev->next = ci->next;
-				if (ci->next)
-					ci->next->prev = ci->prev;
-
-				ci->next = NULL;
-				if (head == NULL)
-					head = ci;
-				else
-					tail->next = ci;
-				ci->prev = tail;
-				tail = ci;
+				LIST_unlink(&newList, l);
+				LIST_push(&components, l);
 				break;
 			}
 		}
-		if (ci == NULL)
+		if (l == LIST_end(&newList))
 			LOG_log(LOG_LEVEL_EMERG, PFX, "Cycle in dependencies detected");
 	}
 }
@@ -186,7 +168,7 @@ bool COMP_initAll()
 
 	checkEnabledDependencies();
 
-	for (ci = head; ci; ci = ci->next) {
+	LIST_foreachItem(&components, ci, list) {
 		const struct Component * c = ci->comp;
 
 		assert(ci->state == COMPONENT_STATE_REGISTERED);
@@ -213,7 +195,7 @@ bool COMP_initAll()
 void COMP_destructAll()
 {
 	struct ComponentI * ci;
-	for (ci = tail; ci; ci = ci->prev)
+	LIST_foreachItemRev(&components, ci, list)
 		destruct(ci);
 }
 
@@ -224,7 +206,7 @@ void COMP_destructAll()
 bool COMP_startAll()
 {
 	struct ComponentI * ci;
-	for (ci = head; ci; ci = ci->next) {
+	LIST_foreachItem(&components, ci, list) {
 		if (ci->state != COMPONENT_STATE_INITIALIZED)
 			continue;
 
@@ -281,14 +263,16 @@ static void stop(struct ComponentI * ci, bool deferred)
 		ci->state = COMPONENT_STATE_INITIALIZED;
 }
 
-/** Stop all components in reverse order, starting at a specific component.
- * @param tail first component to be stopped.
+/** Stop components up to a specific component. This is useful, if starting
+ * failed a specific component c. Then all components up to c (except c)
+ * should be stopped in reverse order.
+ * @param end the first component NOT to be stopped
  */
-void stopAll(struct ComponentI * tail)
+static void stopUntil(struct ComponentI * end)
 {
-	struct ComponentI * ci;
+	struct ComponentI * ci = end;
 	bool deferred = false;
-	for (ci = tail; ci; ci = ci->prev) {
+	LIST_foreachItemRev_continue(&components, ci, list) {
 		stop(ci, false);
 		deferred |= ci->state == COMPONENT_STATE_STARTED;
 	}
@@ -299,7 +283,8 @@ void stopAll(struct ComponentI * tail)
 	while (deferred && progress) {
 		progress = false;
 		deferred = false;
-		for (ci = tail; ci; ci = ci->prev) {
+		ci = end;
+		LIST_foreachItemRev_continue(&components, ci, list) {
 			if (ci->state == COMPONENT_STATE_STARTED) {
 				stop(ci, true);
 				progress |= ci->state != COMPONENT_STATE_STARTED;
@@ -311,10 +296,11 @@ void stopAll(struct ComponentI * tail)
 		/* there are still some components which could not be stopped */
 		char buffer[1000];
 		char * buf = buffer;
-		char * const end = buffer + sizeof(buffer) - 1;
-		for (ci = tail; ci && buf < end; ci = ci->prev) {
+		char * const bend = buffer + sizeof(buffer) - 1;
+		ci = end;
+		LIST_foreachItemRev_continue(&components, ci, list) {
 			if (ci->state == COMPONENT_STATE_STARTED) {
-				size_t len = MIN(strlen(ci->comp->description), end - buf);
+				size_t len = MIN(strlen(ci->comp->description), bend - buf);
 				memcpy(buf, ci->comp->description, len);
 				buf += len;
 				*(buf++) = ' ';
@@ -332,17 +318,7 @@ void stopAll(struct ComponentI * tail)
 /** Stop all components. */
 void COMP_stopAll()
 {
-	stopAll(tail);
-}
-
-/** Stop components up to a specific component. This is useful, if starting
- * failed a specific component c. Then all components up to c (except c)
- * should be stopped in reverse order.
- * @param end the first component NOT to be stopped
- */
-static void stopUntil(struct ComponentI * end)
-{
-	stopAll(end->prev);
+	stopUntil(LIST_item(LIST_end(&components), struct ComponentI, list));
 }
 
 /** Start a component using a thread.
@@ -419,17 +395,17 @@ static void destruct(struct ComponentI * ci)
 	ci->state = COMPONENT_STATE_REGISTERED;
 }
 
-static void destructUntil(const struct ComponentI * end)
+static void destructUntil(struct ComponentI * end)
 {
-	struct ComponentI * ci;
-	for (ci = end->prev; ci; ci = ci->prev)
+	struct ComponentI * ci = end;
+	LIST_foreachItemRev_continue(&components, ci, list)
 		destruct(ci);
 }
 
 void COMP_resetAll()
 {
 	struct ComponentI * ci;
-	for (ci = head; ci; ci = ci->next)
+	LIST_foreachItem(&components, ci, list)
 		if (ci->comp->onReset)
 			ci->comp->onReset();
 }
