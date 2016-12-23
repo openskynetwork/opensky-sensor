@@ -136,6 +136,7 @@ END_TEST
 
 START_TEST(test_start_stop)
 {
+	OpenSky::init();
 	OpenSky::configure();
 	OpenSky::enable();
 	usleep(100);
