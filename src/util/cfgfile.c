@@ -23,13 +23,18 @@
 #include "log.h"
 #include "cfgfile.h"
 #include "util.h"
+#include "list.h"
 
 static const char PFX[] = "CFG";
 
 //#define DEBUG
 
-static size_t n_sections = 0;
-static struct CFG_Section const ** sections = NULL;
+struct Section {
+	const struct CFG_Section const * section;
+	struct LIST_LinkD list;
+};
+
+static struct LIST_ListD sections = LIST_ListD_INIT(sections);
 
 /** silent options */
 static bool optWarnUnknownSection = true;
@@ -61,11 +66,12 @@ static void assignOptionFromDefault(const struct CFG_Option * opt);
 
 void CFG_registerSection(const struct CFG_Section * section)
 {
-	struct CFG_Section const ** newSections =
-		realloc(sections, (n_sections + 1) * sizeof(*sections));
-	if (newSections == NULL)
+	struct Section * s = malloc(sizeof *s);
+	if (s == NULL)
 		LOG_errno(LOG_LEVEL_EMERG, PFX, "malloc failed");
-	sections = newSections;
+
+	s->section = section;
+	LIST_push(&sections, &s->list);
 #ifdef DEBUG
 	LOG_logf(LOG_LEVEL_INFO, PFX, "Registered Section %s with %d options",
 		section->name, section->n_opt);
@@ -82,14 +88,14 @@ void CFG_registerSection(const struct CFG_Section * section)
 		LOG_logf(LOG_LEVEL_INFO, PFX, " - %s: %s", opt->name, types[opt->type]);
 	}
 #endif
-	sections[n_sections++] = section;
 }
 
 void CFG_unregisterAll()
 {
-	free(sections);
-	sections = NULL;
-	n_sections = 0;
+	struct LIST_LinkD * l, * n;
+	LIST_foreachSafe(&sections, l, n)
+		free(LIST_item(l, struct Section, list));
+	LIST_init(&sections);
 }
 
 /** Read a configuration file.
@@ -267,9 +273,9 @@ static enum SECTION_STATE parseSection()
 	const char * const buf = bufferInput + 1;
 
 	/* search section */
-	size_t section;
-	for (section = 0; section < n_sections; ++section)
-		if (isSame(sections[section]->name, buf, len))
+	const struct Section * s;
+	LIST_foreachItem(&sections, s, list)
+		if (isSame(s->section->name, buf, len))
 			break;
 
 	/* advance parser and return */
@@ -277,7 +283,7 @@ static enum SECTION_STATE parseSection()
 	bufferSize -= len + 3;
 	++bufferLine;
 
-	if (section > n_sections) {
+	if (LIST_link(s, list) == LIST_end(&sections)) {
 		if (optWarnUnknownSection)
 			err(LOG_LEVEL_WARN, "Section %.*s is unknown", (int)len, buf);
 		return SECTION_STATE_UNKNOWN;
@@ -481,9 +487,9 @@ static bool parseOption()
 			++value;
 		size_t valLen = n - value;
 
-		size_t sectidx;
-		for (sectidx = 0; sectidx < n_sections; ++sectidx) {
-			const struct CFG_Section * section = sections[sectidx];
+		const struct Section * s;
+		LIST_foreachItem(&sections, s, list) {
+			const struct CFG_Section * section = s->section;
 			if (isSame(section->name, sectionName, sectionNameLen)) {
 				size_t i;
 				for (i = 0; i < section->n_opt; ++i) {
@@ -502,7 +508,7 @@ static bool parseOption()
 				}
 			}
 		}
-		if (sectidx >= n_sections && optWarnUnknownOption)
+		if (LIST_link(s, list) == LIST_end(&sections) && optWarnUnknownOption)
 			unknownKey(key, keyLen);
 	}
 
@@ -577,24 +583,25 @@ static void assignOptionFromDefault(const struct CFG_Option * opt)
 /** Load default values. */
 void CFG_loadDefaults()
 {
-	size_t sect, i;
-
-	for (sect = 0; sect < n_sections; ++sect)
-		for (i = 0; i < sections[sect]->n_opt; ++i)
-			assignOptionFromDefault(&sections[sect]->options[i]);
+	const struct Section * s;
+	LIST_foreachItem(&sections, s, list) {
+		size_t i;
+		for (i = 0; i < s->section->n_opt; ++i)
+			assignOptionFromDefault(&s->section->options[i]);
+	}
 }
 
 static const struct CFG_Option * getOption(const char * section,
 	const char * option)
 {
-	size_t sect;
-
-	for (sect = 0; sect < n_sections; ++sect) {
-		if (strcasecmp(sections[sect]->name, section))
+	const struct Section * s;
+	LIST_foreachItem(&sections, s, list) {
+		const struct CFG_Section * sect = s->section;
+		if (strcasecmp(sect->name, section))
 			continue;
 		size_t i;
-		for (i = 0; i < sections[sect]->n_opt; ++i) {
-			const struct CFG_Option * opt = &sections[sect]->options[i];
+		for (i = 0; i < sect->n_opt; ++i) {
+			const struct CFG_Option * opt = &sect->options[i];
 			if (!strcasecmp(opt->name, option))
 				return opt;
 		}
@@ -653,12 +660,11 @@ void CFG_setDouble(const char * section, const char * option, double value)
 
 static void fix()
 {
-	size_t sect;
-
-	for (sect = 0; sect < n_sections; ++sect) {
-		const struct CFG_Section * section = sections[sect];
-		if (section->fix)
-			section->fix(section);
+	const struct Section * s;
+	LIST_foreachItem(&sections, s, list) {
+		const struct CFG_Section * sect = s->section;
+		if (sect->fix)
+			sect->fix(sect);
 	}
 }
 
@@ -668,13 +674,13 @@ static void fix()
  */
 bool CFG_check()
 {
-	size_t sect;
-
-	for (sect = 0; sect < n_sections; ++sect) {
-		const struct CFG_Section * section = sections[sect];
-		if (section->check && !section->check(section))
+	const struct Section * s;
+	LIST_foreachItem(&sections, s, list) {
+		const struct CFG_Section * sect = s->section;
+		if (sect->check && !sect->check(s->section))
 			return false;
 	}
+
 	return true;
 }
 
@@ -714,15 +720,18 @@ static bool writeOptions(FILE * file, const struct CFG_Section * section)
 static bool writeSections(FILE * file)
 {
 	bool first = true;
-	size_t s;
-	for (s = 0; s < n_sections; ++s) {
-		const struct CFG_Section * sect = sections[s];
-		size_t prev;
-		for (prev = 0; prev < s; ++prev)
-			if (!strcasecmp(sect->name, sections[prev]->name))
+
+	const struct Section * s;
+	LIST_foreachItem(&sections, s, list) {
+		const struct CFG_Section * sect = s->section;
+
+		const struct Section * prev = s;
+		LIST_foreachItemRev_continue(&sections, prev, list)
+			if (!strcasecmp(sect->name, prev->section->name))
 				break;
-		if (prev < s)
+		if (LIST_link(prev, list) != LIST_end(&sections))
 			continue;
+
 		if (!first)
 			if (fprintf(file, "\n\n") < 0)
 				return false;
@@ -732,10 +741,10 @@ static bool writeSections(FILE * file)
 		if (writeOptions(file, sect))
 			return false;
 
-		size_t next;
-		for (next = s + 1; next < n_sections; ++next)
-			if (!strcasecmp(sect->name, sections[next]->name))
-				if (!writeOptions(file, sections[next]))
+		const struct Section * next = s;
+		LIST_foreachItem_continue(&sections, next, list)
+			if (!strcasecmp(sect->name, next->section->name))
+				if (!writeOptions(file, next->section))
 					return false;
 	}
 	return true;
