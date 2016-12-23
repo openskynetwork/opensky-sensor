@@ -18,6 +18,7 @@
 #include "util/cfgfile.h"
 #include "util/threads.h"
 #include "util/util.h"
+#include "util/list.h"
 
 static const char PFX[] = "BUF";
 
@@ -31,34 +32,19 @@ struct Pool;
 struct FrameLink {
 	/** Frame */
 	struct OPENSKY_RawFrame frame;
-	/** Next Element */
-	struct FrameLink * next;
-	/** Previous Element */
-	struct FrameLink * prev;
+	struct LIST_LinkD list;
 	/** Containing pool */
 	struct Pool * pool;
 };
 
-/** Linked List Container */
-struct FrameList {
-	/** Head Pointer or NULL if empty */
-	struct FrameLink * head;
-	/** Tail Pointer or NULL if empty */
-	struct FrameLink * tail;
-	/** Size of list */
-	size_t size;
-};
-
 /** Buffer Pool */
 struct Pool {
-	/** Pool start */
-	struct FrameLink * pool;
-	/** Pool size */
+	struct FrameLink * links;
 	size_t size;
 	/** Linked List: next pool */
-	struct Pool * next;
+	struct LIST_LinkD list;
 	/** Garbage collection: collected frames */
-	struct FrameList collect;
+	struct LIST_ListDC collect;
 };
 
 /** Static Pool (those frames are always allocated in advance) */
@@ -66,15 +52,13 @@ static struct Pool staticPool;
 
 /** Dynamic Pool max. increments */
 static size_t dynMaxIncrements;
-/** Dynamic Pool increments */
-static size_t dynIncrements;
 /** Dynamic Pool List */
-static struct Pool * dynPools;
+static struct LIST_ListDC dynPools;
 
 /** Overall Pool */
-static struct FrameList pool;
+static struct LIST_ListDC pool;
 /** Output Queue */
-static struct FrameList queue;
+static struct LIST_ListDC queue;
 
 /** Currently produced frame, for debugging purposes */
 static struct FrameLink * newFrame;
@@ -189,26 +173,16 @@ static bool createDynPool();
 static void collectPools();
 static bool uncollectPools();
 static void destroyUnusedPools();
-
 static void gc();
-
-static inline struct FrameLink * shift(struct FrameList * list);
-static inline void unshift(struct FrameList * list, struct FrameLink * frame);
-static inline void push(struct FrameList * list, struct FrameLink * frame);
-static inline void append(struct FrameList * dstList,
-	const struct FrameList * srcList);
-static inline void clear(struct FrameList * list);
 
 /** Initialize frame buffer. */
 static bool construct()
 {
-	dynIncrements = 0;
-
 	assert(cfgStatBacklog >= 2);
 
-	dynPools = NULL;
-	clear(&pool);
-	clear(&queue);
+	LIST_init(&dynPools);
+	LIST_init(&pool);
+	LIST_init(&queue);
 
 	newFrame = currentFrame = NULL;
 
@@ -223,13 +197,15 @@ static bool construct()
 
 static void destruct()
 {
-	struct Pool * dyn, * nextDyn;
-	for (dyn = dynPools; dyn; dyn = nextDyn) {
-		nextDyn = dyn->next;
-		free(dyn->pool);
+	struct LIST_LinkD * l, * n;
+	LIST_foreachSafe(&dynPools, l, n) {
+		struct Pool * dyn = LIST_item(l, struct Pool, list);
+		free(dyn->links);
 		free(dyn);
 	}
-	free(staticPool.pool);
+	LIST_init(&dynPools);
+
+	free(staticPool.links);
 }
 
 /** Gargabe collector mainloop.
@@ -239,8 +215,8 @@ static void mainloop()
 	while (true) {
 		sleep(cfgGCInterval);
 		pthread_mutex_lock(&mutex);
-		if (queue.size <
-			(dynIncrements * cfgDynBacklog) / cfgGCLevel) {
+		if (LIST_length(&queue) <
+			(LIST_length(&dynPools) * cfgDynBacklog) / cfgGCLevel) {
 			gc();
 		}
 		pthread_mutex_unlock(&mutex);
@@ -268,10 +244,9 @@ static void gc()
 void BUF_flush()
 {
 	pthread_mutex_lock(&mutex);
-	append(&pool, &queue);
-	clear(&queue);
-	pthread_mutex_unlock(&mutex);
+	LIST_concatenatePush(&pool, &queue);
 	++stats.flushes;
+	pthread_mutex_unlock(&mutex);
 }
 
 void BUF_flushUnlessHistoryEnabled()
@@ -288,9 +263,9 @@ static inline struct FrameLink * getFrameFromPool()
 {
 	struct FrameLink * ret;
 
-	if (likely(pool.head)) {
+	if (likely(!LIST_empty(&pool))) {
 		/* pool is not empty -> unlink and return first frame */
-		ret = shift(&pool);
+		ret = LIST_itemSafe(&pool, LIST_shift(&pool), struct FrameLink, list);
 		stats.discardedCur = 0;
 	} else if (uncollectPools()) {
 		/* pool was empty, but we could uncollect a pool which was about to be
@@ -300,15 +275,15 @@ static inline struct FrameLink * getFrameFromPool()
 #endif
 		++stats.uncollectedPools;
 		stats.discardedCur = 0;
-		ret = shift(&pool);
-	} else if (dynIncrements < dynMaxIncrements && createDynPool()) {
+		ret = LIST_itemSafe(&pool, LIST_shift(&pool), struct FrameLink, list);
+	} else if (LIST_length(&dynPools) < dynMaxIncrements && createDynPool()) {
 		/* pool was empty, but we just created another one */
 #ifdef BUF_DEBUG
 		LOG_logf(LOG_LEVEL_DEBUG, PFX, "Created another pool (%zu/%zu)",
-			dynIncrements, dynMaxIncrements);
+			LIST_length(&dynPools), dynMaxPools);
 #endif
 		stats.discardedCur = 0;
-		ret = shift(&pool);
+		ret = LIST_itemSafe(&pool, LIST_shift(&pool), struct FrameLink, list);
 	} else {
 		/* no more space in the pool and no more pools
 		 * -> sacrifice oldest frame */
@@ -319,7 +294,7 @@ static inline struct FrameLink * getFrameFromPool()
 		++stats.discardedAll;
 		if (stats.discardedCur > stats.discardedMax)
 			stats.discardedMax = stats.discardedCur;
-		ret = shift(&queue);
+		ret = LIST_itemSafe(&queue, LIST_shift(&queue), struct FrameLink, list);
 	}
 
 	assert(ret);
@@ -349,11 +324,11 @@ void BUF_commitFrame(struct OPENSKY_RawFrame * frame)
 	assert(&newFrame->frame == frame);
 
 	pthread_mutex_lock(&mutex);
-	push(&queue, newFrame);
+	LIST_push(&queue, LIST_link(newFrame, list));
 	pthread_cond_broadcast(&cond);
 
-	if (unlikely(queue.size > stats.maxQueueSize))
-		stats.maxQueueSize = queue.size;
+	if (unlikely(LIST_length(&queue) > stats.maxQueueSize))
+		stats.maxQueueSize = LIST_length(&queue);
 	pthread_mutex_unlock(&mutex);
 
 	newFrame = NULL;
@@ -368,7 +343,7 @@ void BUF_abortFrame(struct OPENSKY_RawFrame * frame)
 	assert(&newFrame->frame == frame);
 
 	pthread_mutex_lock(&mutex);
-	unshift(&pool, newFrame);
+	LIST_unshift(&pool, LIST_link(newFrame, list));
 	pthread_mutex_unlock(&mutex);
 
 	newFrame = NULL;
@@ -387,12 +362,12 @@ const struct OPENSKY_RawFrame * BUF_getFrame()
 	assert(!currentFrame);
 	CLEANUP_PUSH(&cleanup, NULL);
 	pthread_mutex_lock(&mutex);
-	while (!queue.head) {
+	while (LIST_empty(&queue)) {
 		int r = pthread_cond_wait(&cond, &mutex);
 		if (r)
 			LOG_errno2(LOG_LEVEL_EMERG, r, PFX, "pthread_cond_wait failed");
 	}
-	currentFrame = shift(&queue);
+	currentFrame = LIST_item(LIST_shift(&queue), struct FrameLink, list);
 	CLEANUP_POP();
 	return &currentFrame->frame;
 }
@@ -418,7 +393,7 @@ const struct OPENSKY_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms)
 
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&cleanup, NULL);
-	while (!queue.head) {
+	while (LIST_empty(&queue)) {
 		int r = pthread_cond_timedwait(&cond, &mutex, &ts);
 		if (r == ETIMEDOUT) {
 			ret = NULL;
@@ -428,8 +403,8 @@ const struct OPENSKY_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms)
 				"pthread_cond_timedwait failed");
 		}
 	}
-	if (queue.head) {
-		currentFrame = shift(&queue);
+	if (!LIST_empty(&queue)) {
+		currentFrame = LIST_item(LIST_shift(&queue), struct FrameLink, list);
 		ret = &currentFrame->frame;
 	}
 	CLEANUP_POP();
@@ -449,7 +424,7 @@ void BUF_releaseFrame(const struct OPENSKY_RawFrame * frame)
 	assert(frame == &currentFrame->frame);
 
 	pthread_mutex_lock(&mutex);
-	unshift(&pool, currentFrame);
+	LIST_unshift(&pool, LIST_link(currentFrame, list));
 	currentFrame = NULL;
 	pthread_mutex_unlock(&mutex);
 }
@@ -467,7 +442,7 @@ void BUF_putFrame(const struct OPENSKY_RawFrame * frame)
 	assert(frame == &currentFrame->frame);
 
 	pthread_mutex_lock(&mutex);
-	unshift(&queue, currentFrame);
+	LIST_unshift(&queue, LIST_link(currentFrame, list));
 	currentFrame = NULL;
 	pthread_mutex_unlock(&mutex);
 }
@@ -481,31 +456,22 @@ static bool deployPool(struct Pool * newPool, size_t size)
 {
 	/* allocate new frames */
 	struct FrameLink * initFrames = malloc(size * sizeof *initFrames);
-	if (unlikely(!initFrames))
+	if (unlikely(initFrames == NULL))
 		return false;
 
 	/* initialize pool */
-	newPool->pool = initFrames;
+	newPool->links = initFrames;
 	newPool->size = size;
-	newPool->next = NULL;
-	clear(&newPool->collect);
+	LIST_init(&newPool->collect);
+
+	size_t i;
+	for (i = 0; i < size; ++i)
+		initFrames[i].pool = newPool;
 
 	/* setup frame list */
-	struct FrameList list;
-	list.head = initFrames;
-	list.tail = initFrames + size - 1;
-	size_t i;
-	struct FrameLink * frame = initFrames;
-	for (i = 0; i < size; ++i, ++frame) {
-		frame->next = frame + 1;
-		frame->prev = frame - 1;
-		frame->pool = newPool;
-	}
-	list.head->prev = list.tail->next = NULL;
-	list.size = size;
-
-	/* append frames to the overall pool */
-	append(&pool, &list);
+	struct LIST_ListDC list = LIST_ListDC_INIT(list);
+	LIST_fromVector(&list, initFrames, list, size);
+	LIST_concatenatePush(&pool, &list);
 
 	return true;
 }
@@ -526,13 +492,11 @@ static bool createDynPool()
 	}
 
 	/* add pool to the list of dynamic pools */
-	newPool->next = dynPools;
-	dynPools = newPool;
-	++dynIncrements;
+	LIST_push(&dynPools, LIST_link(newPool, list));
 
 	++stats.dynPoolsAll;
-	if (unlikely(dynIncrements > stats.dynPoolsMax))
-		stats.dynPoolsMax = dynIncrements;
+	if (unlikely(LIST_length(&dynPools) > stats.dynPoolsMax))
+		stats.dynPoolsMax = LIST_length(&dynPools);
 
 	return true;
 }
@@ -542,36 +506,27 @@ static bool createDynPool()
  */
 static void collectPools()
 {
-	struct FrameLink * frame, * next;
+	//struct FrameLink * frame, * next;
 #ifdef BUF_DEBUG
-	const size_t prevSize = pool.size;
+	const size_t prevSize = LIST_length(&pool);
 #endif
 
 	/* iterate over all frames of the pool and keep a pointer to the
 	 *  predecessor */
-	for (frame = pool.head; frame; frame = next) {
-		next = frame->next;
+	struct LIST_LinkD * l, * n;
+	LIST_foreachSafe(&pool, l, n) {
+		struct FrameLink * frame = LIST_item(l, struct FrameLink, list);
+
 		if (frame->pool != &staticPool) {
 			/* collect only frames of dynamic pools */
 
-			/* unlink from the overall pool */
-			if (frame->prev)
-				frame->prev->next = next;
-			else
-				pool.head = next;
-			if (likely(next))
-				next->prev = frame->prev;
-			else
-				pool.tail = frame->prev;
-			--pool.size;
-
-			/* add them to their pools' collection */
-			unshift(&frame->pool->collect, frame);
+			LIST_unlink(&pool, l);
+			LIST_unshift(&frame->pool->collect, l);
 		}
 	}
 #ifdef BUF_DEBUG
 	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Collected %zu of %zu frames from overall "
-		"pool to their dynamic pools", prevSize - pool.size, prevSize);
+		"pool to their dynamic pools", prevSize - LIST_length(&pool), prevSize);
 #endif
 }
 
@@ -584,14 +539,11 @@ static bool uncollectPools()
 	struct Pool * p;
 
 	/* iterate over all dynamic pools */
-	for (p = dynPools; p; p = p->next) {
-		if (p->collect.head) {
+	LIST_foreachItem(&dynPools, p, list) {
+		if (!LIST_empty(&p->collect)) {
 			/* pools' collection was not empty, put frames back into the
 			 * overall pool */
-			append(&pool, &p->collect);
-			/* clear collection */
-			p->collect.head = p->collect.tail = NULL;
-			p->collect.size = 0;
+			LIST_concatenatePush(&pool, &p->collect);
 			return true;
 		}
 	}
@@ -604,35 +556,28 @@ static bool uncollectPools()
  */
 static void destroyUnusedPools()
 {
-	struct Pool * pool, * prev = NULL, * next;
+	struct LIST_LinkD * l, * n;
 #ifdef BUF_DEBUG
-	const size_t prevSize = dynIncrements;
+	const size_t prevSize = LIST_length(&dynPools);
 #endif
 
 	/* iterate over all dynamic pools */
-	for (pool = dynPools; pool; pool = next) {
-		next = pool->next;
-		if (likely(pool->collect.size == pool->size)) {
+	LIST_foreachSafe(&dynPools, l, n) {
+		struct Pool * pool = LIST_item(l, struct Pool, list);
+		if (likely(LIST_length(&pool->collect) ==  pool->size)) {
 			/* fully collected pool */
 
-			/* unlink from the list of pools */
-			if (prev)
-				prev->next = next;
-			else
-				dynPools = next;
-			--dynIncrements;
+			LIST_unlink(&dynPools, l);
 
 			/* delete frames */
-			free(pool->pool);
+			free(pool->links);
 			/* delete pool itself */
 			free(pool);
-		} else {
-			prev = pool;
 		}
 	}
 #ifdef BUF_DEBUG
 	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Destroyed %zu of %zu dynamic pools",
-		prevSize - dynIncrements, prevSize);
+		prevSize - LIST_length(&dynPools), prevSize);
 #endif
 }
 
@@ -647,112 +592,9 @@ void BUFFER_getStatistics(struct BUFFER_Statistics * statistics)
 {
 	pthread_mutex_lock(&mutex);
 	memcpy(statistics, &stats, sizeof *statistics);
-	statistics->queueSize = queue.size;
-	statistics->poolSize = pool.size;
-	statistics->dynPools = dynIncrements;
+	statistics->queueSize = LIST_length(&queue);
+	statistics->poolSize = LIST_length(&pool);
+	statistics->dynPools = LIST_length(&dynPools);
 	pthread_mutex_unlock(&mutex);
 }
 
-
-/** Unqueue the first element of a list and return it.
- * \param list list container
- * \return first element of the list or NULL if list was empty
- */
-static inline struct FrameLink * shift(struct FrameList * list)
-{
-	assert(!!list->head == !!list->tail);
-
-	if (unlikely(!list->head)) /* empty list */
-		return NULL;
-
-	/* first element */
-	struct FrameLink * ret = list->head;
-
-	/* unlink */
-	list->head = ret->next;
-	if (list->head)
-		list->head->prev = NULL;
-	else
-		list->tail = NULL;
-	ret->next = NULL;
-	--list->size;
-
-	assert(!!list->head == !!list->tail);
-	return ret;
-}
-
-/** Enqueue a new frame at front of a list.
- * \param list list container
- * \param frame the frame to be enqueued
- */
-static inline void unshift(struct FrameList * list, struct FrameLink * frame)
-{
-	assert(!!list->head == !!list->tail);
-
-	/* frame will be the new head */
-	frame->next = list->head;
-	frame->prev = NULL;
-
-	/* link into container */
-	if (!list->tail)
-		list->tail = frame;
-	else
-		list->head->prev = frame;
-	list->head = frame;
-	++list->size;
-
-	assert(!!list->head == !!list->tail);
-}
-
-/** Enqueue a new frame at the end of a list.
- * \param list list container
- * \param frame frame to be appended to the list
- */
-static inline void push(struct FrameList * list, struct FrameLink * frame)
-{
-	assert(!!list->head == !!list->tail);
-
-	/* frame will be new tail */
-	frame->next = NULL;
-	frame->prev = list->tail;
-
-	/* link into container */
-	if (!list->head)
-		list->head = frame;
-	else
-		list->tail->next = frame;
-	list->tail = frame;
-	++list->size;
-
-	assert(!!list->head == !!list->tail);
-}
-
-/** Append a new frame list at the end of a list.
- * \param dstList destination list container
- * \param srcList source list container to be appended to the first list
- */
-static inline void append(struct FrameList * dstList,
-	const struct FrameList * srcList)
-{
-	assert(!!dstList->head == !!dstList->tail);
-	assert(!!srcList->head == !!srcList->tail);
-
-	if (!dstList->head) /* link head if dst is empty */
-		dstList->head = srcList->head;
-	else /* link last element otherwise */
-		dstList->tail->next = srcList->head;
-	if (srcList->tail) {
-		/* link tail */
-		dstList->tail = srcList->tail;
-		srcList->head->prev = dstList->tail;
-	}
-	dstList->size += srcList->size;
-
-	assert(!!dstList->head == !!dstList->tail);
-}
-
-static inline void clear(struct FrameList * list)
-{
-	list->head = list->tail = NULL;
-	list->size = 0;
-}
