@@ -3,7 +3,7 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
   $(top_srcdir)/build-aux/tap-driver.sh
 
 if WITH_CHECK
-TESTS = test_buffer test_radarcape test_recv test_gps test_lib
+TESTS = test_list test_buffer test_radarcape test_recv test_gps test_lib
 check_PROGRAMS = $(TESTS) perf_radarcape perf_buffer
 check_LIBRARIES = libtest.a
 endif
