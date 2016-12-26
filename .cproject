@@ -36,7 +36,6 @@
 									<listOptionValue builtIn="false" value="&quot;__auto_type=void *&quot;"/>
 									<listOptionValue builtIn="false" value="ECLIPSE=1"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIG_H=1"/>
-									<listOptionValue builtIn="false" value="restrict=/**/"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.760827893" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/opensky-sensor/build}&quot;"/>
@@ -99,7 +98,6 @@
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.906114346" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="ECLIPSE=1"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIG_H=1"/>
-									<listOptionValue builtIn="false" value="restrict=/**/"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.1077560715" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/opensky-sensor/build}&quot;"/>
@@ -165,7 +163,6 @@
 									<listOptionValue builtIn="false" value="&quot;__auto_type=void *&quot;"/>
 									<listOptionValue builtIn="false" value="ECLIPSE=1"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIG_H=1"/>
-									<listOptionValue builtIn="false" value="restrict=/**/"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.905030138" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/opensky-sensor/build}&quot;"/>

@@ -118,8 +118,8 @@ static inline struct LIST_LinkD * LIST_popD(struct LIST_ListD * list)
  *  interface.
  */
 static inline void LIST_insertD(struct LIST_ListD * list,
-	struct LIST_LinkD * restrict prev,
-	struct LIST_LinkD * restrict link)
+	struct LIST_LinkD * __restrict prev,
+	struct LIST_LinkD * __restrict link)
 {
 	/* link by redirecting pointers of the previous and next link */
 	link->next = prev->next;
@@ -164,8 +164,8 @@ static inline void LIST_unshiftD(struct LIST_ListD * list,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_separateFromD(struct LIST_ListD * restrict list,
-	struct LIST_ListD * restrict newList, struct LIST_LinkD * pivot)
+static inline void LIST_separateFromD(struct LIST_ListD * __restrict list,
+	struct LIST_ListD * __restrict newList, struct LIST_LinkD * pivot)
 {
 	if (unlikely(pivot != &list->anchor)) {
 		/* note: we also know, that the source list is not empty here,
@@ -202,8 +202,8 @@ static inline void LIST_separateFromD(struct LIST_ListD * restrict list,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_separateUntilD(struct LIST_ListD * restrict list,
-	struct LIST_ListD * restrict newList, struct LIST_LinkD * pivot)
+static inline void LIST_separateUntilD(struct LIST_ListD * __restrict list,
+	struct LIST_ListD * __restrict newList, struct LIST_LinkD * pivot)
 {
 	if (unlikely(pivot == list->head)) {
 		/* Also the case, if the source list was empty. Prevent linking the
@@ -233,8 +233,8 @@ static inline void LIST_separateUntilD(struct LIST_ListD * restrict list,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_concatenatePushD(struct LIST_ListD * restrict dst,
-	struct LIST_ListD * restrict src)
+static inline void LIST_concatenatePushD(struct LIST_ListD * __restrict dst,
+	struct LIST_ListD * __restrict src)
 {
 	/* If the source list is empty, do nothing. Especially: do not link
 	 *  its anchor into the destination. */
@@ -255,8 +255,8 @@ static inline void LIST_concatenatePushD(struct LIST_ListD * restrict dst,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_concatenateUnshiftD(struct LIST_ListD * restrict dst,
-	struct LIST_ListD * restrict src)
+static inline void LIST_concatenateUnshiftD(struct LIST_ListD * __restrict dst,
+	struct LIST_ListD * __restrict src)
 {
 	/* If the source list is empty, do nothing. Especially: do not link
 	 *  its anchor into the destination. */
@@ -426,7 +426,7 @@ static inline struct LIST_LinkD * LIST_popDC(struct LIST_ListDC * list)
  * \param link link to be inserted after prev. Must not be part of another list.
  */
 static inline void LIST_insertDC(struct LIST_ListDC * list,
-	struct LIST_LinkD * restrict prev, struct LIST_LinkD * restrict link)
+	struct LIST_LinkD * __restrict prev, struct LIST_LinkD * __restrict link)
 {
 	LIST_insertD(&list->listD, prev, link);
 	++list->length;
@@ -466,8 +466,8 @@ static inline void LIST_unshiftDC(struct LIST_ListDC * list,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_separateFromDC(struct LIST_ListDC * restrict list,
-	struct LIST_ListDC * restrict newList, struct LIST_LinkD * pivot)
+static inline void LIST_separateFromDC(struct LIST_ListDC * __restrict list,
+	struct LIST_ListDC * __restrict newList, struct LIST_LinkD * pivot)
 {
 	if (pivot != &list->listD.anchor) {
 		LIST_separateFromD(&list->listD, &newList->listD, pivot);
@@ -491,8 +491,8 @@ static inline void LIST_separateFromDC(struct LIST_ListDC * restrict list,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_separateFromFixDC(struct LIST_ListDC * restrict list,
-	struct LIST_ListDC * restrict newList, struct LIST_LinkD * pivot)
+static inline void LIST_separateFromFixDC(struct LIST_ListDC * __restrict list,
+	struct LIST_ListDC * __restrict newList, struct LIST_LinkD * pivot)
 {
 	LIST_separateFromDC(list, newList, pivot);
 	LIST_lengthDC(newList);
@@ -514,8 +514,8 @@ static inline void LIST_separateFromFixDC(struct LIST_ListDC * restrict list,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_separateUntilDC(struct LIST_ListDC * restrict list,
-	struct LIST_ListDC * restrict newList, struct LIST_LinkD * pivot)
+static inline void LIST_separateUntilDC(struct LIST_ListDC * __restrict list,
+	struct LIST_ListDC * __restrict newList, struct LIST_LinkD * pivot)
 {
 	LIST_separateUntilD(&list->listD, &newList->listD, pivot);
 	list->tainted = newList->tainted = true;
@@ -536,8 +536,8 @@ static inline void LIST_separateUntilDC(struct LIST_ListDC * restrict list,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_separateUntilFixDC(struct LIST_ListDC * restrict list,
-	struct LIST_ListDC * restrict newList, struct LIST_LinkD * pivot)
+static inline void LIST_separateUntilFixDC(struct LIST_ListDC * __restrict list,
+	struct LIST_ListDC * __restrict newList, struct LIST_LinkD * pivot)
 {
 	LIST_separateUntilDC(list, newList, pivot);
 	LIST_lengthDC(newList);
@@ -552,8 +552,8 @@ static inline void LIST_separateUntilFixDC(struct LIST_ListDC * restrict list,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_concatenatePushDC(struct LIST_ListDC * restrict dst,
-	struct LIST_ListDC * restrict src)
+static inline void LIST_concatenatePushDC(struct LIST_ListDC * __restrict dst,
+	struct LIST_ListDC * __restrict src)
 {
 	if (likely(!LIST_emptyDC(src))) {
 		LIST_concatenatePushD(&dst->listD, &src->listD);
@@ -571,8 +571,8 @@ static inline void LIST_concatenatePushDC(struct LIST_ListDC * restrict dst,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_concatenateUnshiftDC(struct LIST_ListDC * restrict dst,
-	struct LIST_ListDC * restrict src)
+static inline void LIST_concatenateUnshiftDC(struct LIST_ListDC * __restrict dst,
+	struct LIST_ListDC * __restrict src)
 {
 	if (likely(!LIST_emptyDC(src))) {
 		LIST_concatenateUnshiftD(&dst->listD, &src->listD);
@@ -733,8 +733,8 @@ static inline void LIST_unshiftS(struct LIST_ListS * list,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_concatenatePushS(struct LIST_ListS * restrict dst,
-	struct LIST_ListS * restrict src)
+static inline void LIST_concatenatePushS(struct LIST_ListS * __restrict dst,
+	struct LIST_ListS * __restrict src)
 {
 	if (likely(!LIST_emptyS(src))) {
 		src->tail->next = &dst->anchor;
@@ -752,8 +752,8 @@ static inline void LIST_concatenatePushS(struct LIST_ListS * restrict dst,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_concatenateUnshiftS(struct LIST_ListS * restrict dst,
-	struct LIST_ListS * restrict src)
+static inline void LIST_concatenateUnshiftS(struct LIST_ListS * __restrict dst,
+	struct LIST_ListS * __restrict src)
 {
 	if (likely(!LIST_emptyS(src))) {
 		src->tail->next = dst->head;
@@ -899,8 +899,8 @@ static inline void LIST_unshiftSC(struct LIST_ListSC * list,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_concatenatePushSC(struct LIST_ListSC * restrict dst,
-	struct LIST_ListSC * restrict src)
+static inline void LIST_concatenatePushSC(struct LIST_ListSC * __restrict dst,
+	struct LIST_ListSC * __restrict src)
 {
 	if (likely(!LIST_emptySC(src))) {
 		LIST_concatenatePushS(&dst->listS, &src->listS);
@@ -917,8 +917,8 @@ static inline void LIST_concatenatePushSC(struct LIST_ListSC * restrict dst,
  * \note if the source and destination list are the same, the behavior is
  *  undefined.
  */
-static inline void LIST_concatenateUnshiftSC(struct LIST_ListSC * restrict dst,
-	struct LIST_ListSC * restrict src)
+static inline void LIST_concatenateUnshiftSC(struct LIST_ListSC * __restrict dst,
+	struct LIST_ListSC * __restrict src)
 {
 	if (likely(!LIST_emptySC(src))) {
 		LIST_concatenateUnshiftS(&dst->listS, &src->listS);
