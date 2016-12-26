@@ -12,9 +12,13 @@ extern "C" {
 
 extern struct Component GPS_RECV_comp;
 
+/** GPS Position */
 struct GPS_Position {
+	/** GPS Latitude in degrees, range: -90..+90 */
 	double latitude;
+	/** GPS Longitude in degrees, range: -180..+180 */
 	double longitute;
+	/** GPS Altitiude in meters */
 	double altitude;
 };
 
