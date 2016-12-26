@@ -17,14 +17,21 @@
 #include "util/util.h"
 #include "util/log.h"
 
+/** Component: Prefix */
 static const char PFX[] = "LOGIN";
 
+/** Device Type, must be set using @LOGIN_login */
 static enum BEAST_DEVICE_TYPE deviceType = BEAST_DEVICE_TYPE_INVALID;
+/** OpenSky user name (can be empty by setting the first byte to \0 */
 static char user[BEAST_MAX_USERNAME + 1];
 
+/** Daemon Version */
 struct Version {
+	/** Major version */
 	uint32_t major;
+	/** Minor version */
 	uint32_t minor;
+	/** Release version */
 	uint32_t release;
 };
 
@@ -32,8 +39,13 @@ static bool sendDeviceId();
 static bool sendSerial();
 static bool sendUsername();
 
+/** Log into the OpenSky Network.
+ * @return true if logging into the network succeeded, false if connection was
+ *  broken in between
+ */
 bool LOGIN_login()
 {
+	/* send device id, serial number, username and the position */
 	bool rc = sendDeviceId() && sendSerial() && GPS_sendPosition() &&
 		sendUsername();
 	if (!rc)
@@ -41,12 +53,19 @@ bool LOGIN_login()
 	return rc;
 }
 
+/** Set device type. Must be called once, before trying to login
+ * @param type device type
+ */
 void LOGIN_setDeviceType(enum BEAST_DEVICE_TYPE type)
 {
-	assert (deviceType == BEAST_DEVICE_TYPE_INVALID);
+	assert(deviceType == BEAST_DEVICE_TYPE_INVALID);
+	assert(type != BEAST_DEVICE_TYPE_INVALID);
 	deviceType = type;
 }
 
+/** Set OpenSky user name. Length must not exceed @BEAST_MAX_USERNAME.
+ * @param username user name or NULL to reset
+ */
 void LOGIN_setUsername(const char * username)
 {
 	memset(user, '\0', sizeof user);
@@ -56,19 +75,22 @@ void LOGIN_setUsername(const char * username)
 		if (len > BEAST_MAX_USERNAME) {
 			LOG_logf(LOG_LEVEL_WARN, PFX,
 				"Username '%s' is too long, not sending any", username);
-			return;
 		} else {
 			strncpy(user, username, len);
 		}
 	}
 }
 
+/** Get the current daemon version from autoconf
+ * @param version buffer for current daemon version
+ */
 static void getVersion(struct Version * version)
 {
 	static bool cached = false;
 	static struct Version cachedVer;
 
 	if (!cached) {
+		/* not called until now -> parse the version and cache it */
 		const char * ver = PACKAGE_VERSION;
 		char * end;
 
@@ -87,20 +109,27 @@ static void getVersion(struct Version * version)
 		cached = true;
 	}
 
+	/* copy cache */
 	memcpy(version, &cachedVer, sizeof *version);
 }
 
+/** Send the device ID.
+ * @return true if sending succeeded
+ */
 static bool sendDeviceId()
 {
-	assert (deviceType != BEAST_DEVICE_TYPE_INVALID);
+	assert(deviceType != BEAST_DEVICE_TYPE_INVALID);
 
+	/* build message */
 	uint8_t buf[2 + 4 * 4 * 2] = { BEAST_SYNC, BEAST_TYPE_DEVICE_ID };
 
+	/* encode device type into message */
 	uint8_t * ptr = buf + 2;
 	uint8_t tmp[4 * 3];
 	ENDEC_fromu32(deviceType, tmp);
 	ptr += BEAST_encode(ptr, tmp, sizeof(uint32_t));
 
+	/* get and encode daemon version into message */
 	struct Version ver;
 	getVersion(&ver);
 	ENDEC_fromu32(ver.major, tmp);
@@ -112,21 +141,29 @@ static bool sendDeviceId()
 		"Version %" PRIu32 ".%" PRIu32 ".%" PRIu32,
 		deviceType, ver.major, ver.minor, ver.release);
 
+	/* send it */
 	return NET_send(buf, ptr - buf);
 }
 
+/** Send the serial number.
+ * @return true if sending succeeded
+ */
 static bool sendSerial()
 {
+	/* build message */
 	uint8_t buf[2 + 4 * 2] = { BEAST_SYNC, BEAST_TYPE_SERIAL };
 
+	/* note: getting the serial number can involve message exchange with the
+	 * OpenSky network, which can also fail.
+	 */
 	uint32_t serialNumber;
 	enum SERIAL_RETURN rc = SERIAL_getSerial(&serialNumber);
 	switch (rc) {
 	case SERIAL_RETURN_FAIL_NET:
-		/* network failure */
+		/* network failure (OpenSky Network) */
 		return false;
 	case SERIAL_RETURN_FAIL_TEMP:
-		/* temporary failure */
+		/* temporary failure (TODO: this should be defined better) */
 	case SERIAL_RETURN_FAIL_PERM:
 		/* permanent failure */
 		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
@@ -136,6 +173,7 @@ static bool sendSerial()
 		break;
 	}
 
+	/* encode serial number into message */
 	uint8_t ca[4];
 	ENDEC_fromu32(serialNumber, ca);
 	size_t len = 2 + BEAST_encode(buf + 2, ca, sizeof ca);
@@ -143,9 +181,13 @@ static bool sendSerial()
 	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Serial Number %" PRIu32,
 		serialNumber);
 
+	/* send it */
 	return NET_send(buf, len);
 }
 
+/** Send the user name (if configured).
+ * @return true if sending succeeded
+ */
 static bool sendUsername()
 {
 	if (!*user)
@@ -157,12 +199,15 @@ static bool sendUsername()
 			"characters", user, BEAST_MAX_USERNAME);
 	}
 
+	/* build message */
 	uint8_t buf[2 + 2 * BEAST_MAX_USERNAME] = { BEAST_SYNC, BEAST_TYPE_USER };
+	/* encode user name into message */
 	size_t len = 2 + BEAST_encode(buf + 2, (uint8_t*)user, BEAST_MAX_USERNAME);
 
 	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Username '%.*s'", BEAST_MAX_USERNAME,
 		user);
 
+	/* send it */
 	return NET_send(buf, len);
 }
 
