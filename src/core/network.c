@@ -19,21 +19,92 @@
 #include "util/threads.h"
 #include "util/util.h"
 
-//#define DEBUG
+/* Define to 1 to enable debugging messages */
+//#define DEBUG 1
 
+/** Component: Prefix */
 static const char PFX[] = "NET";
 
+/** Interval to sleep between reconnection attempts */
 #define RECONNET_INTERVAL 10
 
+/** Networking socket: receiving socket */
+static int recvsock;
+/** Networking socket: sending socket */
+static int sendsock;
+
+/** Mutex for all shared variables */
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+/** Condition for changes in connection status */
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+/** Mutex for exclusive sending */
+static pthread_mutex_t sendMutex = PTHREAD_MUTEX_INITIALIZER;
+
+/** Connection status */
+enum CONN_STATE {
+	/** Disconnected */
+	CONN_STATE_DISCONNECTED,
+	/** Connected */
+	CONN_STATE_CONNECTED,
+	/** Special state when shutting down */
+	CONN_STATE_SHUTDOWN
+};
+
+/** Secondary connection status when sender and receiver are unsynchronized */
+enum TRANSIT_STATE {
+	/** Sender and receiver both know of the current connection status */
+	TRANSIT_NONE,
+	/** Receiver is the leader, sender is unsynchronized */
+	TRANSIT_SEND,
+	/** Sender is the leader, receiver is unsynchronized */
+	TRANSIT_RECV
+};
+
+/** If an connection failure occurs, we must know whether the sender or the
+ * receiver has seen the failure*/
+enum EMIT_BY {
+	/** Failure detected by receiver */
+	EMIT_BY_RECV = TRANSIT_SEND,
+	/** Failure detected by sender */
+	EMIT_BY_SEND = TRANSIT_RECV
+};
+
+/** Action to be taken if sending/receiving fails -> it could be, that the
+ * connection has already been reestablished. Try again in that case.
+ */
+enum ACTION {
+	/** No action: just fail */
+	ACTION_NONE,
+	/** Retry */
+	ACTION_RETRY
+};
+
+/** Current connection state */
+static enum CONN_STATE connState;
+
+/** Current transition state */
+static enum TRANSIT_STATE transState;
+
+/** Configuration: host name*/
 static char cfgHost[NI_MAXHOST];
+/** Configuration: tcp port */
 static uint_fast16_t cfgPort;
 
 static bool checkCfg(const struct CFG_Section * sect);
 
+/** Statistics */
 static struct NET_Statistics stats;
+/** Statistics: last time a connection attempt was successful */
 static time_t onlineSince;
 
-static const struct CFG_Section cfg = {
+static void mainloop();
+static int tryConnect();
+static enum ACTION emitDisconnect(enum EMIT_BY by);
+static bool trySend(const void * buf, size_t len);
+static void resetStats();
+
+/** Configuration: Descriptor */
+static const struct CFG_Section cfgDesc = {
 	.name = "NETWORK",
 	.check = &checkCfg,
 	.n_opt = 2,
@@ -60,74 +131,35 @@ static const struct CFG_Section cfg = {
 	}
 };
 
-/** Networking socket */
-static int recvsock;
 
-static int sendsock;
 
-/** Mutex for all shared variables */
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-/** Condition for changes in connection status */
-static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-/** Mutex for exclusive sending */
-static pthread_mutex_t sendMutex = PTHREAD_MUTEX_INITIALIZER;
-
-/** Connection status */
-enum CONN_STATE {
-	/** Disconnected */
-	CONN_STATE_DISCONNECTED,
-	/** Connected */
-	CONN_STATE_CONNECTED,
-	/** Special state when shutting down */
-	CONN_STATE_SHUTDOWN
-};
-
-enum TRANSIT_STATE {
-	TRANSIT_NONE,
-	TRANSIT_SEND,
-	TRANSIT_RECV
-};
-
-enum EMIT_BY {
-	EMIT_BY_RECV = TRANSIT_SEND,
-	EMIT_BY_SEND = TRANSIT_RECV
-};
-
-enum ACTION {
-	ACTION_NONE,
-	ACTION_RETRY
-};
-
-/** Connection state */
-static enum CONN_STATE connState;
-
-static enum TRANSIT_STATE transState;
-
-static void mainloop();
-static void resetStats();
-static int tryConnect();
-static enum ACTION emitDisconnect(enum EMIT_BY by);
-static bool trySend(const void * buf, size_t len);
-
+/** Component: Descriptor */
 const struct Component NET_comp = {
 	.description = PFX,
 	.main = &mainloop,
-	.config = &cfg,
+	.config = &cfgDesc,
 	.onReset = &resetStats,
 	.dependencies = { NULL }
 };
 
+/** Configuration: Check configuration.
+ * @param sect configuration section, should be @cfgDesc
+ * @return true if configuration is sane
+ */
 static bool checkCfg(const struct CFG_Section * sect)
 {
-	assert(sect == &cfg);
+	assert(sect == &cfgDesc);
+
 	if (cfgHost[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "NET.host is missing");
 		return false;
 	}
+
 	if (cfgPort == 0) {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "NET.port = 0");
 		return false;
 	}
+
 	return true;
 }
 
@@ -161,7 +193,7 @@ static void mainloop()
 	pthread_mutex_lock(&mutex);
 	CLEANUP_PUSH(&cleanupMain, NULL);
 	while (true) {
-		assert (connState == CONN_STATE_DISCONNECTED);
+		assert(connState == CONN_STATE_DISCONNECTED);
 		int sock;
 		++stats.connectionAttempts;
 		while ((sock = tryConnect(&sock)) == -1) {
@@ -170,7 +202,7 @@ static void mainloop()
 			++stats.connectionAttempts;
 		}
 
-		/* connection established */
+		/* here: connection established */
 
 		switch (transState) {
 		case TRANSIT_NONE:
@@ -197,6 +229,9 @@ static void mainloop()
 	CLEANUP_POP();
 }
 
+/** Try to connect to the OpenSky Network.
+ * @return socket descriptor or -1 on failure.
+ */
 static int tryConnect()
 {
 	int sock = NETC_connect("NET", cfgHost, cfgPort);
@@ -205,18 +240,25 @@ static int tryConnect()
 	return sock;
 }
 
+/** Log a disconnection event */
 static inline void logDisconnect()
 {
 	LOG_log(LOG_LEVEL_INFO, PFX, "Connection lost");
 }
 
+/** Upon network failure: determine the actions to be taken, depending on
+ * who has detected the failure and the current state
+ * @param by failure was detected by sender or receiver
+ * @return action to be taken by sender resp. receiver
+ */
 static enum ACTION emitDisconnect(enum EMIT_BY by)
 {
+	enum ACTION act;
 	CLEANUP_PUSH_LOCK(&mutex);
 
+	/* determine socket */
 	int * mysock;
 	int othsock;
-
 	if (by == EMIT_BY_RECV) {
 		mysock = &recvsock;
 		othsock = sendsock;
@@ -267,18 +309,20 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 		}
 	} else if (connState != CONN_STATE_SHUTDOWN &&
 		transState != (enum TRANSIT_STATE)by) {
-		assert (transState != TRANSIT_NONE);
+		assert(transState != TRANSIT_NONE);
 		/* we have not been reconnected yet, but the follower has seen the
 		 * failure -> close the stale socket */
 		close(*mysock);
 		*mysock = -1;
 		transState = TRANSIT_NONE;
 	}
+	act = connState == CONN_STATE_CONNECTED ? ACTION_RETRY : ACTION_NONE;
 	CLEANUP_POP();
 
-	return connState == CONN_STATE_CONNECTED ? ACTION_RETRY : ACTION_NONE;
+	return act;
 }
 
+/** Wait for reconnection */
 void NET_waitConnected()
 {
 	CLEANUP_PUSH_LOCK(&mutex);
@@ -287,10 +331,36 @@ void NET_waitConnected()
 	CLEANUP_POP();
 }
 
+/** Force a reconnection to the network.
+ * Must only be called by the thread which normally calls @NET_send.
+ */
+void NET_forceDisconnect()
+{
+	emitDisconnect(EMIT_BY_SEND);
+}
+
+/** Check if the network is still connected.
+ * Must only be called by the thread which normally calls @NET_send.
+ * @return true if the network is connected
+ */
+bool NET_checkConnected()
+{
+	pthread_mutex_lock(&mutex);
+	bool emit = connState != CONN_STATE_CONNECTED ||
+		transState == TRANSIT_SEND;
+	pthread_mutex_unlock(&mutex);
+	if (emit) {
+		emitDisconnect(EMIT_BY_SEND);
+		return false;
+	} else {
+		return true;
+	}
+}
+
 /** Send some data through the socket.
- * \param data data to be sent
- * \param len length of data
- * \return true if sending succeeded, false otherwise (e.g. connection lost)
+ * @param data data to be sent
+ * @param len length of data
+ * @return true if sending succeeded, false otherwise (e.g. connection lost)
  */
 static bool trySend(const void * buf, size_t len)
 {
@@ -300,6 +370,7 @@ static bool trySend(const void * buf, size_t len)
 	do {
 		ssize_t rc = send(sendsock, ptr, len, MSG_NOSIGNAL);
 		if (rc <= 0) {
+			/* report failure */
 #ifdef DEBUG
 			LOG_logf(LOG_LEVEL_DEBUG, PFX, "could not send: %s",
 				rc == 0 || errno == EPIPE ? "Connection lost" :
@@ -316,25 +387,11 @@ static bool trySend(const void * buf, size_t len)
 	return true;
 }
 
-void NET_forceDisconnect()
-{
-	emitDisconnect(EMIT_BY_SEND);
-}
-
-bool NET_checkConnected()
-{
-	pthread_mutex_lock(&mutex);
-	bool emit = connState != CONN_STATE_CONNECTED ||
-		transState == TRANSIT_SEND;
-	pthread_mutex_unlock(&mutex);
-	if (emit) {
-		emitDisconnect(EMIT_BY_SEND);
-		return false;
-	} else {
-		return true;
-	}
-}
-
+/** Send some data through the socket.
+ * @param buf buffer to be sent
+ * @param len length of buffer
+ * @return true if sending succeeded, false on network failure
+ */
 bool NET_send(const void * buf, size_t len)
 {
 	bool rc;
@@ -344,6 +401,11 @@ bool NET_send(const void * buf, size_t len)
 	return rc;
 }
 
+/** Receive some data from the socket.
+ * @param buf buffer to receive into
+ * @param len size of buffer
+ * @return number of bytes received or 0 upon failure
+ */
 ssize_t NET_receive(uint8_t * buf, size_t len)
 {
 	do {
