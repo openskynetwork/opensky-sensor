@@ -10,10 +10,16 @@
 extern "C" {
 #endif
 
+/** Serial number return codes */
 enum SERIAL_RETURN {
+	/** Temporary failure, try again
+	 * TODO: this should be defined more precisely */
 	SERIAL_RETURN_FAIL_TEMP,
+	/** Network (to OpenSky) failed, try again */
 	SERIAL_RETURN_FAIL_NET,
+	/** Permanent failure */
 	SERIAL_RETURN_FAIL_PERM,
+	/** Success */
 	SERIAL_RETURN_SUCCESS
 };
 
