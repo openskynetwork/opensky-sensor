@@ -254,7 +254,7 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 			logDisconnect();
 			shutdown(*mysock, SHUT_RDWR);
 			*mysock = -1;
-			transState = by;
+			transState = (enum TRANSIT_STATE)by;
 			connState = CONN_STATE_DISCONNECTED;
 			stats.onlineSecs += time(NULL) - onlineSince;
 			pthread_cond_broadcast(&cond);

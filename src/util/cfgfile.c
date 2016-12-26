@@ -30,7 +30,7 @@ static const char PFX[] = "CFG";
 //#define DEBUG
 
 struct Section {
-	const struct CFG_Section const * section;
+	struct CFG_Section const * section;
 	struct LIST_LinkD list;
 };
 
