@@ -13,6 +13,7 @@
 #include "util/log.h"
 #include "util/util.h"
 
+/** Component: Prefix */
 static const char PFX[] = "TB";
 
 /* Packet format:
@@ -46,28 +47,36 @@ struct TB_Packet {
 	const uint8_t * payload;
 };
 
-static void mainloop();
 
-const struct Component TB_comp = {
-	.description = PFX,
-	.main = &mainloop,
-	.dependencies = { &NET_comp, NULL }
-};
-
-static void processPacket(const struct TB_Packet * packet);
-
-static void packetConfigureFilter(const uint8_t * payload);
-
+/** Packet processor */
 struct PacketProcessor {
+	/** Callback to processor */
 	TB_ProcessorFn fn;
+	/** Expected payload length */
 	size_t payloadLen;
 };
+
+static void mainloop();
+static void processPacket(const struct TB_Packet * packet);
+static void packetConfigureFilter(const uint8_t * payload);
 
 /** All packet processors in order of their type */
 static struct PacketProcessor processors[TB_PACKET_TYPE_N] = {
 	[TB_PACKET_TYPE_FILTER] = { .payloadLen = 2, .fn = packetConfigureFilter }
 };
 
+/** Component: Descriptor */
+const struct Component TB_comp = {
+	.description = PFX,
+	.main = &mainloop,
+	.dependencies = { &NET_comp, NULL }
+};
+
+/** Register a packet processor
+ * @param type packet type (id)
+ * @param payloadLen expected payload length for this type
+ * @param fn pointer to callback to be called upon that packet type
+ */
 void TB_register(uint32_t type, size_t payloadLen, TB_ProcessorFn fn)
 {
 	if (type < TB_PACKET_TYPE_N) {
@@ -79,6 +88,9 @@ void TB_register(uint32_t type, size_t payloadLen, TB_ProcessorFn fn)
 	}
 }
 
+/** Unregister a packet processor
+ * @param type packet type (id)
+ */
 void TB_unregister(uint32_t type)
 {
 	if (type < TB_PACKET_TYPE_N) {
@@ -88,7 +100,7 @@ void TB_unregister(uint32_t type)
 	}
 }
 
-/** Mainloop of the TB. */
+/** Main loop: receive from OpenSky Network, interpret and call processor. */
 static void mainloop()
 {
 	uint8_t buf[128];
@@ -116,6 +128,7 @@ static void mainloop()
 					bufLen = 0;
 					break;
 				}
+
 				if (bufLen >= frame.len) {
 					/* complete packet: process it */
 					frame.payload = buf + 4;
@@ -132,7 +145,7 @@ static void mainloop()
 
 			/* read (more) data from network into buffer */
 			ssize_t len = NET_receive(buf + bufLen, (sizeof buf) - bufLen);
-			if (len <= 0)
+			if (len <= 0) /* upon failure: wait for new connection */
 				break;
 			bufLen += len;
 		}
@@ -140,7 +153,7 @@ static void mainloop()
 }
 
 /** Process a packet: call handler if exists.
- * \param packet packet to be processed
+ * @param packet packet to be processed
  */
 static void processPacket(const struct TB_Packet * packet)
 {
@@ -155,6 +168,7 @@ static void processPacket(const struct TB_Packet * packet)
 	} else {
 		size_t payloadLen = packet->len - 4;
 		if (payloadLen != processor->payloadLen) {
+			/* expected length does not match -> discard */
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Packet of type %" PRIuFAST16 " has "
 				"a size mismatch (payload len=%" PRIuFAST16 "), discarding",
 				packet->type, payloadLen);
@@ -165,6 +179,9 @@ static void processPacket(const struct TB_Packet * packet)
 	}
 }
 
+/** Packet processor: reconfigure the filter
+ * @param payload packet payload
+ */
 static void packetConfigureFilter(const uint8_t * payload)
 {
 	enum FILT {
