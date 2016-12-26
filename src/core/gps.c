@@ -34,15 +34,9 @@ void GPS_reset()
 	pthread_mutex_unlock(&posMutex);
 }
 
-static void cleanup(void * dummy)
-{
-	pthread_mutex_unlock(&posMutex);
-}
-
 void GPS_setPosition(double latitude, double longitude, double altitude)
 {
-	CLEANUP_PUSH(&cleanup, NULL);
-	pthread_mutex_lock(&posMutex);
+	CLEANUP_PUSH_LOCK(&posMutex);
 
 	position.latitude = latitude;
 	position.longitute = longitude;

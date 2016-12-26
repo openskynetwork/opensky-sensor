@@ -131,11 +131,6 @@ static bool checkCfg(const struct CFG_Section * sect)
 	return true;
 }
 
-static void cleanup()
-{
-	pthread_mutex_unlock(&mutex);
-}
-
 static void cleanupMain()
 {
 	if (connState == CONN_STATE_CONNECTED) {
@@ -155,11 +150,6 @@ static void cleanupMain()
 	}
 	connState = CONN_STATE_SHUTDOWN;
 	pthread_mutex_unlock(&mutex);
-}
-
-static void cleanupSend()
-{
-	pthread_mutex_unlock(&sendMutex);
 }
 
 /** Mainloop for network: (re)established network connection on failure */
@@ -222,8 +212,7 @@ static inline void logDisconnect()
 
 static enum ACTION emitDisconnect(enum EMIT_BY by)
 {
-	pthread_mutex_lock(&mutex);
-	CLEANUP_PUSH(&cleanup, NULL);
+	CLEANUP_PUSH_LOCK(&mutex);
 
 	int * mysock;
 	int othsock;
@@ -292,8 +281,7 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 
 void NET_waitConnected()
 {
-	pthread_mutex_lock(&mutex);
-	CLEANUP_PUSH(&cleanup, NULL);
+	CLEANUP_PUSH_LOCK(&mutex);
 	while (connState != CONN_STATE_CONNECTED)
 		pthread_cond_wait(&cond, &mutex);
 	CLEANUP_POP();
@@ -349,9 +337,8 @@ bool NET_checkConnected()
 
 bool NET_send(const void * buf, size_t len)
 {
-	pthread_mutex_lock(&sendMutex);
 	bool rc;
-	CLEANUP_PUSH(&cleanupSend, NULL);
+	CLEANUP_PUSH_LOCK(&sendMutex);
 	rc = trySend(buf, len);
 	CLEANUP_POP();
 	return rc;

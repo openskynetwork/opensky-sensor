@@ -349,19 +349,13 @@ void BUF_abortFrame(struct OPENSKY_RawFrame * frame)
 	newFrame = NULL;
 }
 
-static void cleanup(void * dummy)
-{
-	pthread_mutex_unlock(&mutex);
-}
-
 /** Get a frame from the queue.
  * \return frame
  */
 const struct OPENSKY_RawFrame * BUF_getFrame()
 {
 	assert(!currentFrame);
-	CLEANUP_PUSH(&cleanup, NULL);
-	pthread_mutex_lock(&mutex);
+	CLEANUP_PUSH_LOCK(&mutex);
 	while (LIST_empty(&queue)) {
 		int r = pthread_cond_wait(&cond, &mutex);
 		if (r)
@@ -391,8 +385,7 @@ const struct OPENSKY_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms)
 
 	assert(!currentFrame);
 
-	pthread_mutex_lock(&mutex);
-	CLEANUP_PUSH(&cleanup, NULL);
+	CLEANUP_PUSH_LOCK(&mutex);
 	while (LIST_empty(&queue)) {
 		int r = pthread_cond_timedwait(&cond, &mutex, &ts);
 		if (r == ETIMEDOUT) {

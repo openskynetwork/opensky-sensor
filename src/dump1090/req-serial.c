@@ -60,16 +60,10 @@ const struct Component SERIAL_comp =
 	.dependencies = { &TB_comp, NULL }
 };
 
-static void cleanup(void * dummy)
-{
-	pthread_mutex_unlock(&serialMutex);
-}
-
 enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 {
 	enum SERIAL_RETURN rc = SERIAL_RETURN_SUCCESS;
-	pthread_mutex_lock(&serialMutex);
-	CLEANUP_PUSH(&cleanup, NULL);
+	CLEANUP_PUSH_LOCK(&serialMutex);
 	if (!hasSerial) {
 		LOG_log(LOG_LEVEL_INFO, PFX, "Requesting new serial number");
 		if (!sendSerialRequest()) {

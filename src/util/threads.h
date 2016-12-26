@@ -3,13 +3,13 @@
 #ifndef _HAVE_THREADS_H
 #define _HAVE_THREADS_H
 
+#include <pthread.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #ifdef CLEANUP_ROUTINES
-
-#include <pthread.h>
 
 #define CLEANUP_PUSH(fun, arg) \
 	pthread_cleanup_push((void(*)(void*))(fun), (void*)(arg))
@@ -55,6 +55,17 @@ extern "C" {
 #define NOC_call(func, args...) func(args)
 
 #endif
+
+__attribute__((unused))
+static void CLEANUP_UNLOCK(pthread_mutex_t * mutex)
+{
+	if (mutex)
+		pthread_mutex_unlock(mutex);
+}
+
+#define CLEANUP_PUSH_LOCK(mutex) \
+	CLEANUP_PUSH(&CLEANUP_UNLOCK, mutex); \
+	pthread_mutex_lock(mutex);
 
 #ifdef __cplusplus
 }
