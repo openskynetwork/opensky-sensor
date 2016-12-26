@@ -14,10 +14,13 @@
 #include "util/threads.h"
 #include "util/util.h"
 
-static void mainloop();
-
+/** Configuration: timeout to wait for a new message in milliseconds.
+ * This is also the keep-alive interval. */
 static uint32_t cfgTimeout;
 
+static void mainloop();
+
+/** Configuration: Descriptor */
 static const struct CFG_Section cfg = {
 	.name = "NETWORK",
 	.n_opt = 1,
@@ -31,6 +34,7 @@ static const struct CFG_Section cfg = {
 	}
 };
 
+/** Component: Descriptor */
 const struct Component RELAY_comp = {
 	.description = "RELAY",
 	.main = &mainloop,
@@ -38,47 +42,61 @@ const struct Component RELAY_comp = {
 	.dependencies = { &NET_comp, &BUF_comp, NULL }
 };
 
+/** Cleanup routine: put a frame back into the queue upon cancellation */
 static void cleanup(struct OPENSKY_RawFrame * frame)
 {
 	BUF_putFrame(frame);
 }
 
+/** Send a frame to the OpenSky Network
+ * @param frame frame to be sent
+ * @return true if sending succeeded
+ */
 static inline bool sendFrame(const struct OPENSKY_RawFrame * frame)
 {
 	return NET_send(frame->raw, frame->rawLen);
 }
 
+/** Send a keep-alive to the OpenSky Network
+ * @return true if sending succeeded
+ */
 static inline bool sendKeepalive()
 {
+	/* Build message */
 	char buf[] = { BEAST_SYNC, BEAST_TYPE_KEEP_ALIVE };
+	/* send it */
 	return NET_send(buf, sizeof buf);
 }
 
+/** Main loop: get a frame from the queue and send it */
 static void mainloop()
 {
 	while (true) {
 		/* synchronize with the network (i.e. wait for a connection) */
 		NET_waitConnected();
 
-		/* Now we have a new connection to the server */
+		/* here: we have a new connection to the server */
 
-		/* Log into the network */
+		/* log into the network */
 		if (unlikely(!LOGIN_login()))
-			continue;
+			continue; /* upon failure: wait again */
 
+		/* flush buffer if history is disabled */
 		BUF_flushUnlessHistoryEnabled();
 
+		/* TODO: we could speed this up by setting the scope of the cleanup
+		 * around the loop */
 		bool success;
 		do {
 			/* read a frame from the buffer */
 			const struct OPENSKY_RawFrame * frame =
 				BUF_getFrameTimeout(cfgTimeout);
 			if (!frame) {
-				/* timeout */
+				/* timeout -> send keep-alive */
 				success = sendKeepalive();
 			} else {
 				CLEANUP_PUSH(&cleanup, frame);
-				/* got a message */
+				/* got a message -> send it */
 				success = sendFrame(frame);
 				if (likely(success))
 					BUF_releaseFrame(frame);
