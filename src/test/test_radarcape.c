@@ -171,7 +171,7 @@ START_TEST(test_decode_modeac)
 	ck_assert_uint_eq(decoded.payloadLen, 2);
 	ck_assert_int_eq(decoded.siglevel, -50);
 	ck_assert(!memcmp(decoded.payload, "ab", 2));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm, len));
 }
 END_TEST
@@ -199,7 +199,7 @@ START_TEST(test_decode_modesshort)
 	ck_assert_uint_eq(decoded.payloadLen, 7);
 	ck_assert_int_eq(decoded.siglevel, 127);
 	ck_assert(!memcmp(decoded.payload, "abcdefg", 7));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm, len));
 }
 END_TEST
@@ -227,7 +227,7 @@ START_TEST(test_decode_modeslong)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, 0);
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm, len));
 }
 END_TEST
@@ -255,7 +255,7 @@ START_TEST(test_decode_status)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, 0);
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm, len));
 }
 END_TEST
@@ -307,7 +307,7 @@ START_TEST(test_decode_unknown_next)
 	ck_assert_uint_eq(decoded.payloadLen, 2);
 	ck_assert_int_eq(decoded.siglevel, 0);
 	ck_assert(!memcmp(decoded.payload, "ab", 2));
-	ck_assert_uint_eq(frame.raw_len, len2);
+	ck_assert_uint_eq(frame.rawLen, len2);
 	ck_assert(!memcmp(frame.raw, frm + len1, len2));
 }
 END_TEST
@@ -337,7 +337,7 @@ START_TEST(test_decode_escape)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, 0x1a);
 	ck_assert(!memcmp(decoded.payload, msg, 14));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm, len));
 }
 END_TEST
@@ -365,7 +365,7 @@ START_TEST(test_decode_unsynchronized_start)
 	ck_assert_uint_eq(decoded.payloadLen, 2);
 	ck_assert_int_eq(decoded.siglevel, -50);
 	ck_assert(!memcmp(decoded.payload, "ab", 2));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm + 2, len));
 
 	struct RADARCAPE_Statistics stats;
@@ -399,7 +399,7 @@ START_TEST(test_decode_unsynchronized_type)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, -128);
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm + 5, len));
 	struct RADARCAPE_Statistics stats;
 	RADARCAPE_getStatistics(&stats);
@@ -432,7 +432,7 @@ START_TEST(test_decode_unsynchronized_header)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, -128);
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm + 4, len));
 	struct RADARCAPE_Statistics stats;
 	RADARCAPE_getStatistics(&stats);
@@ -465,7 +465,7 @@ START_TEST(test_decode_unsynchronized_payload)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, -128);
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm + 9, len));
 	struct RADARCAPE_Statistics stats;
 	RADARCAPE_getStatistics(&stats);
@@ -499,7 +499,7 @@ START_TEST(test_buffer_two_frames)
 	ck_assert_uint_eq(decoded.payloadLen, 2);
 	ck_assert_int_eq(decoded.siglevel, -50);
 	ck_assert(!memcmp(decoded.payload, "ab", 2));
-	ck_assert_uint_eq(frame.raw_len, len1);
+	ck_assert_uint_eq(frame.rawLen, len1);
 	ck_assert(!memcmp(frame.raw, frm, len1));
 
 	ret = INPUT_getFrame(&frame, &decoded);
@@ -509,7 +509,7 @@ START_TEST(test_buffer_two_frames)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, 127);
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
-	ck_assert_uint_eq(frame.raw_len, len2);
+	ck_assert_uint_eq(frame.rawLen, len2);
 	ck_assert(!memcmp(frame.raw, frm + len1, len2));
 }
 END_TEST
@@ -646,7 +646,7 @@ START_TEST(test_buffer_end_start)
 	ck_assert_uint_eq(decoded.payloadLen, 2);
 	ck_assert_int_eq(decoded.siglevel, -50);
 	ck_assert(!memcmp(decoded.payload, "ab", 2));
-	ck_assert_uint_eq(frame.raw_len, len1);
+	ck_assert_uint_eq(frame.rawLen, len1);
 	ck_assert(!memcmp(frame.raw, frm, len1));
 
 	ret = INPUT_getFrame(&frame, &decoded);
@@ -656,7 +656,7 @@ START_TEST(test_buffer_end_start)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, 26);
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
-	ck_assert_uint_eq(frame.raw_len, len2);
+	ck_assert_uint_eq(frame.rawLen, len2);
 	ck_assert(!memcmp(frame.raw, frm2, len2));
 }
 END_TEST
@@ -687,7 +687,7 @@ START_TEST(test_buffer_end)
 	ck_assert_uint_eq(decoded.payloadLen, 2);
 	ck_assert_int_eq(decoded.siglevel, -50);
 	ck_assert(!memcmp(decoded.payload, "ab", 2));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm, len));
 }
 END_TEST
@@ -718,7 +718,7 @@ START_TEST(test_buffer_end_escape)
 	ck_assert_uint_eq(decoded.payloadLen, 2);
 	ck_assert_int_eq(decoded.siglevel, -50);
 	ck_assert(!memcmp(decoded.payload, "\x1a" "b", 2));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm, len));
 }
 END_TEST
@@ -773,7 +773,7 @@ START_TEST(test_synchronize_peek_unsync)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, -128);
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm + 4, len));
 	struct RADARCAPE_Statistics stats;
 	RADARCAPE_getStatistics(&stats);
@@ -810,7 +810,7 @@ START_TEST(test_synchronize_peek_unsync_at_end)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, -128);
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm2 + 1, len));
 	struct RADARCAPE_Statistics stats;
 	RADARCAPE_getStatistics(&stats);
@@ -846,7 +846,7 @@ START_TEST(test_synchronize_peek_sync_at_end)
 	ck_assert_uint_eq(decoded.payloadLen, 14);
 	ck_assert_int_eq(decoded.siglevel, -128);
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
-	ck_assert_uint_eq(frame.raw_len, len);
+	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm2, len));
 	struct RADARCAPE_Statistics stats;
 	RADARCAPE_getStatistics(&stats);

@@ -45,7 +45,7 @@ static void cleanup(struct OPENSKY_RawFrame * frame)
 
 static inline bool sendFrame(const struct OPENSKY_RawFrame * frame)
 {
-	return NET_send(frame->raw, frame->raw_len);
+	return NET_send(frame->raw, frame->rawLen);
 }
 
 static inline bool sendKeepalive()

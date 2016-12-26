@@ -54,7 +54,7 @@ START_TEST(test_recv_frame)
 
 	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_ne(frame, NULL);
-	ck_assert_uint_eq(frame->raw_len, len);
+	ck_assert_uint_eq(frame->rawLen, len);
 	ck_assert(!memcmp(frame->raw, frm, len));
 	struct FILTER_Statistics stats;
 	FILTER_getStatistics(&stats);
@@ -115,7 +115,7 @@ START_TEST(test_filter_synchronized)
 
 	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_ne(frame, NULL);
-	ck_assert_uint_eq(frame->raw_len, len2);
+	ck_assert_uint_eq(frame->rawLen, len2);
 	ck_assert(!memcmp(frame->raw, frm2, len2));
 	struct FILTER_Statistics stats;
 	FILTER_getStatistics(&stats);

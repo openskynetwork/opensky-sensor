@@ -142,7 +142,7 @@ void output_message(const unsigned char * const msg,
 	assert(out);
 	out->raw[0] = '\x1a';
 	out->raw[1] = (uint8_t) messageType;
-	out->raw_len = BEAST_encode(out->raw + 2, msg, msgLen) + 2;
+	out->rawLen = BEAST_encode(out->raw + 2, msg, msgLen) + 2;
 
 	BUF_commitFrame(out);
 }

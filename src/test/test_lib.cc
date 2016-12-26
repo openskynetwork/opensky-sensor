@@ -87,7 +87,7 @@ static void checkRaw(const struct OPENSKY_RawFrame * raw,
 	const struct OPENSKY_DecodedFrame * frame)
 {
 	/* must be at least the header */
-	ck_assert_uint_ge(raw->raw_len, 9);
+	ck_assert_uint_ge(raw->rawLen, 9);
 
 	/* sync */
 	ck_assert_uint_eq(raw->raw[0], '\x1a');
@@ -98,7 +98,7 @@ static void checkRaw(const struct OPENSKY_RawFrame * raw,
 	ck_assert_uint_le(frameType, OPENSKY_FRAME_TYPE_STATUS);
 
 	const uint8_t * rawptr = &raw->raw[2];
-	size_t rawLen = raw->raw_len - 2;
+	size_t rawLen = raw->rawLen - 2;
 
 	uint8_t buf[14 * 2];
 

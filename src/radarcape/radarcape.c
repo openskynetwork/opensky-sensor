@@ -247,7 +247,7 @@ decode_frame:
 		decoded->frameType = type - '1';
 		decoded->payloadLen = payload_len;
 		raw->raw[1] = type;
-		raw->raw_len = 2;
+		raw->rawLen = 2;
 
 		/* decode header */
 		__attribute__((aligned(8))) union { uint8_t u8[7]; uint64_t u64; } hdr;
@@ -283,7 +283,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 	struct OPENSKY_RawFrame * raw)
 {
 	/* get current raw ptr */
-	uint8_t * rawPtr = raw->raw + raw->raw_len;
+	uint8_t * rawPtr = raw->raw + raw->rawLen;
 
 	do {
 		if (unlikely(bufCur == bufEnd)) {
@@ -300,7 +300,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 			/* escape found: copy buffer up to escape, if applicable */
 			memcpy(rawPtr, bufCur, esc + 1 - bufCur);
 			rawPtr += esc + 1 - bufCur;
-			raw->raw_len += esc + 1 - bufCur;
+			raw->rawLen += esc + 1 - bufCur;
 
 			if (likely(esc != bufCur)) {
 				memcpy(dst, bufCur, esc - bufCur);
@@ -318,7 +318,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 				/* it's another escape -> append escape */
 				*dst++ = BEAST_SYNC;
 				*rawPtr++ = BEAST_SYNC;
-				++raw->raw_len;
+				++raw->rawLen;
 				--len;
 				++bufCur;
 			} else {
@@ -330,7 +330,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 			memcpy(dst, bufCur, mlen);
 			memcpy(rawPtr, bufCur, mlen);
 			rawPtr += mlen;
-			raw->raw_len += mlen;
+			raw->rawLen += mlen;
 			dst += mlen;
 			bufCur += mlen;
 			len -= mlen;
