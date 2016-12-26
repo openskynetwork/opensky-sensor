@@ -25,45 +25,64 @@
 #include "util.h"
 #include "list.h"
 
+/** Component: Prefix */
 static const char PFX[] = "CFG";
 
-//#define DEBUG
+/* Define to 1 to enable debugging messages */
+//#define DEBUG 1
 
+/** Internal section: section and link to siblings */
 struct Section {
+	/** pointer to section */
 	struct CFG_Section const * section;
+	/** siblings in list */
 	struct LIST_LinkD list;
 };
 
+/** List of sections */
 static struct LIST_ListD sections = LIST_ListD_INIT(sections);
 
-/** silent options */
+/** Parser option: warn if sections is unknown */
 static bool optWarnUnknownSection = true;
+/** Parser option: warn if option is unknown */
 static bool optWarnUnknownOption = true;
+/** Parser option: if option value cannot be parsed, use default value */
 static bool optOnErrorUseDefault = true;
 
-/** Current begin of parser */
-static const char * bufferInput;
-/** Remaining size of the file to be parsed */
-static off_t bufferSize;
-/** Current line number */
-static uint_fast32_t bufferLine;
-
+/** Parser state: section state */
 enum SECTION_STATE {
+	/** Not in a section */
 	SECTION_STATE_NOSECTION,
+	/** Unknown section */
 	SECTION_STATE_UNKNOWN,
+	/** Valid section */
 	SECTION_STATE_VALID,
+	/** Unrecoverable error */
 	SECTION_STATE_UNRECOVERABLE
 };
 
+/** Parser state: current begin*/
+static const char * bufferInput;
+/** Parser state: remaining size of the file to be parsed */
+static off_t bufferSize;
+/** Parser state: current line number */
+static uint_fast32_t bufferLine;
+/* Parser state: filename */
 static const char * fileName;
+/** Parser state: section state */
 static enum SECTION_STATE sectionState;
+/** Parser state: section name */
 static const char * sectionName;
+/** Parser state: section name length */
 static size_t sectionNameLen;
 
 static bool readCfg();
 static void fix();
 static void assignOptionFromDefault(const struct CFG_Option * opt);
 
+/** Register a new configuration section.
+ * @param section section to be registered
+ */
 void CFG_registerSection(const struct CFG_Section * section)
 {
 	struct Section * s = malloc(sizeof *s);
@@ -90,6 +109,7 @@ void CFG_registerSection(const struct CFG_Section * section)
 #endif
 }
 
+/** Unregister all sections */
 void CFG_unregisterAll()
 {
 	struct LIST_LinkD * l, * n;
@@ -99,8 +119,12 @@ void CFG_unregisterAll()
 }
 
 /** Read a configuration file.
- * \param file configuration file name to be read
- * \return true if reading succeeded, false otherwise
+ * @param file configuration filename to be read
+ * @param warnUnknownSection warn if section is unknown
+ * @param warnUnknownOption warn if options is unknown
+ * @param onErrorUseDefault if option value cannot be parsed, use default value
+ *  Otherwise, parsing will fail
+ * @return true if reading succeeded, false otherwise
  */
 bool CFG_readFile(const char * file, bool warnUnknownSection,
 	bool warnUnknownOption, bool onErrorUseDefault)
@@ -124,7 +148,7 @@ bool CFG_readFile(const char * file, bool warnUnknownSection,
 		return false;
 	}
 
-	/* mmap input file */
+	/* mmap input file and close file descriptor */
 	char * buffer = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 	close(fd);
 	if (buffer == MAP_FAILED) {
@@ -132,9 +156,10 @@ bool CFG_readFile(const char * file, bool warnUnknownSection,
 		return false;
 	}
 
+	/* initialize parser */
 	bufferInput = buffer;
 	bufferSize = st.st_size;
-	bufferLine = 0;
+	bufferLine = 1;
 	fileName = file;
 
 	/* actually read configuration */
@@ -150,21 +175,34 @@ bool CFG_readFile(const char * file, bool warnUnknownSection,
 	return success;
 }
 
+/** Filter callback for scandir: take only files into account which begin with a
+ * number and end with ".conf"
+ * @param ent directory entry
+ * @return 1 if filename begins with a number and ends with ".conf", 0 otherwise
+ */
 static int filterDirectory(const struct dirent * ent)
 {
 	if (ent->d_type != DT_REG)
 		return 0;
 	char first = ent->d_name[0];
-	if (first < '0' || first > '9')
+	if (first < '0' || first > '9') /* does not begin with a number */
 		return 0;
+
 	size_t len = strlen(ent->d_name);
 	if (len < 5)
 		return 0;
-	if (strcmp(ent->d_name + len - 5, ".conf"))
+	if (strcmp(ent->d_name + len - 5, ".conf")) /* does not end with ".conf" */
 		return 0;
+
 	return 1;
 }
 
+/** Compare callback for scandir: sort files by their prefix.
+ * @param a directory entry (lhs)
+ * @param b directory entry (rhs)
+ * @return -1 if a < b, 0 if a = b, 1 if a > b where the real comparison
+ *  is on the numbers preceding the filenames of a and b.
+ */
 static int compareDirectory(const struct dirent ** a, const struct dirent ** b)
 {
 	unsigned long int idx_a = strtoul((*a)->d_name, NULL, 10);
@@ -172,10 +210,23 @@ static int compareDirectory(const struct dirent ** a, const struct dirent ** b)
 	return idx_a < idx_b ? -1 : idx_a == idx_b ? 0 : 1;
 }
 
+/** Read all files in a directory.
+ * @param path directory path
+ * @param warnUnknownSection warn if section is unknown
+ * @param warnUnknownOption warn if options is unknown
+ * @param onErrorUseDefault if option value cannot be parsed, use default value
+ *  Otherwise, parsing that file will fail
+ * @param stopOnFirstError fail parsing on first error or try to resume with
+ *  next file(s)
+ * @return true if parsing ALL files succeeded
+ */
 bool CFG_readDirectory(const char * path, bool warnUnknownSection,
 	bool warnUnknownOption, bool onErrorUseDefault,
 	bool stopOnFirstError)
 {
+	/* get all filenames which begin with a number and end with ".conf"
+	 * and sort them according to their number
+	 */
 	struct dirent ** namelist;
 	int s = scandir(path, &namelist, &filterDirectory, &compareDirectory);
 	if (s < 0) {
@@ -183,6 +234,7 @@ bool CFG_readDirectory(const char * path, bool warnUnknownSection,
 		return false;
 	}
 
+	/* prepare filename */
 	char filename[PATH_MAX];
 	size_t len = strlen(path);
 	if (len > PATH_MAX - 1) {
@@ -193,9 +245,12 @@ bool CFG_readDirectory(const char * path, bool warnUnknownSection,
 	filename[len] = '/';
 	char * foffset = filename + len + 1;
 	len = sizeof filename - (len + 1);
+
+	/* iterate over all files */
 	bool ret = false;
 	int n;
 	for (n = 0; n < s; ++n) {
+		/* build filename */
 		const char * fname = namelist[n]->d_name;
 		size_t flen = strlen(namelist[n]->d_name);
 		if (flen > len) {
@@ -206,6 +261,8 @@ bool CFG_readDirectory(const char * path, bool warnUnknownSection,
 			continue;
 		}
 		strncpy(foffset, fname, len);
+
+		/* read file */
 		if (!CFG_readFile(filename, warnUnknownSection, warnUnknownOption,
 			onErrorUseDefault) && stopOnFirstError)
 			goto ret;
@@ -213,6 +270,7 @@ bool CFG_readDirectory(const char * path, bool warnUnknownSection,
 	ret = true;
 
 ret:
+	/* free filenames */
 	for (n = 0; n < s; ++n)
 		free(namelist[n]);
 	free(namelist);
@@ -220,12 +278,12 @@ ret:
 	return ret;
 }
 
-/** Checks two strings for equality (neglecting the case) where one string is
+/** Check two strings for equality (neglecting the case) where one string is
  * not NUL-terminated.
- * \param str1 NUL-terminated string to compare
- * \param str2 non NUL-terminated string to compare with
- * \param str2len length of second string
- * \return true if strings are equal
+ * @param str1 NUL-terminated string to compare
+ * @param str2 non NUL-terminated string to compare with
+ * @param str2len length of second string
+ * @return true if strings are equal
  */
 static bool isSame(const char * str1, const char * str2, size_t str2len)
 {
@@ -233,21 +291,27 @@ static bool isSame(const char * str1, const char * str2, size_t str2len)
 	return str1len == str2len && !strncasecmp(str2, str1, str2len);
 }
 
+/** Print an error message from the parser.
+ * @param logLevel log level
+ * @param fmt format
+ */
 __attribute__((format(printf, 2, 3)))
 static void err(enum LOG_LEVEL logLevel, const char * fmt, ...) {
 	char buf[512];
 
+	/* build message */
 	va_list ap;
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof buf, fmt, ap);
 	va_end(ap);
 
+	/* print message with file and line number information */
 	LOG_logf(logLevel, PFX, "FILE '%s', Line %" PRIuFAST32 ": %s",
 		fileName, bufferLine, buf);
 }
 
 /** Parse a section name.
- * \return section
+ * @return section state
  */
 static enum SECTION_STATE parseSection()
 {
@@ -272,23 +336,23 @@ static enum SECTION_STATE parseSection()
 	const ptrdiff_t len = c - bufferInput - 1;
 	const char * const buf = bufferInput + 1;
 
-	/* search section */
-	const struct Section * s;
-	LIST_foreachItem(&sections, s, list)
-		if (isSame(s->section->name, buf, len))
-			break;
-
-	/* advance parser and return */
+	/* advance parser */
 	bufferInput += len + 3;
 	bufferSize -= len + 3;
 	++bufferLine;
 
+	/* search section: check if there is at least one section with that name */
+	const struct Section * s;
+	LIST_foreachItem(&sections, s, list)
+		if (isSame(s->section->name, buf, len))
+				break;
 	if (LIST_link(s, list) == LIST_end(&sections)) {
 		if (optWarnUnknownSection)
 			err(LOG_LEVEL_WARN, "Section %.*s is unknown", (int)len, buf);
 		return SECTION_STATE_UNKNOWN;
 	}
 
+	/* set section name and name length */
 	sectionName = buf;
 	sectionNameLen = len;
 
@@ -309,9 +373,10 @@ static void skipComment()
 }
 
 /** Parse an integer. Garbage after the number is ignored.
- * \param opt option to be parsed
- * \param ret parsed integer. Only written if parsing was successful
- * \return true if parsing was successful, false otherwise
+ * @param value value to be parsed
+ * @param valLen value length
+ * @param ret parsed integer. Only written if parsing was successful
+ * @return true if parsing was successful, false otherwise
  */
 static inline bool parseInt(const char * value, size_t valLen, uint32_t * ret)
 {
@@ -333,9 +398,10 @@ static inline bool parseInt(const char * value, size_t valLen, uint32_t * ret)
 }
 
 /** Parse an integer for port. Garbage after the number is ignored.
- * \param opt option to be parsed
- * \param ret parsed port. Only written if parsing was successful
- * \return true if parsing was successful, false otherwise
+ * @param value value to be parsed
+ * @param valLen value length
+ * @param ret parsed port. Only written if parsing was successful
+ * @return true if parsing was successful, false otherwise
  */
 static inline bool parsePort(const char * value, size_t valLen,
 	uint_fast16_t * ret)
@@ -353,9 +419,10 @@ static inline bool parsePort(const char * value, size_t valLen,
 }
 
 /** Parse a boolean.
- * \param opt option to be parsed
- * \param ret parsed boolean. Only written if parsing was successful
- * \return true if parsing was successful, false otherwise
+ * @param value value to be parsed
+ * @param valLen value length
+ * @param ret parsed boolean. Only written if parsing was successful
+ * @return true if parsing was successful, false otherwise
  */
 static inline bool parseBool(const char * value, size_t valLen, bool * ret)
 {
@@ -374,11 +441,12 @@ static inline bool parseBool(const char * value, size_t valLen, bool * ret)
 }
 
 /** Parse a string.
- * \param opt option to be parsed
- * \param str string to read into (will be nul-terminated), only written if
+ * @param value value to be parsed
+ * @param valLen value length
+ * @param str string to read into (will be nul-terminated), only written if
  *  parsing was successful.
- * \param sz size of the string
- * \return true if parsing was successful, false otherwise
+ * @param sz size of the string
+ * @return true if parsing was successful, false otherwise
  */
 static inline bool parseString(const char * value, size_t valLen, char * str,
 	size_t sz)
@@ -394,8 +462,10 @@ static inline bool parseString(const char * value, size_t valLen, char * str,
 }
 
 /** Parse a double. Garbage after the number is ignored.
- * \param opt option to be parsed
- * \return true if parsing was successful, false otherwise
+ * @param value value to be parsed
+ * @param valLen value length
+ * @param ret parsed double. Only written if parsing was successful
+ * @return true if parsing was successful, false otherwise
  */
 static inline bool parseDouble(const char * value, size_t valLen, double * ret)
 {
@@ -416,14 +486,21 @@ static inline bool parseDouble(const char * value, size_t valLen, double * ret)
 	return true;
 }
 
-/** Stop on unknown key.
- * \param opt option which couldn't be recognized
+/** Warn on unknown key.
+ * @param key option key
+ * @param keyLen length of option key
  */
 static inline void unknownKey(const char * key, size_t keyLen)
 {
 	err(LOG_LEVEL_WARN, "Unknown key '%.*s'", (int)keyLen, key);
 }
 
+/** Parse a value string and assign it to an option
+ * @param option option to be assigned
+ * @param value value string
+ * @param valLen length of value string
+ * @return true if parsing succeeded, false otherwise
+ */
 static bool assignOptionFromString(const struct CFG_Option * option,
 	const char * value, size_t valLen)
 {
@@ -449,9 +526,37 @@ static bool assignOptionFromString(const struct CFG_Option * option,
 	}
 }
 
+/** Get an option by its name.
+ * @param section section name
+ * @param sectionLen section name length
+ * @param key key name
+ * @param keyLen key length
+ * @return option or NULL if not found
+ */
+static const struct CFG_Option * getOption(const char * section,
+	size_t sectionLen, const char * key, size_t keyLen)
+{
+	const struct Section * s;
+	LIST_foreachItem(&sections, s, list) {
+		const struct CFG_Section * sect = s->section;
+		if (!isSame(sect->name, section, sectionLen))
+			continue;
+		/* section name matches: search option */
+		size_t i;
+		for (i = 0; i < sect->n_opt; ++i) {
+			const struct CFG_Option * opt = &sect->options[i];
+			if (isSame(opt->name, key, keyLen)) /* found -> return it */
+				return opt;
+		}
+		/* not found: search next section */
+	}
+
+	/* not found */
+	return NULL;
+}
+
 /** Parse an option line.
- * \param section current section
- * \param cfg configuration to be filled
+ * @return true if parsing succeeded
  */
 static bool parseOption()
 {
@@ -487,41 +592,33 @@ static bool parseOption()
 			++value;
 		size_t valLen = n - value;
 
-		const struct Section * s;
-		LIST_foreachItem(&sections, s, list) {
-			const struct CFG_Section * section = s->section;
-			if (isSame(section->name, sectionName, sectionNameLen)) {
-				size_t i;
-				for (i = 0; i < section->n_opt; ++i) {
-					if (isSame(section->options[i].name, key, keyLen)) {
-						const struct CFG_Option * opt = &section->options[i];
-						if (!assignOptionFromString(opt, value, valLen)) {
-							if (optOnErrorUseDefault)
-								assignOptionFromDefault(opt);
-							else
-								return false;
-						} else if (opt->given) {
-							*opt->given = true;
-						}
-						goto found;
-					}
-				}
+		/* get option by section and key name */
+		const struct CFG_Option * opt = getOption(sectionName, sectionNameLen,
+			key, keyLen);
+		if (opt != NULL) {
+			/* found */
+			if (!assignOptionFromString(opt, value, valLen)) {
+				/* could not parse */
+				if (optOnErrorUseDefault) /* use default */
+					assignOptionFromDefault(opt);
+				else /* fail */
+					return false;
+			} else if (opt->given) {
+				*opt->given = true;
 			}
+		} else {
+			if (optWarnUnknownOption)
+				unknownKey(key, keyLen);
 		}
-		if (LIST_link(s, list) == LIST_end(&sections) && optWarnUnknownOption)
-			unknownKey(key, keyLen);
 	}
 
-found:
 	++bufferLine;
 
 	return true;
 }
 
 /** Read the configuration file.
- * \param cfgStr configuration, loaded into memory
- * \param size size of the configuration
- * \param cfg configuration structure to be filled
+ * @return true if parsing succeeded
  */
 static bool readCfg()
 {
@@ -553,6 +650,9 @@ static bool readCfg()
 	return true;
 }
 
+/** Assign option from its default value.
+ * @param opt option to be assigned
+ */
 static void assignOptionFromDefault(const struct CFG_Option * opt)
 {
 	union CFG_Value * val = opt->var;
@@ -580,10 +680,11 @@ static void assignOptionFromDefault(const struct CFG_Option * opt)
 		*opt->given = false;
 }
 
-/** Load default values. */
+/** Load default values for all options. */
 void CFG_loadDefaults()
 {
 	const struct Section * s;
+	/* iterate over all sections and options */
 	LIST_foreachItem(&sections, s, list) {
 		size_t i;
 		for (i = 0; i < s->section->n_opt; ++i)
@@ -591,73 +692,94 @@ void CFG_loadDefaults()
 	}
 }
 
-static const struct CFG_Option * getOption(const char * section,
-	const char * option)
+/** Get option by name. Wrapper for getOption which takes NUL-terminated
+ * strings and fails if the option was not found.
+ * @param section section name
+ * @param key key name
+ * @return option
+ */
+static const struct CFG_Option * getOptionByString(const char * section,
+	const char * key)
 {
-	const struct Section * s;
-	LIST_foreachItem(&sections, s, list) {
-		const struct CFG_Section * sect = s->section;
-		if (strcasecmp(sect->name, section))
-			continue;
-		size_t i;
-		for (i = 0; i < sect->n_opt; ++i) {
-			const struct CFG_Option * opt = &sect->options[i];
-			if (!strcasecmp(opt->name, option))
-				return opt;
-		}
-	}
-	LOG_logf(LOG_LEVEL_EMERG, PFX, "Could not find option %s.%s\n", section,
-		option);
-	return false;
+	const struct CFG_Option * opt = getOption(section, strlen(section),
+		key, strlen(key));
+	if (opt == NULL)
+		LOG_logf(LOG_LEVEL_EMERG, PFX, "Could not find option %s.%s\n", section,
+			key);
+	return opt;
 }
 
-void CFG_setBoolean(const char * section, const char * option, bool value)
+/** Set a boolean option. Option must exist and its type must be boolean.
+ * @param section section name
+ * @param key key name
+ * @param value value to be assigned
+ */
+void CFG_setBoolean(const char * section, const char * key, bool value)
 {
-	const struct CFG_Option * opt = getOption(section, option);
+	const struct CFG_Option * opt = getOptionByString(section, key);
 	if (opt) {
 		assert(opt->type == CFG_VALUE_TYPE_BOOL);
 		((union CFG_Value*)opt->var)->boolean = value;
 	}
 }
 
-void CFG_setInteger(const char * section, const char * option, uint32_t value)
+/** Set an integer option. Option must exist and its type must be integer.
+ * @param section section name
+ * @param key key name
+ * @param value value to be assigned
+ */
+void CFG_setInteger(const char * section, const char * key, uint32_t value)
 {
-	const struct CFG_Option * opt = getOption(section, option);
+	const struct CFG_Option * opt = getOptionByString(section, key);
 	if (opt) {
 		assert(opt->type == CFG_VALUE_TYPE_INT);
 		((union CFG_Value*)opt->var)->integer = value;
 	}
 }
 
-void CFG_setPort(const char * section, const char * option,
-	uint_fast16_t value)
+/** Set a port option. Option must exist and its type must be port.
+ * @param section section name
+ * @param key key name
+ * @param value value to be assigned
+ */
+void CFG_setPort(const char * section, const char * key, uint_fast16_t value)
 {
-	const struct CFG_Option * opt = getOption(section, option);
+	const struct CFG_Option * opt = getOptionByString(section, key);
 	if (opt) {
 		assert(opt->type == CFG_VALUE_TYPE_PORT);
 		((union CFG_Value*)opt->var)->port = value;
 	}
 }
 
-void CFG_setString(const char * section, const char * option,
-	const char * value)
+/** Set a string option. Option must exist and its type must be string.
+ * @param section section name
+ * @param key key name
+ * @param value value to be assigned
+ */
+void CFG_setString(const char * section, const char * key, const char * value)
 {
-	const struct CFG_Option * opt = getOption(section, option);
+	const struct CFG_Option * opt = getOptionByString(section, key);
 	if (opt) {
 		assert(opt->type == CFG_VALUE_TYPE_STRING);
 		strncpy(opt->var, value, opt->maxlen);
 	}
 }
 
-void CFG_setDouble(const char * section, const char * option, double value)
+/** Set a double option. Option must exist and its type must be double.
+ * @param section section name
+ * @param key key name
+ * @param value value to be assigned
+ */
+void CFG_setDouble(const char * section, const char * key, double value)
 {
-	const struct CFG_Option * opt = getOption(section, option);
+	const struct CFG_Option * opt = getOptionByString(section, key);
 	if (opt) {
 		assert(opt->type == CFG_VALUE_TYPE_DOUBLE);
 		((union CFG_Value*)opt->var)->dbl = value;
 	}
 }
 
+/** Call fix-callback on each section */
 static void fix()
 {
 	const struct Section * s;
@@ -669,8 +791,8 @@ static void fix()
 }
 
 /** Check the current configuration.
- * \note Should be called after CFG_readFile()
- * \return true if configuration is correct, false otherwise.
+ * @note Should be called after CFG_readFile()
+ * @return true if configuration is correct, false otherwise.
  */
 bool CFG_check()
 {
@@ -684,13 +806,22 @@ bool CFG_check()
 	return true;
 }
 
+/** Write all options of a section with their current value into a configuration
+ * file.
+ * @param file file handle
+ * @param section section to be written
+ * @return true if writing succeeded
+ */
 static bool writeOptions(FILE * file, const struct CFG_Section * section)
 {
 	size_t n;
 	for (n = 0; n < section->n_opt; ++n) {
 		const struct CFG_Option * opt = &section->options[n];
 		const union CFG_Value * val = opt->var;
+		/* write option name */
 		fprintf(file, "%s = ", opt->name);
+
+		/* write option value, depending on its type */
 		switch (opt->type) {
 		case CFG_VALUE_TYPE_BOOL:
 			if (fprintf(file, "%s\n", val->boolean ? "true" : "false") < 0)
@@ -717,6 +848,10 @@ static bool writeOptions(FILE * file, const struct CFG_Section * section)
 	return true;
 }
 
+/** Write all sections with their options into a configuration file.
+ * @param file file handle
+ * @return true if writing succeeded
+ */
 static bool writeSections(FILE * file)
 {
 	bool first = true;
@@ -725,6 +860,8 @@ static bool writeSections(FILE * file)
 	LIST_foreachItem(&sections, s, list) {
 		const struct CFG_Section * sect = s->section;
 
+		/* collect sections: write this section only if it was not already
+		 * written before (see below) */
 		const struct Section * prev = s;
 		LIST_foreachItemRev_continue(&sections, prev, list)
 			if (!strcasecmp(sect->name, prev->section->name))
@@ -732,15 +869,21 @@ static bool writeSections(FILE * file)
 		if (LIST_link(prev, list) != LIST_end(&sections))
 			continue;
 
+		/* seperator */
 		if (!first)
 			if (fprintf(file, "\n\n") < 0)
 				return false;
 		first = false;
+
+		/* write section name */
 		if (fprintf(file, "[%s]\n", sect->name) < 0)
 			return false;
+
+		/* write options */
 		if (writeOptions(file, sect))
 			return false;
 
+		/* write all options of all sections with the same name */
 		const struct Section * next = s;
 		LIST_foreachItem_continue(&sections, next, list)
 			if (!strcasecmp(sect->name, next->section->name))
@@ -750,6 +893,10 @@ static bool writeSections(FILE * file)
 	return true;
 }
 
+/** Write all sections with their options into a configuration file.
+ * @param filename configuration filename
+ * @return true if writing succeeded
+ */
 bool CFG_write(const char * filename)
 {
 	FILE * file = fopen(filename, "w");
@@ -760,11 +907,17 @@ bool CFG_write(const char * filename)
 	}
 
 	bool rc = writeSections(file);
+
 	fclose(file);
 
 	return rc;
 }
 
+/** Write all options of a particular section into a configuration file.
+ * @param filename configuration filename
+ * @param section section to be written
+ * @return true if writing succeeded
+ */
 bool CFG_writeSection(const char * filename, const struct CFG_Section * section)
 {
 	FILE * file = fopen(filename, "w");
