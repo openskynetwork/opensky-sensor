@@ -7,11 +7,17 @@
 extern "C" {
 #endif
 
+/** Log Levels */
 enum LOG_LEVEL {
+	/** Just an information */
 	LOG_LEVEL_INFO,
+	/** Debugging message */
 	LOG_LEVEL_DEBUG,
+	/** Warning */
 	LOG_LEVEL_WARN,
+	/** Recoverable error */
 	LOG_LEVEL_ERROR,
+	/** Unrecoverable error. This will cause the process to abort */
 	LOG_LEVEL_EMERG
 };
 

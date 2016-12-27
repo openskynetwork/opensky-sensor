@@ -10,6 +10,7 @@
 #include "threads.h"
 #include "util.h"
 
+/** Log level Names */
 static const char * levelNames[] = {
 	[LOG_LEVEL_INFO] = "INFO",
 	[LOG_LEVEL_DEBUG] = "DEBUG",
@@ -18,8 +19,15 @@ static const char * levelNames[] = {
 	[LOG_LEVEL_EMERG] = "EMERG"
 };
 
+/** Mutex: only one thread can log to stdout */
 static pthread_mutex_t stdioMutex = PTHREAD_MUTEX_INITIALIZER;
 
+/** Print log message with printf-like formatting.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param prefix Component name
+ * @param fmt printf format string
+ */
 __attribute__((format(printf, 3, 4)))
 void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 {
@@ -46,6 +54,12 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 	}
 }
 
+/** Print log message.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param prefix Component name
+ * @param str log message
+ */
 void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 {
 	int r;
@@ -67,6 +81,14 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 	}
 }
 
+/** Print log message with error code.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param err error code
+ * @param prefix Component name
+ * @param fmt format string
+ * @param ap argument list for format
+ */
 static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	const char * fmt, va_list ap)
 {
@@ -107,6 +129,12 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	}
 }
 
+/** Print log message with errno.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param prefix Component name
+ * @param fmt format string
+ */
 __attribute__((format(printf, 3, 4)))
 void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 {
@@ -116,6 +144,13 @@ void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 	va_end(ap);
 }
 
+/** Print log message with error code.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param err error code
+ * @param prefix Component name
+ * @param fmt format string
+ */
 __attribute__((format(printf, 4, 5)))
 void LOG_errno2(enum LOG_LEVEL level, int err, const char * prefix,
 	const char * fmt, ...)
@@ -126,6 +161,7 @@ void LOG_errno2(enum LOG_LEVEL level, int err, const char * prefix,
 	va_end(ap);
 }
 
+/** Flush the log */
 void LOG_flush()
 {
 	NOC_call(fflush, stdout);
