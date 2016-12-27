@@ -17,18 +17,28 @@
 #include "util.h"
 #include "list.h"
 
+/** Component: Prefix */
 static const char PFX[] = "COMP";
 
+/** State of a component */
 enum COMPONENT_STATE {
+	/** Component is registered */
 	COMPONENT_STATE_REGISTERED,
+	/** Component is initialized */
 	COMPONENT_STATE_INITIALIZED,
+	/** Component is started */
 	COMPONENT_STATE_STARTED,
 };
 
-struct ComponentI {
+/** Private data for components */
+struct ComponentLink {
+	/** Component */
 	const struct Component * comp;
-	pthread_t thread;
+	/** Component state */
 	enum COMPONENT_STATE state;
+	/** Thread reference (if managed by the subsystem) */
+	pthread_t thread;
+	/** Link to siblings */
 	struct LIST_LinkD list;
 };
 
@@ -36,18 +46,18 @@ struct ComponentI {
 static struct LIST_ListD components = LIST_ListD_INIT(components);
 
 static bool exists(const struct Component * comp);
-static void stop(struct ComponentI * c, bool deferred);
-static void destruct(struct ComponentI * ci);
-static void stopUntil(struct ComponentI * end);
-static void destructUntil(struct ComponentI * end);
-static bool startThreaded(struct ComponentI * ci);
-static bool stopThreaded(const struct ComponentI * ci, bool deferred);
+static void stop(struct ComponentLink * c, bool deferred);
+static void destruct(struct ComponentLink * ci);
+static void stopUntil(struct ComponentLink * end);
+static void destructUntil(struct ComponentLink * end);
+static bool startThreaded(struct ComponentLink * ci);
+static bool stopThreaded(const struct ComponentLink * ci, bool deferred);
 
 /** Silence all outputs (useful for unit testing) */
 static bool silent = false;
 
 /** Set verbosity of the component management.
- * \param s true if the management should not print any information
+ * @param s true if the management should not print any information
  */
 void COMP_setSilent(bool s)
 {
@@ -55,8 +65,7 @@ void COMP_setSilent(bool s)
 }
 
 /** Register a component
- * \param comp component
- * \param initData initial data, passed to the components' start function
+ * @param comp component to be registered
  */
 void COMP_register(const struct Component * comp)
 {
@@ -65,7 +74,7 @@ void COMP_register(const struct Component * comp)
 			comp->description);
 	}
 
-	struct ComponentI * ci = malloc(sizeof *ci);
+	struct ComponentLink * ci = malloc(sizeof *ci);
 	if (ci == NULL)
 		LOG_errno(LOG_LEVEL_EMERG, PFX, "malloc failed");
 	ci->comp = comp;
@@ -77,35 +86,44 @@ void COMP_register(const struct Component * comp)
 		"onRegister: %d", comp->description, !!comp->config,
 		!!comp->onRegister);
 #endif
+
 	if (comp->config)
 		CFG_registerSection(comp->config);
 	if (comp->onRegister)
 		comp->onRegister();
 }
 
+/** Unregister all components
+ * @note components must be stopped and deconstructed first
+ */
 void COMP_unregisterAll()
 {
 	struct LIST_LinkD * l, * n;
 	LIST_foreachSafe(&components, l, n) {
-		struct ComponentI * ci = LIST_item(l, struct ComponentI, list);
+		struct ComponentLink * ci = LIST_item(l, struct ComponentLink, list);
 		assert(ci->state == COMPONENT_STATE_REGISTERED);
 		free(ci);
 	}
 	LIST_init(&components);
 }
 
+/** Check if a component already exists
+ * @param comp component to be tested
+ * @return true if component already exists
+ */
 static bool exists(const struct Component * comp)
 {
-	struct ComponentI * ci;
+	struct ComponentLink * ci;
 	LIST_foreachItem(&components, ci, list)
 		if (ci->comp == comp)
 			return true;
 	return false;
 }
 
+/** Make sure, that all dependencies are registered */
 static void fixDependencies()
 {
-	struct ComponentI * ci;
+	struct ComponentLink * ci;
 	struct Component const * const * dp;
 	LIST_foreachItem(&components, ci, list)
 		for (dp = ci->comp->dependencies; *dp; ++dp)
@@ -113,9 +131,12 @@ static void fixDependencies()
 				COMP_register(*dp);
 }
 
+/** Check if all dependencies are enabled
+ * @note Will log and not return if check fails
+ */
 static void checkEnabledDependencies()
 {
-	struct ComponentI * ci;
+	struct ComponentLink * ci;
 	struct Component const * const * dp;
 	LIST_foreachItem(&components, ci, list)
 		if (!ci->comp->enabled || *ci->comp->enabled)
@@ -126,6 +147,10 @@ static void checkEnabledDependencies()
 						ci->comp->description, (*dp)->description);
 }
 
+/** Check if all dependencies of a component are members of the list
+ * @param c component to be tested
+ * @return true if all dependencies of c are registered
+ */
 static bool allDependencies(const struct Component * c)
 {
 	struct Component const * const * dp;
@@ -135,36 +160,51 @@ static bool allDependencies(const struct Component * c)
 	return true;
 }
 
+/** Sequentialize the list of components, such that all dependencies are
+ * constructed/started before they are needed.
+ * @note this function will log and not return if there are dependency cycles
+ */
 static void sequentialize()
 {
-	struct LIST_ListD newList = LIST_ListD_INIT(newList);
+	/* create a temp list and move all members of the old list to it */
+	struct LIST_ListD tmpList = LIST_ListD_INIT(tmpList);
+	LIST_concatenatePush(&tmpList, &components);
 
-	LIST_concatenatePush(&newList, &components);
-
-	while (!LIST_empty(&newList)) {
-		struct LIST_LinkD * l, * n;
-		LIST_foreachSafe(&newList, l, n) {
-			struct ComponentI * ci = LIST_item(l, struct ComponentI, list);
+	while (!LIST_empty(&tmpList)) {
+		/* there is at least one more component to be added to the list */
+		struct LIST_LinkD * l;
+		LIST_foreach(&tmpList, l) {
+			struct ComponentLink * ci = LIST_item(l, struct ComponentLink,
+				list);
 			if (allDependencies(ci->comp)) {
-				LIST_unlink(&newList, l);
+				/* all dependencies are met -> move the component from the temp
+				 * list to the permament list */
+				LIST_unlink(&tmpList, l);
 				LIST_push(&components, l);
-				break;
+				break; /* begin from start again */
 			}
 		}
-		if (l == LIST_end(&newList))
+		if (l == LIST_end(&tmpList)) {
+			/* nothing done this time -> cycle detected */
 			LOG_log(LOG_LEVEL_EMERG, PFX, "Cycle in dependencies detected");
+		}
 	}
 }
 
+/** After registering all components, call this function to fix the dependencies
+ */
 void COMP_fixup()
 {
 	fixDependencies();
 	sequentialize();
 }
 
+/** Initialize all components
+ * @return true if all components could be initialized successfully
+ */
 bool COMP_initAll()
 {
-	struct ComponentI * ci;
+	struct ComponentLink * ci;
 
 	checkEnabledDependencies();
 
@@ -194,18 +234,18 @@ bool COMP_initAll()
 /** Destruct all components. This is the opposite of COMP_initAll(). */
 void COMP_destructAll()
 {
-	struct ComponentI * ci;
+	struct ComponentLink * ci;
 	LIST_foreachItemRev(&components, ci, list)
 		destruct(ci);
 }
 
 /** Start all components. If not all components could be started, the already
- *  started components are stopped.
- * @return true if all components were started. false otherwise.
+ *  started components are stopped again.
+ * @return true if all components were started successfully
  */
 bool COMP_startAll()
 {
-	struct ComponentI * ci;
+	struct ComponentLink * ci;
 	LIST_foreachItem(&components, ci, list) {
 		if (ci->state != COMPONENT_STATE_INITIALIZED)
 			continue;
@@ -219,9 +259,9 @@ bool COMP_startAll()
 			LOG_logf(LOG_LEVEL_INFO, PFX, "Start %s", c->description);
 
 		bool started = true;
-		if (!c->onStart && c->main)
+		if (!c->onStart && c->main) /* we shall create and manage a thread */
 			started = startThreaded(ci);
-		else if (c->onStart)
+		else if (c->onStart) /* the component manages itself */
 			started = c->onStart();
 
 		if (!started) {
@@ -236,12 +276,12 @@ bool COMP_startAll()
 }
 
 /** Stop a component.
- * @param c component to be stopped
+ * @param ci component to be stopped
  * @param deferred true if the stop was deferred, i.e. it is not the first time
  *  the component was tried to be stopped. This is passed to the stop function
  *  of the component.
  */
-static void stop(struct ComponentI * ci, bool deferred)
+static void stop(struct ComponentLink * ci, bool deferred)
 {
 	const struct Component * c = ci->comp;
 
@@ -264,13 +304,13 @@ static void stop(struct ComponentI * ci, bool deferred)
 }
 
 /** Stop components up to a specific component. This is useful, if starting
- * failed a specific component c. Then all components up to c (except c)
+ * failed a specific component. Then all components up to that (except itself)
  * should be stopped in reverse order.
  * @param end the first component NOT to be stopped
  */
-static void stopUntil(struct ComponentI * end)
+static void stopUntil(struct ComponentLink * end)
 {
-	struct ComponentI * ci = end;
+	struct ComponentLink * ci = end;
 	bool deferred = false;
 	LIST_foreachItemRev_continue(&components, ci, list) {
 		stop(ci, false);
@@ -318,15 +358,14 @@ static void stopUntil(struct ComponentI * end)
 /** Stop all components. */
 void COMP_stopAll()
 {
-	stopUntil(LIST_item(LIST_end(&components), struct ComponentI, list));
+	stopUntil(LIST_item(LIST_end(&components), struct ComponentLink, list));
 }
 
-/** Start a component using a thread.
- * @param c component to be started
- * @param data initial data
+/** Start a threaded component.
+ * @param ci component to be started
  * @return true if starting the component was successful
  */
-static bool startThreaded(struct ComponentI * ci)
+static bool startThreaded(struct ComponentLink * ci)
 {
 	int rc = pthread_create(&ci->thread, NULL,
 		(void*(*)(void*))(ci->comp->main), NULL);
@@ -335,16 +374,18 @@ static bool startThreaded(struct ComponentI * ci)
 			"component %s", ci->comp->description);
 		return false;
 	} else {
+		/* set its name for debugging purposes */
 		pthread_setname_np(ci->thread, ci->comp->description);
 	}
 	return true;
 }
 
 /** Try to join a thread with a timeout of one second.
- * @param c threaded component to be stopped
- * @return the value of pthread_timedjoin_np()
+ * @param ci threaded component to be stopped
+ * @return the value of pthread_timedjoin_np(), especially 0 on success and
+ *  ETIMEDOUT on timeout
  */
-static int tryJoin(const struct ComponentI * ci)
+static int tryJoin(const struct ComponentLink * ci)
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
@@ -353,12 +394,12 @@ static int tryJoin(const struct ComponentI * ci)
 }
 
 /** Stop a threaded component.
- * @param c component to be stopped
+ * @param ci component to be stopped
  * @param deferred true if we're not stopping the first time. This will prevent
  *  pthread_cancel to be called again.
  * @return true if stopping succeeded, false on timeout (one second)
  */
-static bool stopThreaded(const struct ComponentI * ci, bool deferred)
+static bool stopThreaded(const struct ComponentLink * ci, bool deferred)
 {
 	if (deferred) {
 		if (tryJoin(ci) != 0) {
@@ -369,7 +410,7 @@ static bool stopThreaded(const struct ComponentI * ci, bool deferred)
 		}
 	} else {
 		pthread_cancel(ci->thread);
-		if (tryJoin(ci) == ETIMEDOUT) {
+		if (tryJoin(ci) != 0) {
 			if (!silent)
 				LOG_logf(LOG_LEVEL_WARN, PFX, "Component %s could not be "
 					"joined, deferring", ci->comp->description);
@@ -379,7 +420,10 @@ static bool stopThreaded(const struct ComponentI * ci, bool deferred)
 	return true;
 }
 
-static void destruct(struct ComponentI * ci)
+/** Destruct a component.
+ * @param ci component to be destructed
+ */
+static void destruct(struct ComponentLink * ci)
 {
 	assert(ci->state != COMPONENT_STATE_STARTED);
 
@@ -395,16 +439,19 @@ static void destruct(struct ComponentI * ci)
 	ci->state = COMPONENT_STATE_REGISTERED;
 }
 
-static void destructUntil(struct ComponentI * end)
+/** Destruct all components up to (excluding) a given component.
+ * @param end the first component NOT to be destructed
+ */
+static void destructUntil(struct ComponentLink * end)
 {
-	struct ComponentI * ci = end;
+	struct ComponentLink * ci = end;
 	LIST_foreachItemRev_continue(&components, ci, list)
 		destruct(ci);
 }
 
 void COMP_resetAll()
 {
-	struct ComponentI * ci;
+	struct ComponentLink * ci;
 	LIST_foreachItem(&components, ci, list)
 		if (ci->comp->onReset)
 			ci->comp->onReset();

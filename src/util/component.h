@@ -11,29 +11,46 @@
 extern "C" {
 #endif
 
+/** Component Descriptor */
 struct Component {
+	/** Component name */
 	const char * description;
 
+	/** Callback: called upon registering the component */
 	void (*onRegister)();
 
+	/** Callback: called upon construction
+	 * @return true if component was constructed successfully
+	 */
 	bool (*onConstruct)();
+	/** Callback: called upon destruction */
 	void (*onDestruct)();
 
+	/** Callback: main loop */
 	void (*main)();
 
+	/** Callback: called upon start
+	 * @return true if component was started successfully
+	 */
 	bool (*onStart)();
+	/** Callback: called upon stop
+	 * @param deferred true if stopping failed earlier and was deferred
+	 * @return true if component was stopped successfully
+	 */
 	bool (*onStop)(bool deferred);
 
+	/** Callback: reset statistics */
 	void (*onReset)();
 
 	bool * enabled;
+	/** pointer to boolean, indicating if this component should be started */
 	bool * start;
 
+	/** Component configuration descriptor */
 	const struct CFG_Section * config;
 
 	const struct Component * dependencies[];
 };
-
 
 void COMP_setSilent(bool s);
 
