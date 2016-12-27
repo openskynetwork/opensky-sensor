@@ -48,9 +48,9 @@ struct LIST_ListDC {
 
 /** Initialize the list. Must be called before using the list,
  *   except for replacing operations, such as LIST_separateFromD().
- * \note Can also be used to clear the list. When clearing the list, be sure to
+ * @note Can also be used to clear the list. When clearing the list, be sure to
  *   have acess to the list in another way.
- * \param list list to be initialized.
+ * @param list list to be initialized.
  */
 static inline void LIST_initD(struct LIST_ListD * list)
 {
@@ -59,8 +59,8 @@ static inline void LIST_initD(struct LIST_ListD * list)
 }
 
 /** Test whether the list is empty.
- * \param list list to be tested.
- * \return true iff list is empty.
+ * @param list list to be tested.
+ * @return true iff list is empty.
  */
 static inline bool LIST_emptyD(const struct LIST_ListD * list)
 {
@@ -69,11 +69,11 @@ static inline bool LIST_emptyD(const struct LIST_ListD * list)
 }
 
 /** Unlink a link from the list.
- * \param list list to be manipulated.
- * \param link to be unlinked. Must be part of the list. If the link is
+ * @param list list to be manipulated.
+ * @param link to be unlinked. Must be part of the list. If the link is
  *  the lists anchor, nothing will happen.
- * \return the link itself.
- * \note the list itself is not really needed here, but is here to unify the
+ * @return the link itself.
+ * @note the list itself is not really needed here, but is here to unify the
  *  interface.
  */
 static inline struct LIST_LinkD * LIST_unlinkD(struct LIST_ListD * list,
@@ -86,10 +86,10 @@ static inline struct LIST_LinkD * LIST_unlinkD(struct LIST_ListD * list,
 }
 
 /** Unlink first link of the list and return it.
- * \note if the list is empty, the list will still be empty but the anchor
+ * @note if the list is empty, the list will still be empty but the anchor
  *  is returned. Be sure to check this condition.
- * \param list list to be shifted.
- * \return first link of the list or the anchor if the list was empty.
+ * @param list list to be shifted.
+ * @return first link of the list or the anchor if the list was empty.
  */
 static inline struct LIST_LinkD * LIST_shiftD(struct LIST_ListD * list)
 {
@@ -98,10 +98,10 @@ static inline struct LIST_LinkD * LIST_shiftD(struct LIST_ListD * list)
 }
 
 /** Unlink last link of the list and return it.
- * \note if the list is empty, the list will still be empty but the anchor
+ * @note if the list is empty, the list will still be empty but the anchor
  *  is returned. Be sure to check this condition.
- * \param list list to be popped.
- * \return last link of the list or the anchor if the list was empty.
+ * @param list list to be popped.
+ * @return last link of the list or the anchor if the list was empty.
  */
 static inline struct LIST_LinkD * LIST_popD(struct LIST_ListD * list)
 {
@@ -110,11 +110,11 @@ static inline struct LIST_LinkD * LIST_popD(struct LIST_ListD * list)
 }
 
 /** Insert a new link after another link which is member of the list.
- * \param list list to be manipulated.
- * \param prev link after which the new link will be inserted. This link must
+ * @param list list to be manipulated.
+ * @param prev link after which the new link will be inserted. This link must
  *  be part of a list.
- * \param link link to be inserted after prev. Must not be part of another list.
- * \note the list itself is not really needed here, but is here to unify the
+ * @param link link to be inserted after prev. Must not be part of another list.
+ * @note the list itself is not really needed here, but is here to unify the
  *  interface.
  */
 static inline void LIST_insertD(struct LIST_ListD * list,
@@ -129,8 +129,8 @@ static inline void LIST_insertD(struct LIST_ListD * list,
 }
 
 /** Insert a new link at the end of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the end. Must not be part of another list.
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the end. Must not be part of another list.
  */
 static inline void LIST_pushD(struct LIST_ListD * list,
 	struct LIST_LinkD * link)
@@ -140,8 +140,8 @@ static inline void LIST_pushD(struct LIST_ListD * list,
 }
 
 /** Insert a new link at the beginning of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the beginning. Must not be part of another
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the beginning. Must not be part of another
  *  list.
  */
 static inline void LIST_unshiftD(struct LIST_ListD * list,
@@ -152,16 +152,16 @@ static inline void LIST_unshiftD(struct LIST_ListD * list,
 }
 
 /** Separate the lists tail beginning from (including) a pivot into a new list.
- * \param list list to be separated. Will be cut (excluding) at the pivot.
- * \param newList list to hold the tail beginning (including) at the pivot. May
+ * @param list list to be separated. Will be cut (excluding) at the pivot.
+ * @param newList list to hold the tail beginning (including) at the pivot. May
  *  be uninitialized.
- * \param pivot pivot link where the list is separated. Must be part of
+ * @param pivot pivot link where the list is separated. Must be part of
  *  the source list.
- * \note if the pivot is the anchor, the source list will be left untouched and
+ * @note if the pivot is the anchor, the source list will be left untouched and
  *  the new list will be cleared.
- * \note if the pivot is the head, the source list will be emptied and the
+ * @note if the pivot is the head, the source list will be emptied and the
  *  destination list will hold all links.
- * \note if the source and destination list are the same, the behavior is
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_separateFromD(struct LIST_ListD * __restrict list,
@@ -189,17 +189,17 @@ static inline void LIST_separateFromD(struct LIST_ListD * __restrict list,
 }
 
 /** Separate the lists head beginning from (excluding) a pivot into a new list.
- * \param list list to be separated. Will be cut (including) at the pivot and
+ * @param list list to be separated. Will be cut (including) at the pivot and
  *  include the tail only.
- * \param newList list to hold the head until (excluding) the pivot. May be
+ * @param newList list to hold the head until (excluding) the pivot. May be
  *  uninitialized.
- * \param pivot pivot link where the list is separated. Must be part of
+ * @param pivot pivot link where the list is separated. Must be part of
  *  the source list.
- * \note if the pivot is the anchor, the source list will be emptied and
+ * @note if the pivot is the anchor, the source list will be emptied and
  *  the destination list will hold all links.
- * \note if the pivot is the source lists head, the source list will be left
+ * @note if the pivot is the source lists head, the source list will be left
  *  untouched and the destination list is emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_separateUntilD(struct LIST_ListD * __restrict list,
@@ -227,10 +227,10 @@ static inline void LIST_separateUntilD(struct LIST_ListD * __restrict list,
 }
 
 /** Concatenate two lists by appending a source list to a destination list.
- * \param dst destination list. Will contain its old links followed by the
+ * @param dst destination list. Will contain its old links followed by the
  *  links of the source list.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_concatenatePushD(struct LIST_ListD * __restrict dst,
@@ -249,10 +249,10 @@ static inline void LIST_concatenatePushD(struct LIST_ListD * __restrict dst,
 }
 
 /** Concatenate two lists by prepending a source list to a destination list.
- * \param dst destination list. Will contain the links of the source list
+ * @param dst destination list. Will contain the links of the source list
  *  followed by its initial links.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_concatenateUnshiftD(struct LIST_ListD * __restrict dst,
@@ -271,11 +271,11 @@ static inline void LIST_concatenateUnshiftD(struct LIST_ListD * __restrict dst,
 }
 
 /** Create list from a vector.
- * \param dst destination list. May be uninitialized.
- * \param vector pointer to elements of a vector.
- * \param offset offset of the link inside a vectors' element.
- * \param items number of items of the vector.
- * \param elemSize size of one element in the vector.
+ * @param dst destination list. May be uninitialized.
+ * @param vector pointer to elements of a vector.
+ * @param offset offset of the link inside a vectors' element.
+ * @param items number of items of the vector.
+ * @param elemSize size of one element in the vector.
  */
 static inline void LIST_fromVectorD(struct LIST_ListD * dst, void * vector,
 	ptrdiff_t offset, size_t items, size_t elemSize)
@@ -300,8 +300,8 @@ static inline void LIST_fromVectorD(struct LIST_ListD * dst, void * vector,
 }
 
 /** Get first link of the list.
- * \param list the list.
- * \return first link of the list.
+ * @param list the list.
+ * @return first link of the list.
  */
 static inline struct LIST_LinkD * LIST_beginD(struct LIST_ListD * list)
 {
@@ -309,8 +309,8 @@ static inline struct LIST_LinkD * LIST_beginD(struct LIST_ListD * list)
 }
 
 /** Get last link of the list.
- * \param list the list.
- * \return last link of the list.
+ * @param list the list.
+ * @return last link of the list.
  */
 static inline struct LIST_LinkD * LIST_beginRevD(struct LIST_ListD * list)
 {
@@ -318,8 +318,8 @@ static inline struct LIST_LinkD * LIST_beginRevD(struct LIST_ListD * list)
 }
 
 /** Get anchor of the list.
- * \param list the list.
- * \return anchor of the list.
+ * @param list the list.
+ * @return anchor of the list.
  */
 static inline struct LIST_LinkD * LIST_endD(struct LIST_ListD * list)
 {
@@ -327,9 +327,9 @@ static inline struct LIST_LinkD * LIST_endD(struct LIST_ListD * list)
 }
 
 /** Get n-th link of the list.
- * \param list the list.
- * \param n number of links to iterate forward.
- * \return n-th link of the list.
+ * @param list the list.
+ * @param n number of links to iterate forward.
+ * @return n-th link of the list.
  */
 static inline struct LIST_LinkD * LIST_atD(struct LIST_ListD * list, size_t n)
 {
@@ -341,9 +341,9 @@ static inline struct LIST_LinkD * LIST_atD(struct LIST_ListD * list, size_t n)
 
 /** Initialize the list. Must be called before using the list,
  *   except for replacing operations, such as LIST_separateDC().
- * \note Can also be used to clear the list. When clearing the list, be sure to
+ * @note Can also be used to clear the list. When clearing the list, be sure to
  *   have acess to the list in another way.
- * \param list list to be initialized.
+ * @param list list to be initialized.
  */
 static inline void LIST_initDC(struct LIST_ListDC * list)
 {
@@ -353,8 +353,8 @@ static inline void LIST_initDC(struct LIST_ListDC * list)
 }
 
 /** Test whether the list is empty.
- * \param list list to be tested.
- * \return true iff list is empty.
+ * @param list list to be tested.
+ * @return true iff list is empty.
  */
 static inline bool LIST_emptyDC(const struct LIST_ListDC * list)
 {
@@ -362,9 +362,9 @@ static inline bool LIST_emptyDC(const struct LIST_ListDC * list)
 }
 
 /** Get length of the list.
- * \param list the list.
- * \return number of links in the list.
- * \note if the list is tainted, the links will be counted in O(n)
+ * @param list the list.
+ * @return number of links in the list.
+ * @note if the list is tainted, the links will be counted in O(n)
  */
 static inline size_t LIST_lengthDC(const struct LIST_ListDC * list)
 {
@@ -381,10 +381,10 @@ static inline size_t LIST_lengthDC(const struct LIST_ListDC * list)
 }
 
 /** Unlink a link from the list.
- * \param list list to be manipulated.
- * \param link to be unlinked. Must be part of the list. If the link is
+ * @param list list to be manipulated.
+ * @param link to be unlinked. Must be part of the list. If the link is
  *  the lists anchor, nothing will happen.
- * \return the link itself.
+ * @return the link itself.
  */
 static inline struct LIST_LinkD * LIST_unlinkDC(struct LIST_ListDC * list,
 	struct LIST_LinkD * link)
@@ -397,10 +397,10 @@ static inline struct LIST_LinkD * LIST_unlinkDC(struct LIST_ListDC * list,
 }
 
 /** Unlink first link of the list and return it.
- * \note if the list is empty, the list will still be empty but the anchor
+ * @note if the list is empty, the list will still be empty but the anchor
  *  is returned. Be sure to check this condition.
- * \param list list to be shifted.
- * \return first link of the list or the anchor if the list was empty.
+ * @param list list to be shifted.
+ * @return first link of the list or the anchor if the list was empty.
  */
 static inline struct LIST_LinkD * LIST_shiftDC(struct LIST_ListDC * list)
 {
@@ -409,10 +409,10 @@ static inline struct LIST_LinkD * LIST_shiftDC(struct LIST_ListDC * list)
 }
 
 /** Unlink last link of the list and return it.
- * \note if the list is empty, the list will still be empty but the anchor
+ * @note if the list is empty, the list will still be empty but the anchor
  *  is returned. Be sure to check this condition.
- * \param list list to be popped.
- * \return last link of the list or the anchor if the list was empty.
+ * @param list list to be popped.
+ * @return last link of the list or the anchor if the list was empty.
  */
 static inline struct LIST_LinkD * LIST_popDC(struct LIST_ListDC * list)
 {
@@ -421,9 +421,9 @@ static inline struct LIST_LinkD * LIST_popDC(struct LIST_ListDC * list)
 }
 
 /** Insert a new link after another link which is member of the list.
- * \param prev link after which the new link will be inserted. This link must
+ * @param prev link after which the new link will be inserted. This link must
  *  be part of a list.
- * \param link link to be inserted after prev. Must not be part of another list.
+ * @param link link to be inserted after prev. Must not be part of another list.
  */
 static inline void LIST_insertDC(struct LIST_ListDC * list,
 	struct LIST_LinkD * __restrict prev, struct LIST_LinkD * __restrict link)
@@ -433,8 +433,8 @@ static inline void LIST_insertDC(struct LIST_ListDC * list,
 }
 
 /** Insert a new link at the end of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the end. Must not be part of another list.
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the end. Must not be part of another list.
  */
 static inline void LIST_pushDC(struct LIST_ListDC * list,
 	struct LIST_LinkD * link)
@@ -443,8 +443,8 @@ static inline void LIST_pushDC(struct LIST_ListDC * list,
 }
 
 /** Insert a new link at the beginning of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the beginning. Must not be part of another
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the beginning. Must not be part of another
  *  list.
  */
 static inline void LIST_unshiftDC(struct LIST_ListDC * list,
@@ -454,16 +454,16 @@ static inline void LIST_unshiftDC(struct LIST_ListDC * list,
 }
 
 /** Separate the lists tail beginning from (including) a pivot into a new list.
- * \param list list to be separated. Will be cut (excluding) at the pivot.
- * \param newList list to hold the tail beginning (including) at the pivot. May
+ * @param list list to be separated. Will be cut (excluding) at the pivot.
+ * @param newList list to hold the tail beginning (including) at the pivot. May
  *  be uninitialized.
- * \param pivot pivot link where the list is separated. Must be part of
+ * @param pivot pivot link where the list is separated. Must be part of
  *  the source list.
- * \note if the pivot is the anchor, the source list will be left untouched and
+ * @note if the pivot is the anchor, the source list will be left untouched and
  *  the new list will be cleared.
- * \note if the pivot is the head, the source list will be emptied and the
+ * @note if the pivot is the head, the source list will be emptied and the
  *  destination list will hold all links.
- * \note if the source and destination list are the same, the behavior is
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_separateFromDC(struct LIST_ListDC * __restrict list,
@@ -479,16 +479,16 @@ static inline void LIST_separateFromDC(struct LIST_ListDC * __restrict list,
 
 /** Separate the lists tail beginning from (including) a pivot into a new list
  *  and fix the counting (eager counting).
- * \param list list to be separated. Will be cut (excluding) at the pivot.
- * \param newList list to hold the tail beginning (including) at the pivot. May
+ * @param list list to be separated. Will be cut (excluding) at the pivot.
+ * @param newList list to hold the tail beginning (including) at the pivot. May
  *  be uninitialized.
- * \param pivot pivot link where the list is separated. Must be part of
+ * @param pivot pivot link where the list is separated. Must be part of
  *  the source list.
- * \note if the pivot is the anchor, the source list will be left untouched and
+ * @note if the pivot is the anchor, the source list will be left untouched and
  *  the new list will be cleared.
- * \note if the pivot is the head, the source list will be emptied and the
+ * @note if the pivot is the head, the source list will be emptied and the
  *  destination list will hold all links.
- * \note if the source and destination list are the same, the behavior is
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_separateFromFixDC(struct LIST_ListDC * __restrict list,
@@ -501,17 +501,17 @@ static inline void LIST_separateFromFixDC(struct LIST_ListDC * __restrict list,
 }
 
 /** Separate the lists head beginning from (excluding) a pivot into a new list.
- * \param list list to be separated. Will be cut (including) at the pivot and
+ * @param list list to be separated. Will be cut (including) at the pivot and
  *  include the tail only.
- * \param newList list to hold the head until (excluding) the pivot. May be
+ * @param newList list to hold the head until (excluding) the pivot. May be
  *  uninitialized.
- * \param pivot pivot link where the list is separated. Must be part of
+ * @param pivot pivot link where the list is separated. Must be part of
  *  the source list.
- * \note if the pivot is the anchor, the source list will be emptied and
+ * @note if the pivot is the anchor, the source list will be emptied and
  *  the destination list will hold all links.
- * \note if the pivot is the source lists head, the source list will be left
+ * @note if the pivot is the source lists head, the source list will be left
  *  untouched and the destination list is emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_separateUntilDC(struct LIST_ListDC * __restrict list,
@@ -523,17 +523,17 @@ static inline void LIST_separateUntilDC(struct LIST_ListDC * __restrict list,
 
 /** Separate the lists head beginning from (excluding) a pivot into a new list
  *  and fix the counting (eager counting).
- * \param list list to be separated. Will be cut (including) at the pivot and
+ * @param list list to be separated. Will be cut (including) at the pivot and
  *  include the tail only.
- * \param newList list to hold the head until (excluding) the pivot. May be
+ * @param newList list to hold the head until (excluding) the pivot. May be
  *  uninitialized.
- * \param pivot pivot link where the list is separated. Must be part of
+ * @param pivot pivot link where the list is separated. Must be part of
  *  the source list.
- * \note if the pivot is the anchor, the source list will be emptied and
+ * @note if the pivot is the anchor, the source list will be emptied and
  *  the destination list will hold all links.
- * \note if the pivot is the source lists head, the source list will be left
+ * @note if the pivot is the source lists head, the source list will be left
  *  untouched and the destination list is emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_separateUntilFixDC(struct LIST_ListDC * __restrict list,
@@ -546,10 +546,10 @@ static inline void LIST_separateUntilFixDC(struct LIST_ListDC * __restrict list,
 }
 
 /** Concatenate two lists by appending a source list to a destination list.
- * \param dst destination list. Will contain its old links followed by the
+ * @param dst destination list. Will contain its old links followed by the
  *  links of the source list.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_concatenatePushDC(struct LIST_ListDC * __restrict dst,
@@ -565,10 +565,10 @@ static inline void LIST_concatenatePushDC(struct LIST_ListDC * __restrict dst,
 }
 
 /** Concatenate two lists by prepending a source list to a destination list.
- * \param dst destination list. Will contain the links of the source list
+ * @param dst destination list. Will contain the links of the source list
  *  followed by its initial links.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_concatenateUnshiftDC(struct LIST_ListDC * __restrict dst,
@@ -584,11 +584,11 @@ static inline void LIST_concatenateUnshiftDC(struct LIST_ListDC * __restrict dst
 }
 
 /** Create list from a vector.
- * \param dst destination list. May be uninitialized.
- * \param vector pointer to elements of a vector.
- * \param offset offset of the link inside a vectors' element.
- * \param items number of items of the vector.
- * \param elemSize size of one element in the vector.
+ * @param dst destination list. May be uninitialized.
+ * @param vector pointer to elements of a vector.
+ * @param offset offset of the link inside a vectors' element.
+ * @param items number of items of the vector.
+ * @param elemSize size of one element in the vector.
  */
 static inline void LIST_fromVectorDC(struct LIST_ListDC * dst, void * vector,
 	ptrdiff_t offset, size_t items, size_t elemSize)
@@ -599,8 +599,8 @@ static inline void LIST_fromVectorDC(struct LIST_ListDC * dst, void * vector,
 }
 
 /** Get first link of the list.
- * \param list the list.
- * \return first link of the list.
+ * @param list the list.
+ * @return first link of the list.
  */
 static inline struct LIST_LinkD * LIST_beginDC(struct LIST_ListDC * list)
 {
@@ -608,8 +608,8 @@ static inline struct LIST_LinkD * LIST_beginDC(struct LIST_ListDC * list)
 }
 
 /** Get last link of the list.
- * \param list the list.
- * \return last link of the list.
+ * @param list the list.
+ * @return last link of the list.
  */
 static inline struct LIST_LinkD * LIST_beginRevDC(struct LIST_ListDC * list)
 {
@@ -617,8 +617,8 @@ static inline struct LIST_LinkD * LIST_beginRevDC(struct LIST_ListDC * list)
 }
 
 /** Get anchor of the list.
- * \param list the list.
- * \return anchor of the list.
+ * @param list the list.
+ * @return anchor of the list.
  */
 static inline struct LIST_LinkD * LIST_endDC(struct LIST_ListDC * list)
 {
@@ -626,9 +626,9 @@ static inline struct LIST_LinkD * LIST_endDC(struct LIST_ListDC * list)
 }
 
 /** Get n-th link of the list.
- * \param list the list.
- * \param n number of links to iterate forward.
- * \return n-th link of the list.
+ * @param list the list.
+ * @param n number of links to iterate forward.
+ * @return n-th link of the list.
  */
 static inline struct LIST_LinkD * LIST_atDC(struct LIST_ListDC * list, size_t n)
 {
@@ -665,9 +665,9 @@ struct LIST_ListSC {
 };
 
 /** Initialize the list. Must be called before using the list.
- * \note Can also be used to clear the list. When clearing the list, be sure to
+ * @note Can also be used to clear the list. When clearing the list, be sure to
  *   have acess to the list in another way.
- * \param list list to be initialized.
+ * @param list list to be initialized.
  */
 static inline void LIST_initS(struct LIST_ListS * list)
 {
@@ -676,8 +676,8 @@ static inline void LIST_initS(struct LIST_ListS * list)
 }
 
 /** Test whether the list is empty.
- * \param list list to be tested.
- * \return true iff list is empty.
+ * @param list list to be tested.
+ * @return true iff list is empty.
  */
 static inline bool LIST_emptyS(const struct LIST_ListS * list)
 {
@@ -686,10 +686,10 @@ static inline bool LIST_emptyS(const struct LIST_ListS * list)
 }
 
 /** Unlink first link of the list and return it.
- * \note if the list is empty, the list will still be empty but the anchor
+ * @note if the list is empty, the list will still be empty but the anchor
  *  is returned. Be sure to check this condition.
- * \param list list to be shifted.
- * \return first link of the list or the anchor if the list was empty.
+ * @param list list to be shifted.
+ * @return first link of the list or the anchor if the list was empty.
  */
 static inline struct LIST_LinkS * LIST_shiftS(struct LIST_ListS * list)
 {
@@ -701,8 +701,8 @@ static inline struct LIST_LinkS * LIST_shiftS(struct LIST_ListS * list)
 }
 
 /** Insert a new link at the end of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the end. Must not be part of another list.
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the end. Must not be part of another list.
  */
 static inline void LIST_pushS(struct LIST_ListS * list,
 	struct LIST_LinkS * link)
@@ -713,8 +713,8 @@ static inline void LIST_pushS(struct LIST_ListS * list,
 }
 
 /** Insert a new link at the beginning of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the beginning. Must not be part of another
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the beginning. Must not be part of another
  *  list.
  */
 static inline void LIST_unshiftS(struct LIST_ListS * list,
@@ -727,10 +727,10 @@ static inline void LIST_unshiftS(struct LIST_ListS * list,
 }
 
 /** Concatenate two lists by appending a source list to a destination list.
- * \param dst destination list. Will contain its old links followed by the
+ * @param dst destination list. Will contain its old links followed by the
  *  links of the source list.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_concatenatePushS(struct LIST_ListS * __restrict dst,
@@ -746,10 +746,10 @@ static inline void LIST_concatenatePushS(struct LIST_ListS * __restrict dst,
 }
 
 /** Concatenate two lists by prepending a source list to a destination list.
- * \param dst destination list. Will contain the links of the source list
+ * @param dst destination list. Will contain the links of the source list
  *  followed by its initial links.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_concatenateUnshiftS(struct LIST_ListS * __restrict dst,
@@ -766,11 +766,11 @@ static inline void LIST_concatenateUnshiftS(struct LIST_ListS * __restrict dst,
 }
 
 /** Create list from a vector.
- * \param dst destination list. May be uninitialized.
- * \param vector pointer to elements of a vector.
- * \param offset offset of the link inside a vectors' element.
- * \param items number of items of the vector.
- * \param elemSize size of one element in the vector.
+ * @param dst destination list. May be uninitialized.
+ * @param vector pointer to elements of a vector.
+ * @param offset offset of the link inside a vectors' element.
+ * @param items number of items of the vector.
+ * @param elemSize size of one element in the vector.
  */
 static inline void LIST_fromVectorS(struct LIST_ListS * dst, void * vector,
 	ptrdiff_t offset, size_t items, size_t elemSize)
@@ -794,8 +794,8 @@ static inline void LIST_fromVectorS(struct LIST_ListS * dst, void * vector,
 }
 
 /** Get first link of the list.
- * \param list the list.
- * \return first link of the list.
+ * @param list the list.
+ * @return first link of the list.
  */
 static inline struct LIST_LinkS * LIST_beginS(struct LIST_ListS * list)
 {
@@ -803,8 +803,8 @@ static inline struct LIST_LinkS * LIST_beginS(struct LIST_ListS * list)
 }
 
 /** Get anchor of the list.
- * \param list the list.
- * \return anchor of the list.
+ * @param list the list.
+ * @return anchor of the list.
  */
 static inline struct LIST_LinkS * LIST_endS(struct LIST_ListS * list)
 {
@@ -812,9 +812,9 @@ static inline struct LIST_LinkS * LIST_endS(struct LIST_ListS * list)
 }
 
 /** Get n-th link of the list.
- * \param list the list.
- * \param n number of links to iterate forward.
- * \return n-th link of the list.
+ * @param list the list.
+ * @param n number of links to iterate forward.
+ * @return n-th link of the list.
  */
 static inline struct LIST_LinkS * LIST_atS(struct LIST_ListS * list, size_t n)
 {
@@ -825,9 +825,9 @@ static inline struct LIST_LinkS * LIST_atS(struct LIST_ListS * list, size_t n)
 
 
 /** Initialize the list. Must be called before using the list.
- * \note Can also be used to clear the list. When clearing the list, be sure to
+ * @note Can also be used to clear the list. When clearing the list, be sure to
  *   have acess to the list in another way.
- * \param list list to be initialized.
+ * @param list list to be initialized.
  */
 static inline void LIST_initSC(struct LIST_ListSC * list)
 {
@@ -836,8 +836,8 @@ static inline void LIST_initSC(struct LIST_ListSC * list)
 }
 
 /** Test whether the list is empty.
- * \param list list to be tested.
- * \return true iff list is empty.
+ * @param list list to be tested.
+ * @return true iff list is empty.
  */
 static inline bool LIST_emptySC(const struct LIST_ListSC * list)
 {
@@ -845,8 +845,8 @@ static inline bool LIST_emptySC(const struct LIST_ListSC * list)
 }
 
 /** Get length of the list.
- * \param list the list.
- * \return number of links in the list.
+ * @param list the list.
+ * @return number of links in the list.
  */
 static inline size_t LIST_lengthSC(const struct LIST_ListSC * list)
 {
@@ -854,10 +854,10 @@ static inline size_t LIST_lengthSC(const struct LIST_ListSC * list)
 }
 
 /** Unlink first link of the list and return it.
- * \note if the list is empty, the list will still be empty but the anchor
+ * @note if the list is empty, the list will still be empty but the anchor
  *  is returned. Be sure to check this condition.
- * \param list list to be shifted.
- * \return first link of the list or the anchor if the list was empty.
+ * @param list list to be shifted.
+ * @return first link of the list or the anchor if the list was empty.
  */
 static inline struct LIST_LinkS * LIST_shiftSC(struct LIST_ListSC * list)
 {
@@ -870,8 +870,8 @@ static inline struct LIST_LinkS * LIST_shiftSC(struct LIST_ListSC * list)
 }
 
 /** Insert a new link at the end of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the end. Must not be part of another list.
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the end. Must not be part of another list.
  */
 static inline void LIST_pushSC(struct LIST_ListSC * list,
 	struct LIST_LinkS * link)
@@ -881,8 +881,8 @@ static inline void LIST_pushSC(struct LIST_ListSC * list,
 }
 
 /** Insert a new link at the beginning of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the beginning. Must not be part of another
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the beginning. Must not be part of another
  *  list.
  */
 static inline void LIST_unshiftSC(struct LIST_ListSC * list,
@@ -893,10 +893,10 @@ static inline void LIST_unshiftSC(struct LIST_ListSC * list,
 }
 
 /** Concatenate two lists by appending a source list to a destination list.
- * \param dst destination list. Will contain its old links followed by the
+ * @param dst destination list. Will contain its old links followed by the
  *  links of the source list.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_concatenatePushSC(struct LIST_ListSC * __restrict dst,
@@ -911,10 +911,10 @@ static inline void LIST_concatenatePushSC(struct LIST_ListSC * __restrict dst,
 }
 
 /** Concatenate two lists by prepending a source list to a destination list.
- * \param dst destination list. Will contain the links of the source list
+ * @param dst destination list. Will contain the links of the source list
  *  followed by its initial links.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 static inline void LIST_concatenateUnshiftSC(struct LIST_ListSC * __restrict dst,
@@ -929,11 +929,11 @@ static inline void LIST_concatenateUnshiftSC(struct LIST_ListSC * __restrict dst
 }
 
 /** Create list from a vector.
- * \param dst destination list. May be uninitialized.
- * \param vector pointer to elements of a vector.
- * \param offset offset of the link inside a vectors' element.
- * \param items number of items of the vector.
- * \param elemSize size of one element in the vector.
+ * @param dst destination list. May be uninitialized.
+ * @param vector pointer to elements of a vector.
+ * @param offset offset of the link inside a vectors' element.
+ * @param items number of items of the vector.
+ * @param elemSize size of one element in the vector.
  */
 static inline void LIST_fromVectorSC(struct LIST_ListSC * dst, void * vector,
 	ptrdiff_t offset, size_t items, size_t elemSize)
@@ -943,8 +943,8 @@ static inline void LIST_fromVectorSC(struct LIST_ListSC * dst, void * vector,
 }
 
 /** Get first link of the list.
- * \param list the list.
- * \return first link of the list.
+ * @param list the list.
+ * @return first link of the list.
  */
 static inline struct LIST_LinkS * LIST_beginSC(struct LIST_ListSC * list)
 {
@@ -952,8 +952,8 @@ static inline struct LIST_LinkS * LIST_beginSC(struct LIST_ListSC * list)
 }
 
 /** Get anchor of the list.
- * \param list the list.
- * \return anchor of the list.
+ * @param list the list.
+ * @return anchor of the list.
  */
 static inline struct LIST_LinkS * LIST_endSC(struct LIST_ListSC * list)
 {
@@ -961,9 +961,9 @@ static inline struct LIST_LinkS * LIST_endSC(struct LIST_ListSC * list)
 }
 
 /** Get n-th link of the list.
- * \param list the list.
- * \param n number of links to iterate forward.
- * \return n-th link of the list.
+ * @param list the list.
+ * @param n number of links to iterate forward.
+ * @return n-th link of the list.
  */
 static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 {
@@ -973,19 +973,19 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 #undef head
 
 /** Get a list item from its link.
- * \param link link
- * \param type item type
- * \param member name of member inside the type for accessing the link
- * \return item. Will return an invalid pointer if link is the anchor.
+ * @param link link
+ * @param type item type
+ * @param member name of member inside the type for accessing the link
+ * @return item. Will return an invalid pointer if link is the anchor.
  */
 #define LIST_item(link, type, member) \
 	container_of(link, type, member)
 
 /** Get a list item from its link.
- * \param link link
- * \param type item type
- * \param member name of member inside the type for accessing the link
- * \return item or NULL if link is the anchor.
+ * @param link link
+ * @param type item type
+ * @param member name of member inside the type for accessing the link
+ * @return item or NULL if link is the anchor.
  */
 #define LIST_itemSafe(list, link, type, member) ({ \
 	__typeof__(link) _link = (link); \
@@ -993,52 +993,52 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 		container_of(_link, type, member); })
 
 /** Get a link from the list item
- * \param item item
- * \return link
+ * @param item item
+ * @return link
  */
 #define LIST_link(item, member) &((item)->member)
 
 /** Initialize (statically) a double linked counted list.
- * \param name list name
- * \return initializer expression for the list
+ * @param name list name
+ * @return initializer expression for the list
  */
 #define LIST_ListDC_INIT(name) \
 	{ { { &name.listD.anchor, &name.listD.anchor } }, 0, false }
 
 /** Initialize (statically) a double linked list.
- * \param name list name
- * \return initializer expression for the list
+ * @param name list name
+ * @return initializer expression for the list
  */
 #define LIST_ListD_INIT(name) { { &name.anchor, &name.anchor } }
 
 #ifndef ECLIPSE
 /** Initialize (statically) a single linked list.
- * \param name list name
- * \return initializer expression for the list
+ * @param name list name
+ * @return initializer expression for the list
  */
 #define LIST_ListS_INIT(name) { { &name.anchor }, &name.anchor }
 
 /** Initialize (statically) a single linked counted list.
- * \param name list name
- * \return initializer expression for the list
+ * @param name list name
+ * @return initializer expression for the list
  */
 #define LIST_ListSC_INIT(name) \
 	{ { { &name.listS.anchor }, &name.listS.anchor }, 0 }
 
 /** Simple macro to concatenate 3 tokens in the preprocessor
- * \param t1 first token
- * \param t2 second token
- * \param t3 third token
- * \return the concatenation of all tokens without any spaces
+ * @param t1 first token
+ * @param t2 second token
+ * @param t3 third token
+ * @return the concatenation of all tokens without any spaces
  */
 #define concat(t1, t2, t3) t1 ## t2 ## t3
 
 /** Generator for calling a function depending on the list type. Only defined on
  *   counted lists.
- * \param dsc selector (normally: the list)
- * \param what function name (with out LIST_ prefix). The suffix is appended
+ * @param dsc selector (normally: the list)
+ * @param what function name (with out LIST_ prefix). The suffix is appended
  *  depending on the selectors' type.
- * \return assembled function name
+ * @return assembled function name
  */
 #define LIST_SelectC(dsc, what) \
 	(_Generic(dsc, struct LIST_ListSC *: concat(LIST_, what, SC), \
@@ -1046,20 +1046,20 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Generator for calling a function depending on the list type. Only defined on
  *   double linked lists.
- * \param dsc selector (normally: the list)
- * \param what function name (with out LIST_ prefix). The suffix is appended
+ * @param dsc selector (normally: the list)
+ * @param what function name (with out LIST_ prefix). The suffix is appended
  *  depending on the selectors' type.
- * \return assembled function name
+ * @return assembled function name
  */
 #define LIST_SelectD(dsc, what) \
 	(_Generic(dsc, struct LIST_ListD *: concat(LIST_, what, D), \
 		struct LIST_ListDC *: concat(LIST_, what, DC)))
 
 /** Generator for calling a function depending on the list type.
- * \param dsc selector (normally: the list)
- * \param what function name (with out LIST_ prefix). The suffix is appended
+ * @param dsc selector (normally: the list)
+ * @param what function name (with out LIST_ prefix). The suffix is appended
  *  depending on the selectors' type.
- * \return assembled function name
+ * @return assembled function name
  */
 #define LIST_SelectSD(dsc, what) \
 	(_Generic(dsc, struct LIST_ListS *: concat(LIST_, what, S), \
@@ -1069,64 +1069,64 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Initialize the list. Must be called before using the list,
  *   except for replacing operations, such as LIST_separateFrom().
- * \note Can also be used to clear the list. When clearing the list, be sure to
+ * @note Can also be used to clear the list. When clearing the list, be sure to
  *   have acess to the list in another way.
- * \param list list to be initialized.
+ * @param list list to be initialized.
  */
 #define LIST_init(list) LIST_SelectSD((list), init)(list)
 
 /** Test whether the list is empty.
- * \param list list to be tested.
- * \return true iff list is empty.
+ * @param list list to be tested.
+ * @return true iff list is empty.
  */
 #define LIST_empty(list) LIST_SelectSD((list), empty)(list)
 
 /** Get length of the list. Only defined on counted lists.
- * \param list the list.
- * \return number of links in the list.
- * \note if the list is a double linked list and is tainted, the links will be
+ * @param list the list.
+ * @return number of links in the list.
+ * @note if the list is a double linked list and is tainted, the links will be
  *  counted in O(n)
  */
 #define LIST_length(list) LIST_SelectC((list), length)(list)
 
 /** Get first link of the list.
- * \param list the list.
- * \return first link of the list.
+ * @param list the list.
+ * @return first link of the list.
  */
 #define LIST_begin(list) LIST_SelectSD((list), begin)(list)
 
 /** Get last link of the list. Only defined on double linked lists.
- * \param list the list.
- * \return first link of the list.
+ * @param list the list.
+ * @return first link of the list.
  */
 #define LIST_beginRev(list) LIST_SelectD((list), beginRev)(list)
 
 /** Get anchor of the list.
- * \param list the list.
- * \return anchor of the list.
+ * @param list the list.
+ * @return anchor of the list.
  */
 #define LIST_end(list) LIST_SelectSD((list), end)(list)
 
 /** Get successor of a link.
- * \param link the link.
- * \return successor of the link.
- * \note if the link is the last link, the anchor will be returned.
- * \note if the link is the anchor, it will return the first link again.
+ * @param link the link.
+ * @return successor of the link.
+ * @note if the link is the last link, the anchor will be returned.
+ * @note if the link is the anchor, it will return the first link again.
  */
 #define LIST_next(link) ((link)->next)
 
 /** Get predecessor of a link. Only defined on links of double linked lists.
- * \param link the link.
- * \return successor of the link.
- * \note if the link is the first link, the anchor will be returned.
- * \note if the link is the anchor, it will return the last link again.
+ * @param link the link.
+ * @return successor of the link.
+ * @note if the link is the first link, the anchor will be returned.
+ * @note if the link is the anchor, it will return the last link again.
  */
 #define LIST_prev(link) ((link)->prev)
 
 /** Get n-th successor of a link.
- * \param link the link.
- * \return n-th successor of the link.
- * \note although the lists are circular, be sure to understand that the anchor
+ * @param link the link.
+ * @return n-th successor of the link.
+ * @note although the lists are circular, be sure to understand that the anchor
  *  is in between the last and the first link. Thus, when iterating after the
  *  end of the list, first the anchor will be taken and then the first link
  *  again. Best practice is to not iterate after the end of the list.
@@ -1139,9 +1139,9 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Get n-th predecessor of a link. Only defined on links of double linked
  *   lists.
- * \param link the link.
- * \return n-th predecessor of the link.
- * \note although the lists are circular, be sure to understand that the anchor
+ * @param link the link.
+ * @return n-th predecessor of the link.
+ * @note although the lists are circular, be sure to understand that the anchor
  *  is in between the last and the first link. Thus, when iterating before the
  *  begin of the list, first the anchor will be taken and then the last link
  *  again. Best practice is to not iterate before the beginning of the list.
@@ -1153,10 +1153,10 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 	_link; })
 
 /** Get n-th link of the list.
- * \param list the list.
- * \param n number of links to iterate forward.
- * \return n-th link of the list.
- * \note although the lists are circular, be sure to understand that the anchor
+ * @param list the list.
+ * @param n number of links to iterate forward.
+ * @return n-th link of the list.
+ * @note although the lists are circular, be sure to understand that the anchor
  *  is in between the last and the first link. Thus, when iterating after the
  *  end of the list, first the anchor will be taken and then the first link
  *  again. Best practice is that n is <= the length of the list.
@@ -1166,10 +1166,10 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Insert a new link after another link which is member of the list. Only
  *   defined on double linked lists.
- * \param at link before which the new link will be inserted. This link must
+ * @param at link before which the new link will be inserted. This link must
  *  be part of a list.
- * \param link link to be inserted after prev. Must not be part of another list.
- * \note this has another semantics than the LIST_insert* functions: they are
+ * @param link link to be inserted after prev. Must not be part of another list.
+ * @note this has another semantics than the LIST_insert* functions: they are
  *  given the predecessor of the new link, i.e. the new link will be inserted
  *  after the given link. This macro will insert the new link BEFORE the given
  *  one. If 'at' is the n-th link of the list, it will be the n+1-th link and
@@ -1179,43 +1179,43 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 	LIST_SelectD((list), insert)((list), LIST_prev(at), (link))
 
 /** Unlink a link from the list. Only defined on double linked lists.
- * \param list list to be manipulated.
- * \param link to be unlinked. Must be part of the list. If the link is
+ * @param list list to be manipulated.
+ * @param link to be unlinked. Must be part of the list. If the link is
  *  the lists anchor, nothing will happen.
  */
 #define LIST_unlink(list, link) \
 	((void)LIST_SelectD((list), unlink)((list), (link)))
 
 /** Unlink first link of the list and return it.
- * \note if the list is empty, the list will still be empty but the anchor
+ * @note if the list is empty, the list will still be empty but the anchor
  *  is returned. Be sure to check this condition.
- * \param list list to be shifted.
- * \return first link of the list or the anchor if the list was empty.
+ * @param list list to be shifted.
+ * @return first link of the list or the anchor if the list was empty.
  */
 #define LIST_shift(list) \
 	LIST_SelectSD((list), shift)(list)
 
 /** Unlink last link of the list and return it. Only defined on double linked
  *   lists.
- * \note if the list is empty, the list will still be empty but the anchor
+ * @note if the list is empty, the list will still be empty but the anchor
  *  is returned. Be sure to check this condition.
- * \param list list to be popped.
- * \return last link of the list or the anchor if the list was empty.
+ * @param list list to be popped.
+ * @return last link of the list or the anchor if the list was empty.
  */
 #define LIST_pop(list) \
 	LIST_SelectD((list), pop)(list)
 
 /** Insert a new link at the beginning of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the beginning. Must not be part of another
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the beginning. Must not be part of another
  *  list.
  */
 #define LIST_unshift(list, link) \
 	LIST_SelectSD((list), unshift)((list), (link))
 
 /** Insert a new link at the end of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the end. Must not be part of another list.
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the end. Must not be part of another list.
  */
 #define LIST_push(list, link) \
 	LIST_SelectSD((list), push)((list), (link))
@@ -1223,16 +1223,16 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 /** Separate the lists tail beginning from (including) a pivot into a new list
  *  and fix the counting (eager counting) for counted lists. Only defined on
  *  double linked lists.
- * \param list list to be separated. Will be cut (excluding) at the pivot.
- * \param newList list to hold the tail beginning (including) at the pivot. May
+ * @param list list to be separated. Will be cut (excluding) at the pivot.
+ * @param newList list to hold the tail beginning (including) at the pivot. May
  *  be uninitialized.
- * \param pivot pivot link where the list is separated. Must be part of
+ * @param pivot pivot link where the list is separated. Must be part of
  *  the source list.
- * \note if the pivot is the anchor, the source list will be left untouched and
+ * @note if the pivot is the anchor, the source list will be left untouched and
  *  the new list will be cleared.
- * \note if the pivot is the head, the source list will be emptied and the
+ * @note if the pivot is the head, the source list will be emptied and the
  *  destination list will hold all links.
- * \note if the source and destination list are the same, the behavior is
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 #define LIST_separateFrom(list, newList, pivot) \
@@ -1243,17 +1243,17 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 /** Separate the lists head beginning from (excluding) a pivot into a new list
  *  and fix the counting (eager counting) for counted lists. Only defined on
  *  double linked lists.
- * \param list list to be separated. Will be cut (including) at the pivot and
+ * @param list list to be separated. Will be cut (including) at the pivot and
  *  include the tail only.
- * \param newList list to hold the head until (excluding) the pivot. May be
+ * @param newList list to hold the head until (excluding) the pivot. May be
  *  uninitialized.
- * \param pivot pivot link where the list is separated. Must be part of
+ * @param pivot pivot link where the list is separated. Must be part of
  *  the source list.
- * \note if the pivot is the anchor, the source list will be emptied and
+ * @note if the pivot is the anchor, the source list will be emptied and
  *  the destination list will hold all links.
- * \note if the pivot is the source lists head, the source list will be left
+ * @note if the pivot is the source lists head, the source list will be left
  *  untouched and the destination list is emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 #define LIST_separateUntil(list, newList, pivot) \
@@ -1262,31 +1262,31 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 		((list), (newList), (pivot))
 
 /** Concatenate two lists by appending a source list to a destination list.
- * \param dst destination list. Will contain its old links followed by the
+ * @param dst destination list. Will contain its old links followed by the
  *  links of the source list.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 #define LIST_concatenatePush(dstList, srcList) \
 	LIST_SelectSD((dstList), concatenatePush)((dstList), (srcList));
 
 /** Concatenate two lists by prepending a source list to a destination list.
- * \param dst destination list. Will contain the links of the source list
+ * @param dst destination list. Will contain the links of the source list
  *  followed by its initial links.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 #define LIST_concatenateUnshift(dstList, srcList) \
 	LIST_SelectSD((dstList), concatenateUnshift)((dstList), (srcList));
 
 /** Create list from a vector with a given member size.
- * \param list destination list. May be uninitialized.
- * \param vector pointer to elements of a vector.
- * \param member list member in the elements' structure.
- * \param n number of items of the vector.
- * \param elemSize size of one element in the vector.
+ * @param list destination list. May be uninitialized.
+ * @param vector pointer to elements of a vector.
+ * @param member list member in the elements' structure.
+ * @param n number of items of the vector.
+ * @param elemSize size of one element in the vector.
  */
 #define LIST_fromVectorSize(list, vector, member, n, elemSize) \
 	LIST_SelectSD((list), fromVector)((list), (vector), \
@@ -1300,71 +1300,71 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 #define LIST_ListS LIST_ListDC
 
 /** Initialize (statically) a single linked list.
- * \param name list name
- * \return initializer expression for the list
+ * @param name list name
+ * @return initializer expression for the list
  */
 #define LIST_ListS_INIT(name) LIST_ListDC_INIT(name)
 
 /** Initialize the list. Must be called before using the list,
  *   except for replacing operations, such as LIST_separateFrom().
- * \note Can also be used to clear the list. When clearing the list, be sure to
+ * @note Can also be used to clear the list. When clearing the list, be sure to
  *   have acess to the list in another way.
- * \param list list to be initialized.
+ * @param list list to be initialized.
  */
 #define LIST_init(list) LIST_initDC(list)
 
 /** Test whether the list is empty.
- * \param list list to be tested.
- * \return true iff list is empty.
+ * @param list list to be tested.
+ * @return true iff list is empty.
  */
 #define LIST_empty(list) LIST_emptyDC(list)
 
 /** Get length of the list. Only defined on counted lists.
- * \param list the list.
- * \return number of links in the list.
- * \note if the list is a double linked list and is tainted, the links will be
+ * @param list the list.
+ * @return number of links in the list.
+ * @note if the list is a double linked list and is tainted, the links will be
  *  counted in O(n)
  */
 #define LIST_length(list) LIST_lengthDC(list)
 
 /** Get first link of the list.
- * \param list the list.
- * \return first link of the list.
+ * @param list the list.
+ * @return first link of the list.
  */
 #define LIST_begin(list) LIST_beginDC(list)
 
 /** Get last link of the list. Only defined on double linked lists.
- * \param list the list.
- * \return first link of the list.
+ * @param list the list.
+ * @return first link of the list.
  */
 #define LIST_beginRev(list) LIST_beginRevDC(list)
 
 /** Get anchor of the list.
- * \param list the list.
- * \return anchor of the list.
+ * @param list the list.
+ * @return anchor of the list.
  */
 #define LIST_end(list) LIST_endDC(list)
 
 /** Get successor of a link.
- * \param link the link.
- * \return successor of the link.
- * \note if the link is the last link, the anchor will be returned.
- * \note if the link is the anchor, it will return the first link again.
+ * @param link the link.
+ * @return successor of the link.
+ * @note if the link is the last link, the anchor will be returned.
+ * @note if the link is the anchor, it will return the first link again.
  */
 #define LIST_next(link) ((link)->next)
 
 /** Get predecessor of a link. Only defined on links of double linked lists.
- * \param link the link.
- * \return successor of the link.
- * \note if the link is the first link, the anchor will be returned.
- * \note if the link is the anchor, it will return the last link again.
+ * @param link the link.
+ * @return successor of the link.
+ * @note if the link is the first link, the anchor will be returned.
+ * @note if the link is the anchor, it will return the last link again.
  */
 #define LIST_prev(link) ((link)->prev)
 
 /** Get n-th successor of a link.
- * \param link the link.
- * \return n-th successor of the link.
- * \note although the lists are circular, be sure to understand that the anchor
+ * @param link the link.
+ * @return n-th successor of the link.
+ * @note although the lists are circular, be sure to understand that the anchor
  *  is in between the last and the first link. Thus, when iterating after the
  *  end of the list, first the anchor will be taken and then the first link
  *  again. Best practice is to not iterate after the end of the list.
@@ -1377,9 +1377,9 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Get n-th predecessor of a link. Only defined on links of double linked
  *   lists.
- * \param link the link.
- * \return n-th predecessor of the link.
- * \note although the lists are circular, be sure to understand that the anchor
+ * @param link the link.
+ * @return n-th predecessor of the link.
+ * @note although the lists are circular, be sure to understand that the anchor
  *  is in between the last and the first link. Thus, when iterating before the
  *  begin of the list, first the anchor will be taken and then the last link
  *  again. Best practice is to not iterate before the beginning of the list.
@@ -1391,10 +1391,10 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 	_link; })
 
 /** Get n-th link of the list.
- * \param list the list.
- * \param n number of links to iterate forward.
- * \return n-th link of the list.
- * \note although the lists are circular, be sure to understand that the anchor
+ * @param list the list.
+ * @param n number of links to iterate forward.
+ * @return n-th link of the list.
+ * @note although the lists are circular, be sure to understand that the anchor
  *  is in between the last and the first link. Thus, when iterating after the
  *  end of the list, first the anchor will be taken and then the first link
  *  again. Best practice is that n is <= the length of the list.
@@ -1404,10 +1404,10 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Insert a new link after another link which is member of the list. Only
  *   defined on double linked lists.
- * \param at link before which the new link will be inserted. This link must
+ * @param at link before which the new link will be inserted. This link must
  *  be part of a list.
- * \param link link to be inserted after prev. Must not be part of another list.
- * \note this has another semantics than the LIST_insert* functions: they are
+ * @param link link to be inserted after prev. Must not be part of another list.
+ * @note this has another semantics than the LIST_insert* functions: they are
  *  given the predecessor of the new link, i.e. the new link will be inserted
  *  after the given link. This macro will insert the new link BEFORE the given
  *  one. If 'at' is the n-th link of the list, it will be the n+1-th link and
@@ -1417,41 +1417,41 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 	LIST_insertDC((list), LIST_prev(at), (link))
 
 /** Unlink a link from the list. Only defined on double linked lists.
- * \param list list to be manipulated.
- * \param link to be unlinked. Must be part of the list. If the link is
+ * @param list list to be manipulated.
+ * @param link to be unlinked. Must be part of the list. If the link is
  *  the lists anchor, nothing will happen.
  */
 #define LIST_unlink(list, link) \
 	((void)LIST_unlinkDC((list), (link)))
 
 /** Unlink first link of the list and return it.
- * \note if the list is empty, the list will still be empty but the anchor
+ * @note if the list is empty, the list will still be empty but the anchor
  *  is returned. Be sure to check this condition.
- * \param list list to be shifted.
- * \return first link of the list or the anchor if the list was empty.
+ * @param list list to be shifted.
+ * @return first link of the list or the anchor if the list was empty.
  */
 #define LIST_shift(list) LIST_shiftDC(list)
 
 /** Unlink last link of the list and return it. Only defined on double linked
  *   lists.
- * \note if the list is empty, the list will still be empty but the anchor
+ * @note if the list is empty, the list will still be empty but the anchor
  *  is returned. Be sure to check this condition.
- * \param list list to be popped.
- * \return last link of the list or the anchor if the list was empty.
+ * @param list list to be popped.
+ * @return last link of the list or the anchor if the list was empty.
  */
 #define LIST_pop(list) LIST_popDC(list)
 
 /** Insert a new link at the beginning of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the beginning. Must not be part of another
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the beginning. Must not be part of another
  *  list.
  */
 #define LIST_unshift(list, link) \
 	LIST_unshiftDC((list), (link))
 
 /** Insert a new link at the end of the list.
- * \param list list to be manipulated.
- * \param link link to be inserted at the end. Must not be part of another list.
+ * @param list list to be manipulated.
+ * @param link link to be inserted at the end. Must not be part of another list.
  */
 #define LIST_push(list, link) \
 	LIST_pushDC((list), (link))
@@ -1459,16 +1459,16 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 /** Separate the lists tail beginning from (including) a pivot into a new list
  *  and fix the counting (eager counting) for counted lists. Only defined on
  *  double linked lists.
- * \param list list to be separated. Will be cut (excluding) at the pivot.
- * \param newList list to hold the tail beginning (including) at the pivot. May
+ * @param list list to be separated. Will be cut (excluding) at the pivot.
+ * @param newList list to hold the tail beginning (including) at the pivot. May
  *  be uninitialized.
- * \param pivot pivot link where the list is separated. Must be part of
+ * @param pivot pivot link where the list is separated. Must be part of
  *  the source list.
- * \note if the pivot is the anchor, the source list will be left untouched and
+ * @note if the pivot is the anchor, the source list will be left untouched and
  *  the new list will be cleared.
- * \note if the pivot is the head, the source list will be emptied and the
+ * @note if the pivot is the head, the source list will be emptied and the
  *  destination list will hold all links.
- * \note if the source and destination list are the same, the behavior is
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 #define LIST_separateFrom(list, newList, pivot) \
@@ -1477,37 +1477,37 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 /** Separate the lists head beginning from (excluding) a pivot into a new list
  *  and fix the counting (eager counting) for counted lists. Only defined on
  *  double linked lists.
- * \param list list to be separated. Will be cut (including) at the pivot and
+ * @param list list to be separated. Will be cut (including) at the pivot and
  *  include the tail only.
- * \param newList list to hold the head until (excluding) the pivot. May be
+ * @param newList list to hold the head until (excluding) the pivot. May be
  *  uninitialized.
- * \param pivot pivot link where the list is separated. Must be part of
+ * @param pivot pivot link where the list is separated. Must be part of
  *  the source list.
- * \note if the pivot is the anchor, the source list will be emptied and
+ * @note if the pivot is the anchor, the source list will be emptied and
  *  the destination list will hold all links.
- * \note if the pivot is the source lists head, the source list will be left
+ * @note if the pivot is the source lists head, the source list will be left
  *  untouched and the destination list is emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 #define LIST_separateUntil(list, newList, pivot) \
 	LIST_separateUntilDC((list), (newList), (pivot))
 
 /** Concatenate two lists by appending a source list to a destination list.
- * \param dst destination list. Will contain its old links followed by the
+ * @param dst destination list. Will contain its old links followed by the
  *  links of the source list.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 #define LIST_concatenatePush(dstList, srcList) \
 	LIST_concatenatePushDC((dstList), (srcList));
 
 /** Concatenate two lists by prepending a source list to a destination list.
- * \param dst destination list. Will contain the links of the source list
+ * @param dst destination list. Will contain the links of the source list
  *  followed by its initial links.
- * \param src source list. Will be emptied.
- * \note if the source and destination list are the same, the behavior is
+ * @param src source list. Will be emptied.
+ * @note if the source and destination list are the same, the behavior is
  *  undefined.
  */
 #define LIST_concatenateUnshift(dstList, srcList) \
@@ -1515,11 +1515,11 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 
 /** Create list from a vector with a given member size.
- * \param list destination list. May be uninitialized.
- * \param vector pointer to elements of a vector.
- * \param member list member in the elements' structure.
- * \param n number of items of the vector.
- * \param elemSize size of one element in the vector.
+ * @param list destination list. May be uninitialized.
+ * @param vector pointer to elements of a vector.
+ * @param member list member in the elements' structure.
+ * @param n number of items of the vector.
+ * @param elemSize size of one element in the vector.
  */
 #define LIST_fromVectorSize(list, vector, member, n, elemSize) \
 	LIST_fromVectorDC((list), (vector), \
@@ -1528,19 +1528,19 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 
 /** Create list from a vector with a given member size.
- * \param list destination list. May be uninitialized.
- * \param vector pointer to elements of a vector.
- * \param member list member in the elements' structure.
- * \param n number of items of the vector.
+ * @param list destination list. May be uninitialized.
+ * @param vector pointer to elements of a vector.
+ * @param member list member in the elements' structure.
+ * @param n number of items of the vector.
  */
 #define LIST_fromVector(list, vector, member, n) \
 	LIST_fromVectorSize(list, vector, member, n, sizeof(*(vector)))
 
 /** Iterate over a list (foreach control flow).
- * \param list list to iterate over.
- * \param link iterator.
- * \note you can use break inside the loop.
- * \note do not use unlink while iterating.
+ * @param list list to iterate over.
+ * @param link iterator.
+ * @note you can use break inside the loop.
+ * @note do not use unlink while iterating.
  */
 #define LIST_foreach(list, link) \
 	for (link = LIST_begin(list); link != LIST_end(list); \
@@ -1548,20 +1548,20 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Iterate over a list (foreach control flow) with the possibility to unlink
  *   the iterator link while iterating.
- * \param list list to iterate over.
- * \param link iterator.
- * \param n bogus iterator, used internally only. Do not use this in the loop.
- * \note you can use break inside the loop.
+ * @param list list to iterate over.
+ * @param link iterator.
+ * @param n bogus iterator, used internally only. Do not use this in the loop.
+ * @note you can use break inside the loop.
  */
 #define LIST_foreachSafe(list, link, n) \
 	for (link = LIST_begin(list), n = LIST_next(link); \
 		link != LIST_end(list); link = n, n = LIST_next(link))
 
 /** Iterate over a list (foreach control flow) in reverse.
- * \param list list to iterate over.
- * \param link iterator.
- * \note you can use break inside the loop.
- * \note do not use unlink while iterating.
+ * @param list list to iterate over.
+ * @param link iterator.
+ * @note you can use break inside the loop.
+ * @note do not use unlink while iterating.
  */
 #define LIST_foreachRev(list, elem) \
 	for (link = LIST_beginRev(list); link != LIST_end(list); \
@@ -1569,9 +1569,9 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Iterate over a list (foreach control flow) in reverse with the possibility
  *   to unlink the iterator link while iterating.
- * \param list list to iterate over.
- * \param link iterator.
- * \note you can use break inside the loop.
+ * @param list list to iterate over.
+ * @param link iterator.
+ * @note you can use break inside the loop.
  */
 #define LIST_foreachRevSafe(list, elem, n) \
 	for (link = LIST_beginRev(list), n = LIST_prev(link); \
@@ -1579,9 +1579,9 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Iterate over a list (foreach control flow) with combined dereference of the
  *   link.
- * \param list list to iterate over.
- * \param item iterator (is also the item).
- * \note you can use break inside the loop.
+ * @param list list to iterate over.
+ * @param item iterator (is also the item).
+ * @note you can use break inside the loop.
  */
 #define LIST_foreachItem(list, item, member) \
 	for (item = LIST_item(LIST_begin(list), __typeof__(*item), member); \
@@ -1590,11 +1590,11 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Iterate over a list (foreach control flow) but begin right after the current
  *   (given) item with combined dereference of the link.
- * \param list list to iterate over.
- * \param item iterator (is also the item). Its successor is also the beginning
+ * @param list list to iterate over.
+ * @param item iterator (is also the item). Its successor is also the beginning
  *  of the iteration.
- * \note you can use break inside the loop.
- * \note this is meant to be a continuation point for foreachItem which was
+ * @note you can use break inside the loop.
+ * @note this is meant to be a continuation point for foreachItem which was
  *  terminated with a break
  */
 #define LIST_foreachItem_continue(list, item, member) \
@@ -1604,9 +1604,9 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Iterate over a list (foreach control flow) in reverse with combined
  *   dereference of the link.
- * \param list list to iterate over.
- * \param item iterator (is also the item).
- * \note you can use break inside the loop.
+ * @param list list to iterate over.
+ * @param item iterator (is also the item).
+ * @note you can use break inside the loop.
  */
 #define LIST_foreachItemRev(list, item, member) \
 	for (item = LIST_item(LIST_beginRev(list), __typeof__(*item), member); \
@@ -1615,11 +1615,11 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 
 /** Iterate over a list (foreach control flow) in reverse but begin right before
  *   the current (given) item with combined dereference of the link.
- * \param list list to iterate over.
- * \param item iterator (is also the item). Its predecessor is also the
+ * @param list list to iterate over.
+ * @param item iterator (is also the item). Its predecessor is also the
  *  beginning of the iteration.
- * \note you can use break inside the loop.
- * \note this is meant to be a continuation point for foreachItemRev which was
+ * @note you can use break inside the loop.
+ * @note this is meant to be a continuation point for foreachItemRev which was
  *  terminated with a break
  */
 #define LIST_foreachItemRev_continue(list, item, member) \

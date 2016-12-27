@@ -21,7 +21,7 @@ static void setupD()
 }
 
 /** Test (intrusively) the integrity of a double linked counted list
- * \param listD double linked list
+ * @param listD double linked list
  */
 static void testDIntegrity(struct LIST_ListDC * listD)
 {
@@ -1347,7 +1347,7 @@ static void setupS()
 }
 
 /** Test (intrusively) the integrity of a double linked counted list
- * \param listD double linked list
+ * @param listD double linked list
  */
 static void testSIntegrity(struct LIST_ListSC * listS)
 {
