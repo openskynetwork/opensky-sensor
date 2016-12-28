@@ -10,8 +10,6 @@
 extern "C" {
 #endif
 
-extern struct Component GPS_RECV_comp;
-
 /** GPS Position */
 struct GPS_Position {
 	/** GPS Latitude in degrees, range: -90..+90 */

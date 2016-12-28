@@ -31,6 +31,7 @@
 #include "util/log.h"
 #include "util/util.h"
 #include "util/serial_eth.h"
+#include "trimble/trimble_recv.h"
 
 static const char PFX[] = "MAIN";
 
