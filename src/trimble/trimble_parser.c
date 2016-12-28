@@ -35,23 +35,23 @@ static inline bool discardAndFill();
 static inline bool next(uint8_t * ch);
 static inline bool synchronize();
 
-void GPS_PARSER_init()
+void TRIMBLE_PARSER_init()
 {
-	GPS_INPUT_init();
+	TRIMBLE_INPUT_init();
 }
 
 /** Setup GPS receiver with some options. */
 static bool configure()
 {
 	const uint8_t setutc[] = { 0x10, 0x35, 0x04, 0x00, 0x01, 0x08, 0x10, 0x03 };
-	return GPS_INPUT_write(setutc, sizeof setutc) == sizeof setutc;
+	return TRIMBLE_INPUT_write(setutc, sizeof setutc) == sizeof setutc;
 }
 
-void GPS_PARSER_connect()
+void TRIMBLE_PARSER_connect()
 {
 	while (true) {
 		/* connect with input */
-		GPS_INPUT_connect();
+		TRIMBLE_INPUT_connect();
 
 		/* configure input */
 		if (configure())
@@ -63,12 +63,12 @@ void GPS_PARSER_connect()
 	bufEnd = bufCur;
 }
 
-void GPS_PARSER_disconnect()
+void TRIMBLE_PARSER_disconnect()
 {
-	GPS_INPUT_disconnect();
+	TRIMBLE_INPUT_disconnect();
 }
 
-size_t GPS_PARSER_getFrame(uint8_t * buf, size_t bufLen)
+size_t TRIMBLE_PARSER_getFrame(uint8_t * buf, size_t bufLen)
 {
 	assert (bufLen > 0);
 	while (true) {
@@ -183,7 +183,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t * len)
 /** Discard buffer content and fill it again. */
 static inline bool discardAndFill()
 {
-	size_t rc = GPS_INPUT_read(buf, sizeof buf);
+	size_t rc = TRIMBLE_INPUT_read(buf, sizeof buf);
 	if (unlikely(rc == 0)) {
 		return false;
 	} else {

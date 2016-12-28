@@ -20,136 +20,136 @@ static void posFrame(const uint8_t * buf);
 static bool construct();
 static void mainloop();
 
-struct Component GPS_RECV_comp = {
+struct Component TRIMBLE_comp = {
 	.description = "GPS",
-	.onRegister = &GPS_INPUT_register,
+	.onRegister = &TRIMBLE_INPUT_register,
 	.onConstruct = &construct,
 	.main = &mainloop,
 	.dependencies = { &NET_comp, NULL }
 };
 
 /** Receiver Mode */
-enum GPS_RECV_MODE {
+enum TRIMBLE_GPS_RECV_MODE {
 	/** Automatic (2d/3d) */
-	GPS_RECV_MODE_AUTOMATIC = 0,
+	TRIMBLE_GPS_RECV_MODE_AUTOMATIC = 0,
 	/** Single Satellite (Time) */
-	GPS_RECV_MODE_SNGL_SAT = 1,
+	TRIMBLE_GPS_RECV_MODE_SNGL_SAT = 1,
 	/** Horizontal (2d) */
-	GPS_RECV_MODE_HORIZONTAL = 3,
+	TRIMBLE_GPS_RECV_MODE_HORIZONTAL = 3,
 	/** Full Position (3d) */
-	GPS_RECV_MODE_FULL_POS = 4,
+	TRIMBLE_GPS_RECV_MODE_FULL_POS = 4,
 	/** Over-Determined Clock */
-	GPS_RECV_MODE_ODT_CLK = 7,
+	TRIMBLE_GPS_RECV_MODE_ODT_CLK = 7,
 };
 
 /** Disciplining Mode */
-enum GPS_DISC_MODE {
+enum TRIMBLE_GPS_DISC_MODE {
 	/** Normal (Locked to GPS) */
-	GPS_DISC_MODE_LOCKED = 0,
+	TRIMBLE_GPS_DISC_MODE_LOCKED = 0,
 	/** Power Up */
-	GPS_DISC_MODE_PWR_UP = 1,
+	TRIMBLE_GPS_DISC_MODE_PWR_UP = 1,
 	/** Auto Holdover */
-	GPS_DISC_MODE_AUTO_HOLDOVER = 2,
+	TRIMBLE_GPS_DISC_MODE_AUTO_HOLDOVER = 2,
 	/** Manual Holdover */
-	GPS_DISC_MODE_MANUAL_HOLDOVER = 3,
+	TRIMBLE_GPS_DISC_MODE_MANUAL_HOLDOVER = 3,
 	/** Recovery */
-	GPS_DISC_MODE_RECOVERY = 4,
+	TRIMBLE_GPS_DISC_MODE_RECOVERY = 4,
 	/** Disciplining disabled */
-	GPS_DISC_MODE_DISC_DISABLED = 6
+	TRIMBLE_GPS_DISC_MODE_DISC_DISABLED = 6
 };
 
 /** Critical Alarms */
-enum GPS_CRIT_ALARM {
+enum TRIMBLE_GPS_CRIT_ALARM {
 	/** Oscillator Control Voltage is at rail */
-	GPS_CRIT_ALARM_DAC_AT_RAIL = 1 << 4
+	TRIMBLE_GPS_CRIT_ALARM_DAC_AT_RAIL = 1 << 4
 };
 
 /** Minor Alarms */
-enum GPS_MIN_ALARM {
+enum TRIMBLE_GPS_MIN_ALARM {
 	/** Oscillator Control Voltage is near a rail. Oscillator is within
 	 * 2 years of becoming untunable.
 	 */
-	GPS_MIN_ALARM_DAC_NEAR_RAIL = 1 << 0,
+	TRIMBLE_GPS_MIN_ALARM_DAC_NEAR_RAIL = 1 << 0,
 	/** Antenna input is not drawing sufficient current, most likely
 	 * unconnected
 	 */
-	GPS_MIN_ALARM_ANT_OPEN = 1 << 1,
+	TRIMBLE_GPS_MIN_ALARM_ANT_OPEN = 1 << 1,
 	/** Antenna input is drawing too much current, most likely broken cable or
 	 * antenna
 	 */
-	GPS_MIN_ALARM_ANT_SHORT = 1 << 2,
+	TRIMBLE_GPS_MIN_ALARM_ANT_SHORT = 1 << 2,
 	/** No satellites are usable */
-	GPS_MIN_ALARM_NOT_TRACKING_SATS = 1 << 3,
-	GPS_MIN_ALARM_NOT_DISC_OSC = 1 << 4,
+	TRIMBLE_GPS_MIN_ALARM_NOT_TRACKING_SATS = 1 << 3,
+	TRIMBLE_GPS_MIN_ALARM_NOT_DISC_OSC = 1 << 4,
 	/** Self-Survey procedure is in progress */
-	GPS_MIN_ALARM_SURVEY_IN_PROGRESS = 1 << 5,
+	TRIMBLE_GPS_MIN_ALARM_SURVEY_IN_PROGRESS = 1 << 5,
 	/** No accurate position stored in the flash ROM */
-	GPS_MIN_ALARM_NO_STORED_POSITION = 1 << 6,
+	TRIMBLE_GPS_MIN_ALARM_NO_STORED_POSITION = 1 << 6,
 	/** Leap second transition is pending */
-	GPS_MIN_ALARM_LEAP_SECOND_PEND = 1 << 7,
+	TRIMBLE_GPS_MIN_ALARM_LEAP_SECOND_PEND = 1 << 7,
 	/** the receive is operating in one of its test modes */
-	GPS_MIN_ALARM_IN_TEST_MODE = 1 << 8,
+	TRIMBLE_GPS_MIN_ALARM_IN_TEST_MODE = 1 << 8,
 	/** Accuracy of the position used for time only fixes is questionable */
-	GPS_MIN_ALARM_POSITION_QUESTIONABLE = 1 << 9,
-	GPS_MIN_ALARM_ALMANAC_INCOMPLETE = 1 << 11,
-	GPS_MIN_ALARM_PPS_NOT_GENERATED = 1 << 12
+	TRIMBLE_GPS_MIN_ALARM_POSITION_QUESTIONABLE = 1 << 9,
+	TRIMBLE_GPS_MIN_ALARM_ALMANAC_INCOMPLETE = 1 << 11,
+	TRIMBLE_GPS_MIN_ALARM_PPS_NOT_GENERATED = 1 << 12
 };
 
 /** GPS Decoding Status */
-enum GPS_DECODE_STATUS {
+enum TRIMBLE_GPS_DECODE_STATUS {
 	/** Doing fixes */
-	GPS_DECODE_STATUS_DOING_FIXES = 0x00,
+	TRIMBLE_GPS_DECODE_STATUS_DOING_FIXES = 0x00,
 	/** Don't have GPS time */
-	GPS_DECODE_STATUS_NO_GPS_TIME = 0x01,
+	TRIMBLE_GPS_DECODE_STATUS_NO_TRIMBLE_GPS_TIME = 0x01,
 	/** PDOP too high */
-	GPS_DECODE_STATUS_PDOP_TOO_HIGH = 0x03,
+	TRIMBLE_GPS_DECODE_STATUS_PDOP_TOO_HIGH = 0x03,
 	/** No usable sats */
-	GPS_DECODE_STATUS_NO_SATS = 0x08,
+	TRIMBLE_GPS_DECODE_STATUS_NO_SATS = 0x08,
 	/** Only 1 usable sat */
-	GPS_DECODE_STATUS_1SAT = 0x09,
+	TRIMBLE_GPS_DECODE_STATUS_1SAT = 0x09,
 	/** Only 2 usable sats */
-	GPS_DECODE_STATUS_2SAT = 0x0a,
+	TRIMBLE_GPS_DECODE_STATUS_2SAT = 0x0a,
 	/** Only 3 usable sats */
-	GPS_DECODE_STATUS_3SAT = 0x0b,
+	TRIMBLE_GPS_DECODE_STATUS_3SAT = 0x0b,
 	/** The chosen sat is unusable */
-	GPS_DECODE_STATUS_UNUSABLE = 0x0c,
+	TRIMBLE_GPS_DECODE_STATUS_UNUSABLE = 0x0c,
 	/** TRAIM rejected the fix */
-	GPS_DECODE_STATUS_TRAIM_REJECT = 0x10
+	TRIMBLE_GPS_DECODE_STATUS_TRAIM_REJECT = 0x10
 };
 
 /** Disciplining Activity */
-enum GPS_DISC_ACTIVITY {
+enum TRIMBLE_GPS_DISC_ACTIVITY {
 	/** Phase locking */
-	GPS_DISC_ACTIVITY_PHASE_LOCKING = 0,
+	TRIMBLE_GPS_DISC_ACTIVITY_PHASE_LOCKING = 0,
 	/** Oscillator warm-up */
-	GPS_DISC_ACTIVITY_OSC_WARMUP = 1,
+	TRIMBLE_GPS_DISC_ACTIVITY_OSC_WARMUP = 1,
 	/** Frequency locking */
-	GPS_DISC_ACTIVITY_FREQ_LOCK = 2,
+	TRIMBLE_GPS_DISC_ACTIVITY_FREQ_LOCK = 2,
 	/** Placing PPS */
-	GPS_DISC_ACTIVITY_PLACING_PPS = 3,
+	TRIMBLE_GPS_DISC_ACTIVITY_PLACING_PPS = 3,
 	/** Initializing loop filter */
-	GPS_DISC_ACTIVITY_INIT_LOOP_FILTER = 4,
+	TRIMBLE_GPS_DISC_ACTIVITY_INIT_LOOP_FILTER = 4,
 	/** Compensating OCXO (holdover) */
-	GPS_DISC_ACTIVITY_COMP_OCXO = 5,
+	TRIMBLE_GPS_DISC_ACTIVITY_COMP_OCXO = 5,
 	/** Inactive */
-	GPS_DISC_ACTIVITY_INACTIVE = 6,
+	TRIMBLE_GPS_DISC_ACTIVITY_INACTIVE = 6,
 	/** Recovery mode */
-	GPS_DISC_ACTIVITY_RECOVERY = 8,
+	TRIMBLE_GPS_DISC_ACTIVITY_RECOVERY = 8,
 	/** Calibration/control voltage */
-	GPS_DISC_ACTIVITY_CALIBRATION = 9
+	TRIMBLE_GPS_DISC_ACTIVITY_CALIBRATION = 9
 };
 
 #define R2D 57.2957795130823208767981548141051703
 
 static bool construct()
 {
-	GPS_PARSER_init();
+	TRIMBLE_PARSER_init();
 	return true;
 }
 
 static void cleanupParser(void * dummy)
 {
-	GPS_PARSER_disconnect();
+	TRIMBLE_PARSER_disconnect();
 }
 
 static void mainloop()
@@ -157,7 +157,7 @@ static void mainloop()
 	GPS_reset();
 
 	while (true) {
-		GPS_PARSER_connect();
+		TRIMBLE_PARSER_connect();
 
 		CLEANUP_PUSH(&cleanupParser, NULL);
 
@@ -165,7 +165,7 @@ static void mainloop()
 
 		while (true) {
 			uint8_t buf[1024];
-			size_t len = GPS_PARSER_getFrame(buf, sizeof buf);
+			size_t len = TRIMBLE_PARSER_getFrame(buf, sizeof buf);
 			if (len == 0)
 				break;
 			switch (buf[0]) {
@@ -202,43 +202,43 @@ static void mainloop()
 #if 0
 static void timeFrame(const uint8_t * buf)
 {
-	uint_fast32_t secondsOfWeek = GPS_tou32(buf + 1);
-	uint_fast16_t week = GPS_tou16(buf + 5);
-	int_fast16_t offset = GPS_toi16(buf + 7);
+	uint_fast32_t secondsOfWeek = TRIMBLE_GPS_tou32(buf + 1);
+	uint_fast16_t week = TRIMBLE_GPS_tou16(buf + 5);
+	int_fast16_t offset = TRIMBLE_GPS_toi16(buf + 7);
 	bool testMode = !!(buf[9] & 0x10);
 	bool hasOffset = !(buf[9] & 0x08);
 	bool hasGpsTime = !(buf[9] & 0x04);
 	bool isUTCTime = !!(buf[9] & 0x01);
 	bool hasWeek = week != 1024;
 
-	enum GPS_TIME_FLAGS flags;
-	flags = (testMode ? 0 : GPS_TIME_FLAG_NON_TEST_MODE) |
-		(hasGpsTime ? GPS_TIME_FLAG_HAS_GPS_TIME : 0) |
-		(hasWeek ? GPS_TIME_FLAG_HAS_WEEK : 0) |
-		(hasOffset ? GPS_TIME_FLAG_HAS_OFFSET : 0) |
-		(isUTCTime ? GPS_TIME_FLAG_IS_UTC : 0);
-	atomic_store_explicit(&GPS_timeFlags, flags, memory_order_relaxed);
+	enum TRIMBLE_GPS_TIME_FLAGS flags;
+	flags = (testMode ? 0 : TRIMBLE_GPS_TIME_FLAG_NON_TEST_MODE) |
+		(hasGpsTime ? TRIMBLE_GPS_TIME_FLAG_HAS_TRIMBLE_GPS_TIME : 0) |
+		(hasWeek ? TRIMBLE_GPS_TIME_FLAG_HAS_WEEK : 0) |
+		(hasOffset ? TRIMBLE_GPS_TIME_FLAG_HAS_OFFSET : 0) |
+		(isUTCTime ? TRIMBLE_GPS_TIME_FLAG_IS_UTC : 0);
+	atomic_store_explicit(&TRIMBLE_GPS_timeFlags, flags, memory_order_relaxed);
 #if 0
-	enum GPS_TIME_STATUS stat = preGpsTime ? GPS_TIME_PRE : hasGpsTime ? GPS_TIME_FULL : GPS_TIME_NONE;
+	enum TRIMBLE_GPS_TIME_STATUS stat = preGpsTime ? TRIMBLE_GPS_TIME_PRE : hasGpsTime ? TRIMBLE_GPS_TIME_FULL : TRIMBLE_GPS_TIME_NONE;
 
 	if (!testMode) {
 		//printf("isUTC: %d 0x%02x\n", isUTCTime, buf[9]);
 		time_t unixtime = secondsOfWeek + week * 7 * 24 * 60 * 60 - offset +
 			gps0;
-		pthread_mutex_lock(&GPS_gps.mutex);
-		GPS_gps.unixtime = unixtime;
-		if (stat != GPS_gps.timeStatus)
-			printf("GPS: timeStatus changed from %d to %d -> %s", GPS_gps.timeStatus, stat,
+		pthread_mutex_lock(&TRIMBLE_GPS_gps.mutex);
+		TRIMBLE_GPS_gps.unixtime = unixtime;
+		if (stat != TRIMBLE_GPS_gps.timeStatus)
+			printf("GPS: timeStatus changed from %d to %d -> %s", TRIMBLE_GPS_gps.timeStatus, stat,
 				ctime(&unixtime));
-		GPS_gps.timeStatus = stat;
-		if (hasOffset != GPS_gps.hasOffset)
-			printf("GPS: hasOffset changed from %d to %d\n", GPS_gps.hasOffset, hasOffset);
-		GPS_gps.hasOffset = hasOffset;
-		pthread_mutex_unlock(&GPS_gps.mutex);
+		TRIMBLE_GPS_gps.timeStatus = stat;
+		if (hasOffset != TRIMBLE_GPS_gps.hasOffset)
+			printf("GPS: hasOffset changed from %d to %d\n", TRIMBLE_GPS_gps.hasOffset, hasOffset);
+		TRIMBLE_GPS_gps.hasOffset = hasOffset;
+		pthread_mutex_unlock(&TRIMBLE_GPS_gps.mutex);
 	}
 
-	/*if (++GPS_gps.ctr == 10) {
-		GPS_gps.ctr = 0;
+	/*if (++TRIMBLE_GPS_gps.ctr == 10) {
+		TRIMBLE_GPS_gps.ctr = 0;
 		const char buf[] = { 0x10, 0x35, 0x10, 0x03 };
 		(void)write(fd, buf, sizeof buf);
 
@@ -251,40 +251,40 @@ static void timeFrame(const uint8_t * buf)
 
 static void posFrame(const uint8_t * buf)
 {
-	enum GPS_RECV_MODE recvMode = buf[1];
-	enum GPS_DISC_MODE discMode = buf[2];
+	enum TRIMBLE_GPS_RECV_MODE recvMode = buf[1];
+	enum TRIMBLE_GPS_DISC_MODE discMode = buf[2];
 	//uint8_t selfSurveyProgress = buf[3];
-	//uint32_t holdOverDuration = GPS_tou32(buf + 4);
+	//uint32_t holdOverDuration = TRIMBLE_GPS_tou32(buf + 4);
 	uint16_t critAlarms = ENDEC_tou16(buf + 8);
 	uint16_t minorAlarms = ENDEC_tou16(buf + 10);
-	enum GPS_DECODE_STATUS decodingStatus = buf[12];
-	//enum GPS_DISC_ACTIVITY discActivity = buf[13];
-	/*float ppsOffset = GPS_tofloat(buf + 16);
-	float clockOffset = GPS_tofloat(buf + 20);
-	uint32_t dacValue = GPS_tou32(buf + 24);
-	float dacVoltage = GPS_tofloat(buf + 28);
-	float temperature = GPS_tofloat(buf+ 32);*/
+	enum TRIMBLE_GPS_DECODE_STATUS decodingStatus = buf[12];
+	//enum TRIMBLE_GPS_DISC_ACTIVITY discActivity = buf[13];
+	/*float ppsOffset = TRIMBLE_GPS_tofloat(buf + 16);
+	float clockOffset = TRIMBLE_GPS_tofloat(buf + 20);
+	uint32_t dacValue = TRIMBLE_GPS_tou32(buf + 24);
+	float dacVoltage = TRIMBLE_GPS_tofloat(buf + 28);
+	float temperature = TRIMBLE_GPS_tofloat(buf+ 32);*/
 	double latitude = ENDEC_todouble(buf + 36) * R2D;
 	double longitude = ENDEC_todouble(buf + 44) * R2D;
 	double altitude = ENDEC_todouble(buf + 52);
-	//float ppsQuantizationError = GPS_tofloat(buf + 60);
+	//float ppsQuantizationError = TRIMBLE_GPS_tofloat(buf + 60);
 
-	bool selfSurvey = !!(minorAlarms & GPS_MIN_ALARM_SURVEY_IN_PROGRESS);
-	bool inTestMode = !!(minorAlarms & GPS_MIN_ALARM_IN_TEST_MODE);
+	bool selfSurvey = !!(minorAlarms & TRIMBLE_GPS_MIN_ALARM_SURVEY_IN_PROGRESS);
+	bool inTestMode = !!(minorAlarms & TRIMBLE_GPS_MIN_ALARM_IN_TEST_MODE);
 
-	/*NOC_printf("GPS Pos: %d %d ", recvMode == GPS_RECV_MODE_ODT_CLK,
-		decodingStatus == GPS_DECODE_STATUS_DOING_FIXES);
+	/*NOC_printf("GPS Pos: %d %d ", recvMode == TRIMBLE_GPS_RECV_MODE_ODT_CLK,
+		decodingStatus == TRIMBLE_GPS_DECODE_STATUS_DOING_FIXES);
 	NOC_printf("LLA: %+6.2f %+6.2f %+6.2f\n", latitude, longitude,
 		altitude);*/
 
-	if (critAlarms || inTestMode || recvMode != GPS_RECV_MODE_ODT_CLK ||
-		discMode != GPS_DISC_MODE_LOCKED) {
+	if (critAlarms || inTestMode || recvMode != TRIMBLE_GPS_RECV_MODE_ODT_CLK ||
+		discMode != TRIMBLE_GPS_DISC_MODE_LOCKED) {
 		/* unrecoverable or not automatically solvable by now */
 		return;
 	}
 
-	if (selfSurvey || decodingStatus != GPS_DECODE_STATUS_DOING_FIXES ||
-		discMode != GPS_DISC_MODE_LOCKED) {
+	if (selfSurvey || decodingStatus != TRIMBLE_GPS_DECODE_STATUS_DOING_FIXES ||
+		discMode != TRIMBLE_GPS_DISC_MODE_LOCKED) {
 		/* no position -> wait */
 		return;
 	}
@@ -292,17 +292,17 @@ static void posFrame(const uint8_t * buf)
 	GPS_setPosition(latitude, longitude, altitude);
 
 #if 0
-	pthread_mutex_lock(&GPS_gps.mutex);
-	if (antError != GPS_gps.antennaError)
-		printf("GPS: antennaError changed from %d to %d\n", GPS_gps.antennaError, antError);
-	GPS_gps.antennaError = antError;
-	if (fixes != GPS_gps.hasPosition)
+	pthread_mutex_lock(&TRIMBLE_GPS_gps.mutex);
+	if (antError != TRIMBLE_GPS_gps.antennaError)
+		printf("GPS: antennaError changed from %d to %d\n", TRIMBLE_GPS_gps.antennaError, antError);
+	TRIMBLE_GPS_gps.antennaError = antError;
+	if (fixes != TRIMBLE_GPS_gps.hasPosition)
 		printf("GPS: hasPosition changed from %d to %d -> %.2f %.2f\n",
-			GPS_gps.hasPosition, fixes, latitude, longitude);
-	GPS_gps.hasPosition = fixes;
-	GPS_gps.latitude = latitude;
-	GPS_gps.longitude = longitude;
-	pthread_mutex_unlock(&GPS_gps.mutex);
+			TRIMBLE_GPS_gps.hasPosition, fixes, latitude, longitude);
+	TRIMBLE_GPS_gps.hasPosition = fixes;
+	TRIMBLE_GPS_gps.latitude = latitude;
+	TRIMBLE_GPS_gps.longitude = longitude;
+	pthread_mutex_unlock(&TRIMBLE_GPS_gps.mutex);
 #endif
 }
 

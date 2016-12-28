@@ -11,8 +11,9 @@
 extern "C" {
 #endif
 
-extern struct Component GPS_RECV_comp;
+extern struct Component TRIMBLE_comp;
 
+#if 0
 enum GPS_TIME_FLAGS {
 	GPS_TIME_FLAG_NONE = 0,
 	GPS_TIME_FLAG_NON_TEST_MODE = 1,
@@ -26,11 +27,12 @@ enum GPS_TIME_FLAGS {
 		GPS_TIME_FLAG_HAS_WEEK
 };
 
-/*inline enum GPS_TIME_FLAGS GPS_getTimeFlags()
+inline enum GPS_TIME_FLAGS GPS_getTimeFlags()
 {
 	extern _Atomic enum GPS_TIME_FLAGS GPS_timeFlags;
 	return atomic_load_explicit(&GPS_timeFlags, memory_order_relaxed);
-}*/
+}
+#endif
 
 #ifdef __cplusplus
 }

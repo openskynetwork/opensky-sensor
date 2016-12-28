@@ -30,16 +30,16 @@ static struct pollfd fds;
 static bool doConnect();
 static void closeUart();
 
-void GPS_INPUT_register()
+void TRIMBLE_INPUT_register()
 {
 }
 
-void GPS_INPUT_init()
+void TRIMBLE_INPUT_init()
 {
 	fd = -1;
 }
 
-void GPS_INPUT_disconnect()
+void TRIMBLE_INPUT_disconnect()
 {
 	closeUart();
 }
@@ -52,7 +52,7 @@ static void closeUart()
 	}
 }
 
-void GPS_INPUT_connect()
+void TRIMBLE_INPUT_connect()
 {
 	while (!doConnect())
 		sleep(RECONNECT_INTERVAL);
@@ -100,7 +100,7 @@ static bool doConnect()
 	return true;
 }
 
-size_t GPS_INPUT_read(uint8_t * buf, size_t bufLen)
+size_t TRIMBLE_INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	while (true) {
 		ssize_t rc = read(fd, buf, bufLen);
@@ -120,7 +120,7 @@ size_t GPS_INPUT_read(uint8_t * buf, size_t bufLen)
 	}
 }
 
-size_t GPS_INPUT_write(const uint8_t * buf, size_t bufLen)
+size_t TRIMBLE_INPUT_write(const uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = write(fd, buf, bufLen);
 	if (unlikely(rc <= 0))

@@ -57,7 +57,7 @@ static int sock;
 static bool doConnect();
 static void closeConn();
 
-void GPS_INPUT_register()
+void TRIMBLE_INPUT_register()
 {
 	CFG_registerSection(&cfg);
 }
@@ -76,12 +76,12 @@ static bool checkCfg(const struct CFG_Section * sect)
 	return true;
 }
 
-void GPS_INPUT_init()
+void TRIMBLE_INPUT_init()
 {
 	sock = -1;
 }
 
-void GPS_INPUT_disconnect()
+void TRIMBLE_INPUT_disconnect()
 {
 	closeConn();
 }
@@ -95,7 +95,7 @@ static void closeConn()
 	}
 }
 
-void GPS_INPUT_connect()
+void TRIMBLE_INPUT_connect()
 {
 	while (!doConnect())
 		sleep(RECONNECT_INTERVAL);
@@ -109,7 +109,7 @@ static bool doConnect()
 	return sock != -1;
 }
 
-size_t GPS_INPUT_read(uint8_t * buf, size_t bufLen)
+size_t TRIMBLE_INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = recv(sock, buf, bufLen, 0);
 	if (unlikely(rc < 0)) {
@@ -121,7 +121,7 @@ size_t GPS_INPUT_read(uint8_t * buf, size_t bufLen)
 	}
 }
 
-size_t GPS_INPUT_write(const uint8_t * buf, size_t bufLen)
+size_t TRIMBLE_INPUT_write(const uint8_t * buf, size_t bufLen)
 {
 	/* ignore */
 	return bufLen;

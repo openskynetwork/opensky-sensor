@@ -10,11 +10,11 @@
 extern "C" {
 #endif
 
-void GPS_PARSER_init();
+void TRIMBLE_PARSER_init();
 
-void GPS_PARSER_connect();
-void GPS_PARSER_disconnect();
-size_t GPS_PARSER_getFrame(uint8_t * buf, size_t bufLen);
+void TRIMBLE_PARSER_connect();
+void TRIMBLE_PARSER_disconnect();
+size_t TRIMBLE_PARSER_getFrame(uint8_t * buf, size_t bufLen);
 
 #ifdef __cplusplus
 }

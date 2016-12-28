@@ -111,7 +111,7 @@ int main(int argc, char * argv[])
 	COMP_register(&RELAY_comp);
 	COMP_register(&RECV_comp);
 	COMP_register(&STAT_comp);
-	COMP_register(&GPS_RECV_comp);
+	COMP_register(&TRIMBLE_comp);
 
 	COMP_fixup();
 
