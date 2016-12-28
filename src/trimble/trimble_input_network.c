@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <stdbool.h>
 #include <assert.h>
-#include "gps_input.h"
+#include "trimble_input.h"
 #include "util/net_common.h"
 #include "util/cfgfile.h"
 #include "util/util.h"

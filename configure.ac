@@ -208,5 +208,5 @@ AS_IF([test x"$with_pacman" != x"no"],
 
 dnl output directive
 AC_OUTPUT([Makefile src/Makefile src/core/Makefile src/util/Makefile
-	src/radarcape/Makefile src/radarcape/lib/Makefile src/dump1090/Makefile
-	src/test/Makefile])
+	src/trimble/Makefile src/radarcape/Makefile src/radarcape/lib/Makefile
+	src/dump1090/Makefile src/test/Makefile])

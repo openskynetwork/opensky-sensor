@@ -6,11 +6,11 @@
 #include <pthread.h>
 #include <inttypes.h>
 #include <stdbool.h>
-#include "gps_recv.h"
-#include "gps_parser.h"
-#include "gps_input.h"
 #include "core/gps.h"
 #include "core/network.h"
+#include "trimble_input.h"
+#include "trimble_parser.h"
+#include "trimble_recv.h"
 #include "util/endec.h"
 #include "util/threads.h"
 

@@ -8,8 +8,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include "gps_parser.h"
-#include "gps_input.h"
+#include "trimble_parser.h"
+#include "trimble_input.h"
 #include "util/log.h"
 #include "util/util.h"
 #include "util/threads.h"

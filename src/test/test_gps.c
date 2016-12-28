@@ -8,7 +8,6 @@
 #include <stdbool.h>
 #include "core/gps.h"
 #include "core/beast.h"
-#include "gps/gps_parser.h"
 #include "core/network.h"
 #include "util/endec.h"
 

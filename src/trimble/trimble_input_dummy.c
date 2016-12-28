@@ -4,7 +4,7 @@
 #include <config.h>
 #endif
 #include <unistd.h>
-#include "gps_input.h"
+#include "trimble_input.h"
 
 void GPS_INPUT_register()
 {

@@ -17,18 +17,13 @@ endif
 # common sources of radarcape input
 radarcape_sources = main.c \
 	watchdog.h fpga.h \
-	rc-input.h radarcape.h radarcape.c \
-	../gps/gps_input.h \
-	../gps/gps_recv.h ../gps/gps_recv.c ../gps/gps_parser.h ../gps/gps_parser.c
+	rc-input.h radarcape.h radarcape.c
 
 # sources for binaries
 openskyd_rc_SOURCES = $(radarcape_sources) uart.c \
-	../gps/gps_input_uart.c fpga.c watchdog.c \
-	gpio.h gpio.c tb_standalone.h tb_standalone.c
-openskyd_rcd_net_SOURCES = $(radarcape_sources) network.c \
-	../gps/gps_input_network.c
-openskyd_rc_dummy_SOURCES = $(radarcape_sources) dummy.c \
-	../gps/gps_input_dummy.c
+	fpga.c watchdog.c gpio.h gpio.c tb_standalone.h tb_standalone.c
+openskyd_rcd_net_SOURCES = $(radarcape_sources) network.c
+openskyd_rc_dummy_SOURCES = $(radarcape_sources) dummy.c
 
 rc_wd_SOURCES = wd-main.c \
 	gpio.h gpio.c \
@@ -36,11 +31,14 @@ rc_wd_SOURCES = wd-main.c \
 
 # compiler libs
 openskyd_rc_LIBS = @PTHREAD_LIBS@
-openskyd_rc_LDADD = ../core/libcore.a ../util/libutil.a
+openskyd_rc_LDADD = ../core/libcore.a ../trimble/libtrimble-uart.a \
+	../util/libutil.a
 openskyd_rcd_net_LIBS = @PTHREAD_LIBS@
-openskyd_rcd_net_LDADD = ../core/libcore.a ../util/libutil.a
+openskyd_rcd_net_LDADD = ../core/libcore.a ../trimble/libtrimble-net.a \
+	../util/libutil.a
 openskyd_rc_dummy_LIBS = @PTHREAD_LIBS@
-openskyd_rc_dummy_LDADD = -lm ../core/libcore.a ../util/libutil.a
+openskyd_rc_dummy_LDADD = -lm ../core/libcore.a ../trimble/libtrimble-dummy.a \
+	../util/libutil.a
 rc_wd_LDADD = ../core/libcore.a ../util/libutil.a
 
 # common compile flags
