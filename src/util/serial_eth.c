@@ -19,9 +19,12 @@
 #include <stdio.h>
 #include "serial_eth.h"
 #include "log.h"
+#include "threads.h"
 
+/** Component: Prefix */
 static const char PFX[] = "SERIAL";
 
+/** Default ethernet device name */
 #define ETHERNET_DEVICE_NAME "eth0"
 
 /** whether the serial number has already been resolved */
@@ -29,6 +32,11 @@ static bool cachedSerial;
 /** the serial number, if cachedSerial is true */
 static uint32_t serialNo;
 
+/** Try to get the MAC address of an ethernet device using the socket API
+ * @param dev ethernet device name
+ * @param mac buffer to return the MAC address
+ * @return true if succeeded
+ */
 static bool getMacBySocket(const char * dev, uint8_t mac[IFHWADDRLEN])
 {
 	int sock = socket(PF_INET, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_IP);
@@ -38,9 +46,7 @@ static bool getMacBySocket(const char * dev, uint8_t mac[IFHWADDRLEN])
 	struct ifreq ifr;
 	strncpy(ifr.ifr_name, dev, IFNAMSIZ);
 
-	int ret = ioctl(sock, SIOCGIFHWADDR, &ifr);
-
-	close(sock);
+	int ret = NOC_call(ioctl, sock, SIOCGIFHWADDR, &ifr);
 
 	if (ret < 0) /* no such device */
 		return false;
@@ -51,6 +57,15 @@ static bool getMacBySocket(const char * dev, uint8_t mac[IFHWADDRLEN])
 	memcpy(mac, ifr.ifr_hwaddr.sa_data, IFHWADDRLEN);
 
 	return true;
+}
+
+/** Cleanup: close file handle upon cancellation.
+ * @param f file handle
+ */
+static void cleanupCloseFile(FILE * f)
+{
+	if (f)
+		fclose(f);
 }
 
 static bool getMacBySysfs(const char * dev, uint8_t mac[IFHWADDRLEN])
@@ -65,20 +80,21 @@ static bool getMacBySysfs(const char * dev, uint8_t mac[IFHWADDRLEN])
 	if (!sys)
 		return false;
 
+	CLEANUP_PUSH(&cleanupCloseFile, sys);
 	len = fscanf(sys, "%" SCNx8 ":%" SCNx8 ":%"	SCNx8 ":%" SCNx8 ":%" SCNx8
 		":%" SCNx8, &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
-	fclose(sys);
+	CLEANUP_POP();
 
 	return len == 6;
 }
 
-/** Get a unique identification of the device by taking parts of its mac
- *   address. The serial number is the least 31 bits of the mac address of
+/** Get a unique identification of the device by taking parts of its MAC
+ *   address. The serial number is the least 31 bits of the MAC address of
  *   an ethernet device. This way, it will fit into Javas 32 bit signed integer.
- * \param device name of the ethernet device
- * \param serial the serial number will be written to this address, if the
+ * @param device name of the ethernet device
+ * @param serial the serial number will be written to this address, if the
  *  return value is true.
- * \return true if operation succeeded, false otherwise
+ * @return true if operation succeeded, false otherwise
  */
 enum SERIAL_RETURN SERIAL_ETH_getSerial(uint32_t * serial)
 {
@@ -112,7 +128,7 @@ enum SERIAL_RETURN SERIAL_ETH_getSerial(uint32_t * serial)
 
 	uint32_t serial_be;
 	memcpy(&serial_be, mac + 2, sizeof serial_be);
-	/* get the lower 31 bit */
+	/* get the lower 31 bits */
 	serialNo = be32toh(serial_be) & 0x7fffffff;
 	if (serial)
 		*serial = serialNo;
