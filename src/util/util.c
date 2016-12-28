@@ -14,6 +14,7 @@
 #include "util.h"
 #include "log.h"
 
+/** Component: Prefix */
 static const char PFX[] = "UTIL";
 
 /** Drop privileges by switching uid and gid to nobody */
@@ -54,6 +55,10 @@ void UTIL_dropPrivileges()
 	if (setuid(u_nobody)) {}
 }
 
+/** Get a random number.
+ * @param n maximum number
+ * @return returns a number between 0 and n
+ */
 uint32_t UTIL_randInt(uint32_t n)
 {
 	uint32_t limit = RAND_MAX - RAND_MAX % n;
@@ -63,6 +68,7 @@ uint32_t UTIL_randInt(uint32_t n)
 	return rnd % n;
 }
 
+/** Wait for SIGINT and return then */
 void UTIL_waitSigInt()
 {
 #ifdef CLEANUP_ROUTINES
