@@ -15,10 +15,11 @@
 #include "proc.h"
 #include "log.h"
 
+/** Component: Prefix */
 static const char PFX[] = "PROC";
 
 /** Print a command line which is about to be executed to stdout.
- * \param argv the whole argument vector where argv[0] is the executable.
+ * @param argv the whole argument vector where argv[0] is the executable.
  */
 static void printCmdLine(char * const argv[])
 {
@@ -40,7 +41,7 @@ static void printCmdLine(char * const argv[])
 }
 
 /** Fork from parent process.
- * \return true if this is child, false if its the parent (returns twice)
+ * @return true if this is child, false if its the parent (returns twice)
  */
 bool PROC_fork()
 {
@@ -56,16 +57,21 @@ bool PROC_fork()
 }
 
 /** Execute a command and don't return.
- * \param argv argument vector.
+ * @param argv argument vector.
  */
 void PROC_execAndFinalize(char * const argv[])
 {
 	close(STDIN_FILENO);
-	/*close(STDOUT_FILENO);
-	close(STDERR_FILENO);*/
 	openat(STDIN_FILENO, "/dev/null", O_RDONLY);
-	/*openat(STDOUT_FILENO, "/tmp/log", O_WRONLY | O_CREAT | O_APPEND, 0600);
-	dup2(STDOUT_FILENO, STDERR_FILENO);*/
+
+	/* TODO: if we don't want to have the output of the process, we need to
+	 * close STDOUT and STDERR:
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+	 * we could also open a file and redirect STDOUT and STDERR:
+	openat(STDOUT_FILENO, "/tmp/log", O_WRONLY | O_CREAT | O_APPEND, 0600);
+	dup2(STDOUT_FILENO, STDERR_FILENO);
+	*/
 
 	(void)umask(~0755);
 
@@ -102,7 +108,7 @@ static inline void escape_cgroup()
 }
 
 /** Fork parent process, daemonize child and execute.
- * \param argv argument vector
+ * @param argv argument vector
  */
 void PROC_forkAndExec(char * const argv[])
 {
@@ -118,10 +124,10 @@ void PROC_forkAndExec(char * const argv[])
 }
 
 /** Execute a command and return.
- * \note If the parent process should not wait, you should PROC_fork() first
+ * @note If the parent process should not wait, you should PROC_fork() first
  *       and either exit or use PROC_execAndFinalize as last call.
- * \param argv argument vector.
- * \return true if call succeeded
+ * @param argv argument vector.
+ * @return true if call succeeded
  */
 bool PROC_execAndReturn(char * const argv[])
 {
