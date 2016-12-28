@@ -17,11 +17,17 @@
 #include "threads.h"
 #include "util.h"
 
+/** Private data for addresses */
 struct Hosts {
+	/** Hosts as returned by getaddrinfo */
 	struct addrinfo * hosts;
+	/** Pointers into hosts, in random order */
 	struct addrinfo ** shuffled;
 };
 
+/** Cleanup Routine
+ * @param hosts private hosts information
+ */
 static void cleanup(struct Hosts * hosts)
 {
 	if (hosts) {
@@ -32,15 +38,22 @@ static void cleanup(struct Hosts * hosts)
 	}
 }
 
+/** Open a TCP Connection to a given host and port. Try all addresses and
+ * protocols (ipv4/ipv6) in random order.
+ * @param prefix Prefix of the calling component, for logging purposes
+ * @param hostName either an ip or the host name to connect to
+ * @param port port to connect to
+ * @return socket descriptor or -1 upon failure
+ */
 int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 {
-	struct addrinfo * host, hints;
+	struct addrinfo * host = NULL, hints;
 	int sock = -1;
 
-	// must be pointer for correct cleanup
+	/* must be pointer for correct cleanup */
 	struct Hosts * hosts = malloc(sizeof *hosts);
-	assert(hosts);
-
+	if (hosts == NULL)
+		LOG_errno(LOG_LEVEL_EMERG, prefix, "malloc failed");
 	hosts->hosts = NULL;
 	hosts->shuffled = NULL;
 
@@ -56,7 +69,7 @@ int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 	if (rc) {
 		LOG_logf(LOG_LEVEL_WARN, prefix, "Could not resolve host '%s': %s",
 			hostName, gai_strerror(rc));
-		return -1;
+		goto cleanup;
 	}
 
 	/* count hosts */
@@ -66,7 +79,8 @@ int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 
 	/* copy hosts */
 	hosts->shuffled = malloc(nHosts * sizeof(struct addrinfo));
-	assert(hosts->shuffled);
+	if (hosts->shuffled == NULL)
+		LOG_errno(LOG_LEVEL_EMERG, prefix, "malloc failed");
 	size_t i;
 	for (i = 0, host = hosts->hosts; host != NULL; host = host->ai_next, ++i)
 		hosts->shuffled[i] = host;
@@ -127,6 +141,7 @@ int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 	}
 	if (i == nHosts)
 		host = NULL;
+cleanup:
 	CLEANUP_POP();
 
 	if (!host) {
