@@ -14,12 +14,21 @@
 #include "util/util.h"
 #include "util/threads.h"
 
-#define PFX "GPS"
+/** Component: Prefix */
+static const char PFX[] = "TRIMBLE";
 
+#define BOM 0x10
+#define EOM 0x03
+
+/** Decoding status */
 enum DECODE_STATUS {
+	/** Success */
 	DECODE_STATUS_OK,
+	/** Unexpected resynchronization */
 	DECODE_STATUS_RESYNC,
+	/** Connection failure */
 	DECODE_STATUS_CONNFAIL,
+	/** Buffer full */
 	DECODE_STATUS_BUFFER_FULL
 };
 
@@ -35,18 +44,22 @@ static inline bool discardAndFill();
 static inline bool next(uint8_t * ch);
 static inline bool synchronize();
 
+/** Initialize trimble parser */
 void TRIMBLE_PARSER_init()
 {
 	TRIMBLE_INPUT_init();
 }
 
-/** Setup GPS receiver with some options. */
+/** Setup trimble receiver with some options.
+ * @return true if writing to the receiver was successful
+ */
 static bool configure()
 {
-	const uint8_t setutc[] = { 0x10, 0x35, 0x04, 0x00, 0x01, 0x08, 0x10, 0x03 };
+	const uint8_t setutc[] = { BOM, 0x35, 0x04, 0x00, 0x01, 0x08, BOM, EOM };
 	return TRIMBLE_INPUT_write(setutc, sizeof setutc) == sizeof setutc;
 }
 
+/** Connect to receiver and configure it */
 void TRIMBLE_PARSER_connect()
 {
 	while (true) {
@@ -63,23 +76,29 @@ void TRIMBLE_PARSER_connect()
 	bufEnd = bufCur;
 }
 
+/** Disconnect from receiver */
 void TRIMBLE_PARSER_disconnect()
 {
 	TRIMBLE_INPUT_disconnect();
 }
 
+/** Get a frame from the receiver
+ * @param buf buffer to receive into
+ * @param bufLen size of buffer to receive into
+ * @return length which was actually used
+ */
 size_t TRIMBLE_PARSER_getFrame(uint8_t * buf, size_t bufLen)
 {
 	assert (bufLen > 0);
+
 	while (true) {
 		/* synchronize */
-		uint8_t sync;
-		if (unlikely(!next(&sync)))
+		uint8_t bom;
+		if (unlikely(!next(&bom)))
 			return false;
-		if (unlikely(sync != 0x10)) {
+		if (unlikely(bom != BOM)) {
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Out of Sync: got 0x%02" PRIx8
-				" instead of 0x10", sync);
-			//++STAT_stats.ADSB_outOfSync;
+				" instead of BOM", bom);
 synchronize:
 			if (unlikely(!synchronize()))
 				return false;
@@ -90,10 +109,9 @@ decode_frame:
 		/* decode type */
 		if (unlikely(!next(buf)))
 			return false;
-		if (unlikely(*buf == 0x03)) {
-			LOG_log(LOG_LEVEL_WARN, PFX, "Out of Sync: got unescaped 0x1a in "
+		if (unlikely(*buf == EOM)) {
+			LOG_log(LOG_LEVEL_WARN, PFX, "Out of Sync: got unescaped EOM in "
 				"frame, resynchronizing");
-			//++STAT_stats.ADSB_outOfSync;
 			goto synchronize;
 		}
 		size_t len = bufLen - 1;
@@ -103,12 +121,10 @@ decode_frame:
 		} else {
 			switch (rs) {
 			case DECODE_STATUS_RESYNC:
-				//++STAT_stats.ADSB_outOfSync; TODO
 				goto decode_frame;
 			case DECODE_STATUS_CONNFAIL:
 				return 0;
 			case DECODE_STATUS_BUFFER_FULL:
-				/* TODO: stats */
 				goto synchronize;
 			default:
 				assert(false);
@@ -117,6 +133,12 @@ decode_frame:
 	}
 }
 
+/** Decode a trimble frame
+ * @param dst destination buffer
+ * @param len pointer to size of buffer, will contain the actually used length
+ *  after return
+ * @return decoding status
+ */
 static inline enum DECODE_STATUS decode(uint8_t * dst, size_t * len)
 {
 	/* destination buffer length */
@@ -130,37 +152,37 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t * len)
 			if (unlikely(!discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
 		}
-		/* search sync in the current buffer end up to remaining destination
+		/* search BOM in the current buffer end up to remaining destination
 		 * buffer length */
 		size_t rbuf = bufEnd - bufCur;
 		size_t mlen = rbuf <= dstLen ? rbuf : dstLen;
-		uint8_t * sync = memchr(bufCur, '\x10', mlen);
-		if (likely(sync)) {
-			/* sync found: copy buffer up to escape, if applicable */
-			size_t syncLen = sync - bufCur;
+		uint8_t * bom = memchr(bufCur, BOM, mlen);
+		if (likely(bom)) {
+			/* BOM found: copy buffer up to BOM, if applicable */
+			size_t syncLen = bom - bufCur;
 			if (likely(syncLen)) {
 				memcpy(dst, bufCur, syncLen);
 				dst += syncLen;
 				dstLen -= syncLen;
 			}
 
-			/* consume symbols, discard sync */
-			bufCur = sync + 1;
+			/* consume symbols, discard BOM */
+			bufCur = bom + 1;
 
 			/* peek next symbol */
 			if (unlikely(bufCur == bufEnd && !discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
-			if (likely(*bufCur == '\x03')) {
+			if (likely(*bufCur == EOM)) {
 				/* frame end: discard symbol and return */
 				++bufCur;
 				*len = dst - dstStart;
 				return DECODE_STATUS_OK;
 			}
-			if (likely(*bufCur == '\x10')) {
-				/* it's another sync -> append escape */
+			if (likely(*bufCur == BOM)) {
+				/* it's another BOM -> append escaped BOM */
 				if (unlikely(!dstLen))
 					break;
-				*dst++ = '\x10';
+				*dst++ = BOM;
 				--dstLen;
 				++bufCur;
 			} else {
@@ -168,7 +190,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t * len)
 				return DECODE_STATUS_RESYNC;
 			}
 		} else {
-			/* no escape found: copy up to buffer length */
+			/* no BOM found: copy up to buffer length */
 			memcpy(dst, bufCur, mlen);
 			dst += mlen;
 			bufCur += mlen;
@@ -180,7 +202,9 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t * len)
 	return DECODE_STATUS_BUFFER_FULL;
 }
 
-/** Discard buffer content and fill it again. */
+/** Discard buffer content and fill it again.
+ * @return true if reading was successful
+ */
 static inline bool discardAndFill()
 {
 	size_t rc = TRIMBLE_INPUT_read(buf, sizeof buf);
@@ -194,8 +218,8 @@ static inline bool discardAndFill()
 }
 
 /** Consume next symbol from buffer.
- * \param ch pointer to returned next symbol
- * \return false if reading new data failed, true otherwise
+ * @param ch pointer to returned next symbol
+ * @return true if reading new data was successful
  */
 static inline bool next(uint8_t * ch)
 {
@@ -209,21 +233,21 @@ static inline bool next(uint8_t * ch)
 }
 
 /** Synchronize buffer.
- * \return false if reading new data failed, true otherwise
- * \note After calling that, *bufCur will be the first byte of the frame
- * \note It is also guaranteed, that bufCur != bufEnd
- * \note Furthermore, *bufCur != 0x1a and *bufCur != 0x03, because a frame
- *  cannot start with \x1a or \x03
+ * @return true if reading new data was successful
+ * @note After calling that, *bufCur will be the first byte of the frame
+ * @note It is also guaranteed, that bufCur != bufEnd
+ * @note Furthermore, *bufCur != BOM and *bufCur != EOM, because a frame
+ *  cannot start with BOM or EOM
  */
 static inline bool synchronize()
 {
 	do {
-		uint8_t * sync;
+		uint8_t * bom;
 redo:
-		sync = memchr(bufCur, 0x10, bufEnd - bufCur);
-		if (likely(sync)) {
-			/* found sync symbol, discard everything including the sync */
-			bufCur = sync + 1;
+		bom = memchr(bufCur, BOM, bufEnd - bufCur);
+		if (likely(bom)) {
+			/* found BOM, discard everything including the BOM */
+			bufCur = bom + 1;
 
 			/* peek next */
 			if (unlikely(bufCur == bufEnd)) {
@@ -232,8 +256,8 @@ redo:
 					return false;
 			}
 
-			if (unlikely(*bufCur == 0x10 || *bufCur == 0x03)) {
-				/* next symbol is an escaped sync or an end-of-frame symbol
+			if (unlikely(*bufCur == BOM || *bufCur == EOM)) {
+				/* next symbol is an escaped BOM or an EOM
 				 * -> discard both and try again */
 				++bufCur;
 				if (bufCur != bufEnd)

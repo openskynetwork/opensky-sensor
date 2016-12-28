@@ -20,6 +20,7 @@ static void posFrame(const uint8_t * buf);
 static bool construct();
 static void mainloop();
 
+/** Component descriptor */
 struct Component TRIMBLE_comp = {
 	.description = "GPS",
 	.onRegister = &TRIMBLE_INPUT_register,
@@ -91,7 +92,9 @@ enum TRIMBLE_GPS_MIN_ALARM {
 	TRIMBLE_GPS_MIN_ALARM_IN_TEST_MODE = 1 << 8,
 	/** Accuracy of the position used for time only fixes is questionable */
 	TRIMBLE_GPS_MIN_ALARM_POSITION_QUESTIONABLE = 1 << 9,
+	/** Almanac is incomplete */
 	TRIMBLE_GPS_MIN_ALARM_ALMANAC_INCOMPLETE = 1 << 11,
+	/** PPS is not generated */
 	TRIMBLE_GPS_MIN_ALARM_PPS_NOT_GENERATED = 1 << 12
 };
 
@@ -139,19 +142,26 @@ enum TRIMBLE_GPS_DISC_ACTIVITY {
 	TRIMBLE_GPS_DISC_ACTIVITY_CALIBRATION = 9
 };
 
+/** Constant to convert radians to degrees (360/(2*pi)) */
 #define R2D 57.2957795130823208767981548141051703
 
+/** Initialize Trimble receiver component
+ * @return always true
+ */
 static bool construct()
 {
 	TRIMBLE_PARSER_init();
 	return true;
 }
 
-static void cleanupParser(void * dummy)
+/** Cleanup receiver: disconnect */
+static void cleanupParser()
 {
 	TRIMBLE_PARSER_disconnect();
 }
 
+/** Main loop: parse Trimble packets, extract position and pass it to GPS
+ * component */
 static void mainloop()
 {
 	GPS_reset();
