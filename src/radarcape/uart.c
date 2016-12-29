@@ -16,9 +16,12 @@
 #include "util/util.h"
 #include "util/log.h"
 
+/** Component: Prefix */
 static const char PFX[] = "INPUT";
 
+/** Interval in seconds between two reconnection attempts */
 #define RECONNECT_INTERVAL 10
+/** UART Port */
 #define UART "/dev/ttyS5"
 
 /** file descriptor for UART */
@@ -29,15 +32,18 @@ static struct pollfd fds;
 static bool doConnect();
 static void closeUart();
 
+/** Register Radarcape input */
 void RC_INPUT_register()
 {
 }
 
+/** Initialize Radarcape input */
 void RC_INPUT_init()
 {
 	fd = -1;
 }
 
+/** Close connection */
 static void closeUart()
 {
 	if (fd != -1) {
@@ -46,17 +52,22 @@ static void closeUart()
 	}
 }
 
+/** Disconnect Radarcape input */
 void RC_INPUT_disconnect()
 {
 	closeUart();
 }
 
+/** Reconnect Radarcape receiver until success */
 void RC_INPUT_connect()
 {
 	while (!doConnect())
 		sleep(RECONNECT_INTERVAL);
 }
 
+/** Connect to UART.
+ * @return true upon success
+ */
 static bool doConnect()
 {
 	closeUart();
@@ -76,7 +87,6 @@ static bool doConnect()
 		closeUart();
 		return false;
 	}
-
 	t.c_iflag = IGNPAR;
 	t.c_oflag = ONLCR;
 	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3500000;
@@ -84,13 +94,11 @@ static bool doConnect()
 	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
 	t.c_ispeed = B3500000;
 	t.c_ospeed = B3500000;
-
 	if (tcsetattr(fd, TCSANOW, &t)) {
 		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not set UART settings");
 		closeUart();
 		return false;
 	}
-
 	tcflush(fd, TCIOFLUSH);
 
 	/* setup polling */
@@ -100,6 +108,11 @@ static bool doConnect()
 	return true;
 }
 
+/** Read from Radarcape receiver.
+ * @param buf buffer to read into
+ * @param bufLen buffer size
+ * @return used buffer length or 0 on failure
+ */
 size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	while (true) {
@@ -120,6 +133,11 @@ size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
 	}
 }
 
+/** Write to Radarcape receiver.
+ * @param buf buffer to be written
+ * @param bufLen length of buffer
+ * @return number of bytes written or 0 on failure
+ */
 size_t RC_INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = write(fd, buf, bufLen);

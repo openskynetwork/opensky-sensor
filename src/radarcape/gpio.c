@@ -15,9 +15,10 @@
 #include "util/util.h"
 #include "util/log.h"
 
+/** Component: Prefix */
 static const char PFX[] = "GPIO";
 
-/** Represents a GPIO controller */
+/** GPIO controller */
 struct Controller {
 	/** controller base address */
 	const uintptr_t base;
@@ -45,6 +46,7 @@ static struct Controller controllers[4] = {
 static bool construct();
 static void destruct();
 
+/** Component Descriptor */
 struct Component GPIO_comp = {
 	.description = PFX,
 	.onConstruct = &construct,
@@ -57,8 +59,7 @@ static void controllerDestruct(struct Controller * ctrl);
 static inline struct Controller * getController(uint_fast32_t gpio);
 static inline uint_fast32_t getBit(uint_fast32_t gpio);
 
-/** Initialize the GPIO subsystem.
- * \note Must be called exactly once before any GPIO functions are used! */
+/** Initialize the GPIO subsystem. */
 static bool construct()
 {
 	/* open /dev/mem */
@@ -75,6 +76,7 @@ static bool construct()
 			size_t j;
 			for (j = 0; j < i; ++j)
 				controllerDestruct(&controllers[j]);
+			close(devfd);
 			return false;
 		}
 	}
@@ -84,6 +86,7 @@ static bool construct()
 	return true;
 }
 
+/** Destruct GPIO subsystem. */
 static void destruct()
 {
 	/* terminate all 4 controllers */
@@ -93,8 +96,8 @@ static void destruct()
 }
 
 /** Set Direction of a GPIO.
- * \param gpio gpio number
- * \param dir direction (either in or out)
+ * @param gpio gpio number
+ * @param dir direction (either in or out)
  */
 void GPIO_setDirection(uint_fast32_t gpio, enum GPIO_DIRECTION dir)
 {
@@ -107,7 +110,7 @@ void GPIO_setDirection(uint_fast32_t gpio, enum GPIO_DIRECTION dir)
 }
 
 /** Set an output GPIO.
- * \param gpio gpio number
+ * @param gpio gpio number
  */
 void GPIO_set(uint_fast32_t gpio)
 {
@@ -117,7 +120,7 @@ void GPIO_set(uint_fast32_t gpio)
 }
 
 /** Clear an output GPIO.
- * \param gpio gpio number
+ * @param gpio gpio number
  */
 void GPIO_clear(uint_fast32_t gpio)
 {
@@ -127,8 +130,8 @@ void GPIO_clear(uint_fast32_t gpio)
 }
 
 /** Read an input GPIO.
- * \param gpio gpio number
- * \return 1 if gpio is set, 0 otherwise
+ * @param gpio gpio number
+ * @return 1 if gpio is set, 0 otherwise
  */
 uint_fast32_t GPIO_read(uint_fast32_t gpio)
 {
@@ -137,8 +140,9 @@ uint_fast32_t GPIO_read(uint_fast32_t gpio)
 }
 
 /** Initialize a GPIO controller.
- * \param devfd file handle to /dev/mem
- * \param ctrl controller to be initialized
+ * @param devfd file handle to /dev/mem
+ * @param ctrl controller to be initialized
+ * @return true if initialization completed successfully
  */
 static bool controllerInit(int devfd, struct Controller * ctrl)
 {
@@ -159,14 +163,17 @@ static bool controllerInit(int devfd, struct Controller * ctrl)
 	return true;
 }
 
+/** Destruct a GPIO controller.
+ * @param ctrl controller
+ */
 static void controllerDestruct(struct Controller * ctrl)
 {
 	munmap(ctrl->map, 4096);
 }
 
 /** Get GPIO controller from gpio number
- * \param gpio gpio number
- * \return GPIO controller
+ * @param gpio gpio number
+ * @return GPIO controller
  */
 static inline struct Controller * getController(uint_fast32_t gpio)
 {
@@ -174,8 +181,8 @@ static inline struct Controller * getController(uint_fast32_t gpio)
 }
 
 /** Get Data Bit from gpio number
- * \param gpio gpio number
- * \return gpio data bit
+ * @param gpio gpio number
+ * @return gpio data bit
  */
 static inline uint_fast32_t getBit(uint_fast32_t gpio)
 {

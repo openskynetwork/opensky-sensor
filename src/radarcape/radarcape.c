@@ -22,6 +22,7 @@
 #include "util/threads.h"
 #include "util/util.h"
 
+/** Component: Prefix */
 static const char PFX[] = "RC";
 
 /** receive buffer */
@@ -33,7 +34,7 @@ static uint8_t * bufEnd;
 
 static struct RADARCAPE_Statistics stats;
 
-/** Radarcape Options */
+/** Radarcape options */
 enum RADARCAPE_OPTION {
 	/** Output Format: AVR */
 	RADARCAPE_OPTION_OUTPUT_FORMAT_AVR = 'c',
@@ -75,19 +76,27 @@ enum RADARCAPE_OPTION {
 	/** Mode-AC messages: disable decoding */
 	RADARCAPE_OPTION_MODE_AC_DECODING_DISABLED = 'j',
 
+	/** Radarcape LEDs: yellow */
 	RADARCAPE_OPTION_Y = 'Y',
+	/** Radarcape LEDs: red */
 	RADARCAPE_OPTION_R = 'R'
 };
 
+/** Decoding status */
 enum DECODE_STATUS {
+	/** Success */
 	DECODE_STATUS_OK,
+	/** Unexpected resynchronization */
 	DECODE_STATUS_RESYNC,
+	/** Connection failure */
 	DECODE_STATUS_CONNFAIL
 };
 
+/** Configuration: Forward error correction */
 static bool cfgFec;
 
-static struct CFG_Section cfg = {
+/** Configuration Descriptor */
+static struct CFG_Section cfgDesc = {
 	.name = "INPUT",
 	.n_opt = 1,
 	.options = {
@@ -103,17 +112,6 @@ static struct CFG_Section cfg = {
 };
 
 static bool construct();
-static void resetStats();
-
-const struct Component INPUT_comp = {
-	.description = PFX,
-	.onRegister = &RC_INPUT_register,
-	.onConstruct = &construct,
-	.config = &cfg,
-	.onReset = &resetStats,
-	.dependencies = { NULL }
-};
-
 static bool configure();
 static inline bool discardAndFill();
 static inline bool next(uint8_t * ch);
@@ -121,14 +119,30 @@ static inline bool synchronize();
 static inline bool setOption(enum RADARCAPE_OPTION option);
 static inline enum DECODE_STATUS decode(uint8_t * buf, size_t len,
 	struct OPENSKY_RawFrame * raw);
+static void resetStats();
 
+/** Component Descriptor */
+const struct Component INPUT_comp = {
+	.description = PFX,
+	.onRegister = &RC_INPUT_register,
+	.onConstruct = &construct,
+	.config = &cfgDesc,
+	.onReset = &resetStats,
+	.dependencies = { NULL }
+};
+
+/** Initialize parser
+ * @return always true
+ */
 static bool construct()
 {
 	RC_INPUT_init();
 	return true;
 }
 
-/** Setup ADSB receiver with some options. */
+/** Setup ADSB receiver with some options.
+ * @return true if configuration could be set successfully
+ */
 static bool configure()
 {
 #if defined(INPUT_RADARCAPE_UART) || defined(CHECK)
@@ -154,6 +168,7 @@ static bool configure()
 #endif
 }
 
+/** Reconfigure the input from the filter configuration */
 void INPUT_reconfigure()
 {
 #ifdef INPUT_RADARCAPE_UART
@@ -165,7 +180,7 @@ void INPUT_reconfigure()
 }
 
 /** Set an option for the ADSB decoder.
- * \param option option to be set
+ * @param option option to be set
  */
 __attribute__((unused))
 static inline bool setOption(enum RADARCAPE_OPTION option)
@@ -174,6 +189,7 @@ static inline bool setOption(enum RADARCAPE_OPTION option)
 	return RC_INPUT_write(w, sizeof w) == sizeof w;
 }
 
+/** Connect input */
 void INPUT_connect()
 {
 	while (true) {
@@ -190,11 +206,17 @@ void INPUT_connect()
 	bufEnd = bufCur;
 }
 
+/** Disconnect input */
 void INPUT_disconnect()
 {
 	RC_INPUT_disconnect();
 }
 
+/** Get a frame from the receiver
+ * @param raw raw frame to receive into
+ * @param decoded decoded frame to receive into
+ * @return true on success, false on connection failure
+ */
 bool INPUT_getFrame(struct OPENSKY_RawFrame * raw,
 	struct OPENSKY_DecodedFrame * decoded)
 {
@@ -234,8 +256,8 @@ decode_frame:
 			payload_len = 14;
 		break;
 		case BEAST_SYNC: /* resynchronize */
-			LOG_logf(LOG_LEVEL_WARN, PFX, "Out of Sync: got unescaped 0x%02x "
-				"in frame, resynchronizing", BEAST_SYNC);
+			LOG_log(LOG_LEVEL_WARN, PFX, "Out of Sync: got unescaped SYNC "
+				"in frame, resynchronizing");
 			++stats.outOfSync;
 			goto synchronize;
 		default:
@@ -274,10 +296,10 @@ decode_frame:
 }
 
 /** Unescape frame payload.
- * \param dst destination buffer
- * \param len length of frame content to be decoded.
+ * @param dst destination buffer
+ * @param len length of frame content to be decoded.
  *  Must not exceed the buffers size
- * \param frame frame to be decoded, used for raw decoding
+ * @param raw raw frame to copy the raw data into
  */
 static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 	struct OPENSKY_RawFrame * raw)
@@ -291,31 +313,31 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 			if (unlikely(!discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
 		}
-		/* search escape in the current buffer end up to the expected frame
+		/* search SYNC in the current buffer end up to the expected frame
 		 * length */
 		size_t rbuf = bufEnd - bufCur;
 		size_t mlen = rbuf <= len ? rbuf : len;
-		uint8_t * esc = memchr(bufCur, BEAST_SYNC, mlen);
-		if (unlikely(esc)) {
-			/* escape found: copy buffer up to escape, if applicable */
-			memcpy(rawPtr, bufCur, esc + 1 - bufCur);
-			rawPtr += esc + 1 - bufCur;
-			raw->rawLen += esc + 1 - bufCur;
+		uint8_t * sync = memchr(bufCur, BEAST_SYNC, mlen);
+		if (unlikely(sync)) {
+			/* SYNC found: copy buffer up to escape, if applicable */
+			memcpy(rawPtr, bufCur, sync + 1 - bufCur);
+			rawPtr += sync + 1 - bufCur;
+			raw->rawLen += sync + 1 - bufCur;
 
-			if (likely(esc != bufCur)) {
-				memcpy(dst, bufCur, esc - bufCur);
-				dst += esc - bufCur;
-				len -= esc - bufCur;
+			if (likely(sync != bufCur)) {
+				memcpy(dst, bufCur, sync - bufCur);
+				dst += sync - bufCur;
+				len -= sync - bufCur;
 			}
 
-			/* discard escape */
-			bufCur = esc + 1;
+			/* discard SYNC */
+			bufCur = sync + 1;
 
 			/* Peek the next symbol. */
 			if (unlikely(bufCur == bufEnd && !discardAndFill()))
 				return DECODE_STATUS_CONNFAIL;
 			if (likely(*bufCur == BEAST_SYNC)) {
-				/* it's another escape -> append escape */
+				/* it's another SYNC -> append escaped SYNC */
 				*dst++ = BEAST_SYNC;
 				*rawPtr++ = BEAST_SYNC;
 				++raw->rawLen;
@@ -326,7 +348,7 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 				return DECODE_STATUS_RESYNC;
 			}
 		} else {
-			/* no escape found: copy up to buffer length */
+			/* no SYNC found: copy up to buffer length */
 			memcpy(dst, bufCur, mlen);
 			memcpy(rawPtr, bufCur, mlen);
 			rawPtr += mlen;
@@ -340,7 +362,9 @@ static inline enum DECODE_STATUS decode(uint8_t * dst, size_t len,
 	return DECODE_STATUS_OK;
 }
 
-/** Discard buffer content and fill it again. */
+/** Discard buffer content and fill it again.
+ * @return true if reading was successful
+ */
 static inline bool discardAndFill()
 {
 	size_t rc = RC_INPUT_read(buf, sizeof buf);
@@ -354,8 +378,8 @@ static inline bool discardAndFill()
 }
 
 /** Consume next symbol from buffer.
- * \param ch pointer to returned next symbol
- * \return false if reading new data failed, true otherwise
+ * @param ch pointer to returned next symbol
+ * @return true if reading new data was successful
  */
 static inline bool next(uint8_t * ch)
 {
@@ -369,10 +393,10 @@ static inline bool next(uint8_t * ch)
 }
 
 /** Synchronize buffer.
- * \return false if reading new data failed, true otherwise
- * \note After calling that, *bufCur will be the first byte of the frame
- * \note It is also guaranteed, that bufCur != bufEnd
- * \note Furthermore, *bufCur != BEAST_SYNC, because a frame cannot start
+ * @return true if reading new data was successful
+ * @note After calling that, *bufCur will be the first byte of the frame
+ * @note It is also guaranteed, that bufCur != bufEnd
+ * @note Furthermore, *bufCur != BEAST_SYNC, because a frame cannot start
  *  with BEAST_SYNC
  */
 static inline bool synchronize()
@@ -382,7 +406,7 @@ static inline bool synchronize()
 redo:
 		sync = memchr(bufCur, BEAST_SYNC, bufEnd - bufCur);
 		if (likely(sync)) {
-			/* found sync symbol, discard everything including the sync */
+			/* found SYNC symbol, discard everything including the SYNC */
 			bufCur = sync + 1;
 
 			/* peek next */
@@ -393,8 +417,7 @@ redo:
 			}
 
 			if (unlikely(*bufCur == BEAST_SYNC)) {
-				/* next symbol is an escaped sync
-				 * -> discard it and try again */
+				/* next symbol is an escaped SYNC -> discard it and try again */
 				++bufCur;
 				if (bufCur != bufEnd)
 					goto redo;

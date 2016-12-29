@@ -33,14 +33,17 @@
 #include "util/serial_eth.h"
 #include "trimble/trimble_recv.h"
 
+/** Component: Prefix */
 static const char PFX[] = "MAIN";
 
 #if (defined(ECLIPSE) || defined(LOCAL_FILES)) && !defined(SYSCONFDIR)
 #define SYSCONFDIR "."
 #endif
 
+/** program name (first argument in argv) */
 const char * MAIN_progName;
 
+/** CLI options */
 static struct option opts[] = {
 #ifdef STANDALONE
 	{ .name = "black", .has_arg = no_argument, .val = 'b' },
@@ -50,11 +53,20 @@ static struct option opts[] = {
 	{}
 };
 
+/** Get serial number: generated from MAC.
+ * @param serial buffer for serial number
+ * @return status of serial number
+ */
 enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 {
 	return SERIAL_ETH_getSerial(serial);
 }
 
+/** Entry point
+ * @param argc argument count
+ * @param argv argument vector
+ * @return 0 on successful exit
+ */
 int main(int argc, char * argv[])
 {
 	/* force flushing of stdout and stderr on newline */

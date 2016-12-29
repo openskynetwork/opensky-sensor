@@ -11,12 +11,13 @@
 
 /** Watchdog GPIO number */
 #define GPIO 60
-/** Watchdog repetition rate in seconds */
-#define REPEAT 30
+/** Watchdog repetition interval in seconds */
+#define INTERVAL 30
 
 static bool construct();
 static void mainloop();
 
+/** Component Descriptor */
 struct Component WD_comp = {
 	.description = "WD",
 	.onConstruct = &construct,
@@ -28,7 +29,7 @@ struct Component WD_comp = {
 };
 
 /** Initialize watchdog.
- * \note: GPIO_init() must be called prior to that function!
+ * @return always true
  */
 static bool construct()
 {
@@ -44,6 +45,6 @@ static void mainloop()
 	while (1) {
 		GPIO_set(GPIO);
 		GPIO_clear(GPIO);
-		sleep(REPEAT);
+		sleep(INTERVAL);
 	}
 }

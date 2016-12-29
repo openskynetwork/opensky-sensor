@@ -12,10 +12,11 @@
 #include "util/proc.h"
 #include "util/log.h"
 
-#define PFX "TB"
+/** Component: Prefix */
+static const char PFX[] = "TB";
 
 /** Start reverse connect to given server
- * \param packet packet containing the server address */
+ * @param payload packet containing the server address */
 void TB_reverseShell(const uint8_t * payload)
 {
 	/* extract ip and port */
@@ -43,7 +44,7 @@ void TB_reverseShell(const uint8_t * payload)
 }
 
 /** Restart Daemon.
- * \param packet packet */
+ * @param payload dummy (not used) */
 void TB_restartDaemon(const uint8_t * payload)
 {
 	LOG_log(LOG_LEVEL_INFO, PFX, "restarting daemon");
@@ -66,6 +67,9 @@ void TB_restartDaemon(const uint8_t * payload)
 }
 
 #ifdef WITH_SYSTEMD
+/** Reboot system using systemd
+ * @param payload dummy (not used)
+ */
 void TB_rebootSystem(const uint8_t * payload)
 {
 	char *argv[] = { WITH_SYSTEMD "/systemctl", "reboot", NULL };
@@ -75,7 +79,7 @@ void TB_rebootSystem(const uint8_t * payload)
 
 #ifdef WITH_PACMAN
 /** Upgrade daemon using pacman and restart daemon using systemd.
- * \param packet packet */
+ * @param payload dummy (not used) */
 void TB_upgradeDaemon(const uint8_t * payload)
 {
 	if (!PROC_fork())
@@ -86,11 +90,14 @@ void TB_upgradeDaemon(const uint8_t * payload)
 	if (!PROC_execAndReturn(argv)) {
 		LOG_log(LOG_LEVEL_WARN, PFX, "Upgrade failed");
 	} else {
-		char *argv1[] = { "/bin/systemctl", "daemon-reload", NULL };
+#ifdef WITH_SYSTEMD
+		char *argv1[] = { WITH_SYSTEMD "/systemctl", "daemon-reload", NULL };
 		PROC_execAndReturn(argv1);
 
-		char *argv2[] = { "/bin/systemctl", "restart", "openskyd", NULL };
+		char *argv2[] = { WITH_SYSTEMD "/systemctl", "restart", "openskyd",
+			NULL };
 		PROC_execAndFinalize(argv2);
+#endif
 	}
 }
 #endif

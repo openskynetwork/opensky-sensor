@@ -10,11 +10,17 @@
 #include "watchdog.h"
 #include "util/util.h"
 
+/** CLI options */
 static struct option opts[] = {
 	{ .name = "help", .has_arg = no_argument, .val = 'h' },
 	{}
 };
 
+/** Entry point
+ * @param argc argument count
+ * @param argv argument vector
+ * @return 0 on successful exit
+ */
 int main(int argc, char * argv[])
 {
 	int opt;
@@ -33,6 +39,7 @@ int main(int argc, char * argv[])
 	/* drop privileges */
 	UTIL_dropPrivileges();
 
+	/* Start WD */
 	WD_comp.onConstruct(NULL);
 	WD_comp.main();
 

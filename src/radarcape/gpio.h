@@ -10,8 +10,11 @@
 extern "C" {
 #endif
 
+/** GPIO pin direction */
 enum GPIO_DIRECTION {
+	/** Input pin */
 	GPIO_DIRECTION_IN,
+	/** Output pin */
 	GPIO_DIRECTION_OUT
 };
 

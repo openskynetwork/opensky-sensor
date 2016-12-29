@@ -20,26 +20,38 @@
 #include "util/log.h"
 #include "util/cfgfile.h"
 
+/** Component: Prefix */
 static const char PFX[] = "FPGA";
 
 #if (defined(ECLIPSE) || defined(LOCAL_FILES)) && !defined(FWDIR)
 #define FWDIR "."
 #endif
 
+/** FPGA pin location */
 struct FPGApins {
+	/** Board name */
 	const char * name;
+	/** CONF_D pin */
 	const uint32_t confd;
+	/** D_CLK pin */
 	const uint32_t dclk;
+	/** N_STAT pin */
 	const uint32_t nstat;
+	/** DATA_0 pin */
 	const uint32_t data0;
+	/** N_CONF pin */
 	const uint32_t nconf;
 };
 
+/** BeagleBone type */
 enum BB_TYPE {
+	/** White board */
 	BB_TYPE_WHITE = 0,
+	/** Black board */
 	BB_TYPE_BLACK = 1
 };
 
+/** FPGA pin locations */
 static const struct FPGApins pins[2] = {
 	[BB_TYPE_WHITE] = {
 		.name = "white",
@@ -56,19 +68,26 @@ static const struct FPGApins pins[2] = {
 		.data0 = 44,
 		.nconf = 61 } };
 
+/** Selected pin configuration */
 static const struct FPGApins * fpga;
 
+/** Configuration: Bitstream filename */
 static char cfgFilename[PATH_MAX];
+/** Configuration: Configure FPGA */
 static bool cfgConfigure;
 
+/** Static configuration: board selection: true if BeagleBone White */
 bool FPGA_bbwhite;
 
+/** Number of retries to configure the fPGA */
 #define RETRIES 3
+/** Timeout in units of 50 ms */
 #define TIMEOUT 10
 
 static bool checkCfg(const struct CFG_Section * sect);
 
-static struct CFG_Section cfg = {
+/** Configuration Descriptor */
+static struct CFG_Section cfgDesc = {
 	.name = "FPGA",
 	.check = &checkCfg,
 	.n_opt = 2,
@@ -89,12 +108,15 @@ static struct CFG_Section cfg = {
 
 static bool construct();
 static bool program();
+static bool reset(uint32_t timeout);
+static bool transfer(const uint8_t * rfd, off_t size);
 
+/** Component Descriptor */
 struct Component FPGA_comp = {
 	.description = PFX,
 	.onConstruct = &construct,
 	.onStart = &program,
-	.config = &cfg,
+	.config = &cfgDesc,
 	.enabled = &cfgConfigure,
 	.dependencies = {
 		&GPIO_comp,
@@ -102,12 +124,13 @@ struct Component FPGA_comp = {
 	}
 };
 
-static bool reset(uint32_t timeout);
-static bool transfer(const uint8_t * rfd, off_t size);
-
+/** Check configuration.
+ * @param sect should be @cfgDesc
+ * @return true if configuration is sane
+ */
 static bool checkCfg(const struct CFG_Section * sect)
 {
-	assert(sect == &cfg);
+	assert(sect == &cfgDesc);
 	if (cfgConfigure && cfgFilename[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "FPGA.file is missing");
 		return false;
@@ -115,12 +138,10 @@ static bool checkCfg(const struct CFG_Section * sect)
 	return true;
 }
 
-/** Initialize FPGA configuration.
- * \note: GPIO_init() must be called prior to that function!
- */
+/** Initialize FPGA configuration component. */
 static bool construct()
 {
-	CFG_registerSection(&cfg);
+	CFG_registerSection(&cfgDesc);
 
 	fpga = &pins[FPGA_bbwhite ? BB_TYPE_WHITE : BB_TYPE_BLACK];
 
@@ -136,7 +157,7 @@ static bool construct()
 }
 
 /** (Re-)Program the FPGA.
- * \param cfg pointer to buffer configuration, see cfgfile.h
+ * @return true if configuration succeeded
  */
 static bool program()
 {
@@ -211,7 +232,7 @@ static bool program()
 }
 
 /** Reset the FPGA configuration.
- * \param timeout waiting time for the reset to happen in units of 50 us
+ * @param timeout waiting time for the reset to happen in units of 50 us
  */
 static bool reset(uint32_t timeout)
 {
@@ -232,9 +253,9 @@ static bool reset(uint32_t timeout)
 }
 
 /** Transfer data to the FPGA's configuration interface
- * \param rfd data to transfer
- * \param size size of data
- * \param true if transfer done without any error
+ * @param rfd data to transfer
+ * @param size size of data
+ * @return true if transfer done without any error
  */
 static bool transfer(const uint8_t * rfd, off_t size)
 {

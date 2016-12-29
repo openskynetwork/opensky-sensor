@@ -17,14 +17,18 @@
 #include "util/util.h"
 #include "util/log.h"
 
+/** Component: Prefix */
 static const char PFX[] = "INPUT";
 
+/** Configuration: host to connect to */
 static char cfgHost[NI_MAXHOST];
+/** Configuration: port to connect to */
 static uint_fast16_t cfgPort;
 
 static bool checkCfg(const struct CFG_Section * sect);
 
-static const struct CFG_Section cfg = {
+/** Configuration descriptor */
+static const struct CFG_Section cfgDesc = {
 	.name = "INPUT",
 	.check = &checkCfg,
 	.n_opt = 2,
@@ -49,6 +53,7 @@ static const struct CFG_Section cfg = {
 	}
 };
 
+/** Interval in seconds between two reconnection attempts */
 #define RECONNECT_INTERVAL 10
 
 /** file descriptor for UART */
@@ -57,14 +62,19 @@ static int sock;
 static bool doConnect();
 static void closeConn();
 
+/** Register Radarcape input */
 void RC_INPUT_register()
 {
-	CFG_registerSection(&cfg);
+	CFG_registerSection(&cfgDesc);
 }
 
+/** Check configuration.
+ * @param sect should be @cfgDesc
+ * @return true if configuration is sane
+ */
 static bool checkCfg(const struct CFG_Section * sect)
 {
-	assert(sect == &cfg);
+	assert(sect == &cfgDesc);
 	if (cfgHost[0] == '\0') {
 		LOG_log(LOG_LEVEL_ERROR, PFX, "INPUT.host is missing");
 		return false;
@@ -76,16 +86,19 @@ static bool checkCfg(const struct CFG_Section * sect)
 	return true;
 }
 
+/** Initialize Radarcape input */
 void RC_INPUT_init()
 {
 	sock = -1;
 }
 
+/** Disconnect Radarcape input */
 void RC_INPUT_disconnect()
 {
 	closeConn();
 }
 
+/** Close connection */
 static void closeConn()
 {
 	if (sock != -1) {
@@ -95,12 +108,16 @@ static void closeConn()
 	}
 }
 
+/** Reconnect Radarcape receiver until success */
 void RC_INPUT_connect()
 {
 	while (!doConnect())
 		sleep(RECONNECT_INTERVAL);
 }
 
+/** Connect to host.
+ * @return true upon success
+ */
 static bool doConnect()
 {
 	closeConn();
@@ -109,6 +126,11 @@ static bool doConnect()
 	return sock != -1;
 }
 
+/** Read from Radarcape receiver.
+ * @param buf buffer to read into
+ * @param bufLen buffer size
+ * @return used buffer length or 0 on failure
+ */
 size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = recv(sock, buf, bufLen, 0);
@@ -121,6 +143,11 @@ size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
 	}
 }
 
+/** Write to Radarcape receiver.
+ * @param buf buffer to be written
+ * @param bufLen length of buffer
+ * @return number of bytes written or 0 on failure
+ */
 size_t RC_INPUT_write(uint8_t * buf, size_t bufLen)
 {
 	ssize_t rc = send(sock, buf, bufLen, MSG_NOSIGNAL);
