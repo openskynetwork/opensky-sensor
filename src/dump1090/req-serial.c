@@ -19,22 +19,28 @@
 #include "util/log.h"
 #include "req-serial.h"
 
+/** Component: Prefix */
 static const char PFX[] = "SERIAL";
 
 #if (defined(ECLIPSE) || defined(LOCAL_FILES)) && !defined(LOCALSTATEDIR)
 #define LOCALSTATEDIR "var"
 #endif
 
-static bool construct();
-static void destruct();
+static void reg();
 static bool sendSerialRequest();
 
+/** Serial number mutex for synchronization */
 static pthread_mutex_t serialMutex = PTHREAD_MUTEX_INITIALIZER;
+/** Serial number condition for synchronization */
 static pthread_cond_t serialReqCond = PTHREAD_COND_INITIALIZER;
+
+/** Configuration: serial number given */
 static bool hasSerial;
+/** Configuration: serial number */
 static uint32_t serialNumber;
 
-static const struct CFG_Section cfg =
+/** Configuration Descriptor */
+static const struct CFG_Section cfgDesc =
 {
 	.name = "Device",
 	.n_opt = 1,
@@ -48,18 +54,19 @@ static const struct CFG_Section cfg =
 	}
 };
 
+/** Component Descriptor */
 const struct Component SERIAL_comp =
 {
 	.description = PFX,
-
-	.onConstruct = &construct,
-	.onDestruct = &destruct,
-
-	.config = &cfg,
-
+	.onRegister = &reg,
+	.config = &cfgDesc,
 	.dependencies = { &TB_comp, NULL }
 };
 
+/** Get serial number: requested from OpenSky Network.
+ * @param serial buffer for serial number
+ * @return status of serial number
+ */
 enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 {
 	enum SERIAL_RETURN rc = SERIAL_RETURN_SUCCESS;
@@ -71,9 +78,11 @@ enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 			goto cleanup;
 		}
 
-		/* Little hack: we could wait 10 seconds and print our message
-		 * but then we would also have to wait up to 10 seconds to see any
-		 * reconnects. Making this a bit cleaner would also raise complexity,
+		/* Little hack: we could wait 60 seconds and print our message
+		 * but then we would also have to wait up to 60 seconds to see any
+		 * reconnects. Instead, we wait 2 seconds 30 times and check for
+		 * reconnects in between.
+		 * Making this a bit cleaner would also raise complexity,
 		 * but it should be a rare condition here.
 		 */
 
@@ -112,7 +121,7 @@ enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 			serialNumber);
 
 		/* got a new serial number -> save it */
-		if (!CFG_writeSection(LOCALSTATEDIR "/conf.d/10-serial.conf", &cfg)) {
+		if (!CFG_writeSection(LOCALSTATEDIR "/conf.d/10-serial.conf", &cfgDesc)) {
 			LOG_log(LOG_LEVEL_EMERG, PFX, "Could not write serial number, "
 				"refusing to work");
 		}
@@ -123,12 +132,20 @@ cleanup:
 	return rc;
 }
 
+/** Send request for serial number to OpenSky
+ * @return true if sending succeeded
+ */
 static bool sendSerialRequest()
 {
+	/* build message */
 	uint8_t buf[2] = { BEAST_SYNC, BEAST_TYPE_SERIAL_REQ };
+	/* send it */
 	return NET_send(buf, sizeof buf);
 }
 
+/** Callback from TB upon serial number response from OpenSky
+ * @param payload payload: serial number
+ */
 static void serialResponse(const uint8_t * payload)
 {
 	pthread_mutex_lock(&serialMutex);
@@ -138,13 +155,7 @@ static void serialResponse(const uint8_t * payload)
 	pthread_mutex_unlock(&serialMutex);
 }
 
-static bool construct()
+static void reg()
 {
 	TB_register(TB_PACKET_TYPE_SERIAL_RES, 4, &serialResponse);
-	return true;
-}
-
-static void destruct()
-{
-	TB_unregister(TB_PACKET_TYPE_SERIAL_RES);
 }

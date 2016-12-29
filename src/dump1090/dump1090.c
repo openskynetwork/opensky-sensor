@@ -34,6 +34,7 @@
 #include "req-serial.h"
 #include "position.h"
 
+/** Component: Prefix */
 static const char PFX[] = "MAIN";
 
 #if (defined(ECLIPSE) || defined(LOCAL_FILES)) && !defined(SYSCONFDIR)
@@ -43,9 +44,11 @@ static const char PFX[] = "MAIN";
 #define LOCALSTATEDIR "var"
 #endif
 
+/** Configuration: user name */
 static char username[BEAST_MAX_USERNAME + 1];
 
-static struct CFG_Section cfg =
+/** Configuration Descriptor */
+static struct CFG_Section cfgDesc =
 {
 	.name = "IDENT",
 	.n_opt = 1,
@@ -59,6 +62,11 @@ static struct CFG_Section cfg =
 	}
 };
 
+/** Make sure, that a given directory exists.
+ * @param path path to the directory
+ * @note will try to create the directory if it does not exist
+ * @note will abort the process if something goes wrong
+ */
 static void ensureDir(const char * path)
 {
 	struct stat st;
@@ -80,6 +88,11 @@ static void ensureDir(const char * path)
 	}
 }
 
+/** Entry point
+ * @param argc argument count
+ * @param argv argument vector
+ * @return 0 on successful exit
+ */
 int main(int argc, char * argv[])
 {
 	/* force flushing of stdout and stderr on newline */
@@ -98,7 +111,7 @@ int main(int argc, char * argv[])
 
 	COMP_fixup();
 
-	CFG_registerSection(&cfg);
+	CFG_registerSection(&cfgDesc);
 
 	ensureDir(LOCALSTATEDIR);
 	ensureDir(LOCALSTATEDIR "/conf.d");
