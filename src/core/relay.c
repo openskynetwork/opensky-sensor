@@ -42,10 +42,13 @@ const struct Component RELAY_comp = {
 	.dependencies = { &NET_comp, &BUF_comp, NULL }
 };
 
-/** Cleanup routine: put a frame back into the queue upon cancellation */
-static void cleanup(struct OPENSKY_RawFrame * frame)
+/** Cleanup routine: put a frame back into the queue upon cancellation
+ * @param frame pointer to frame
+ */
+static void cleanup(struct OPENSKY_RawFrame ** frame)
 {
-	BUF_putFrame(frame);
+	if (*frame)
+		BUF_putFrame(*frame);
 }
 
 /** Send a frame to the OpenSky Network
@@ -84,27 +87,26 @@ static void mainloop()
 		/* flush buffer if history is disabled */
 		BUF_flushUnlessHistoryEnabled();
 
-		/* TODO: we could speed this up by setting the scope of the cleanup
-		 * around the loop */
 		bool success;
+		const struct OPENSKY_RawFrame * frame = NULL;
+		CLEANUP_PUSH(&cleanup, &frame);
 		do {
 			/* read a frame from the buffer */
-			const struct OPENSKY_RawFrame * frame =
-				BUF_getFrameTimeout(cfgTimeout);
+			frame = BUF_getFrameTimeout(cfgTimeout);
 			if (!frame) {
 				/* timeout -> send keep-alive */
 				success = sendKeepalive();
 			} else {
-				CLEANUP_PUSH(&cleanup, frame);
 				/* got a message -> send it */
 				success = sendFrame(frame);
 				if (likely(success))
 					BUF_releaseFrame(frame);
 				else
 					BUF_putFrame(frame);
-				CLEANUP_POP0();
+				frame = NULL;
 			}
 		} while(likely(success));
+		CLEANUP_POP0();
 		/* if sending failed, synchronize with the network */
 	}
 }
