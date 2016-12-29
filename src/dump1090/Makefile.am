@@ -7,7 +7,7 @@ endif
 
 openskyd_dump1090_SOURCES = dump1090.c req-serial.h req-serial.c \
 	position.h position.c \
-	../radarcape/radarcape.c ../radarcape/network.c
+	../radarcape/rc-parser.c ../radarcape/network.c
 
 # compiler libs
 openskyd_dump1090_LIBS = @PTHREAD_LIBS@

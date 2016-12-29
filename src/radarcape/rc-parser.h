@@ -1,7 +1,7 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
-#ifndef _HAVE_RADARCAPE_H
-#define _HAVE_RADARCAPE_H
+#ifndef _HAVE_RC_PARSER_H
+#define _HAVE_RC_PARSER_H
 
 #include <stdint.h>
 
@@ -9,12 +9,12 @@
 extern "C" {
 #endif
 
-struct RADARCAPE_Statistics {
+struct RC_PARSER_Statistics {
 	uint64_t outOfSync;
 	uint64_t frameTypeUnknown;
 };
 
-void RADARCAPE_getStatistics(struct RADARCAPE_Statistics * statistics);
+void RC_PARSER_getStatistics(struct RC_PARSER_Statistics * statistics);
 
 #ifdef __cplusplus
 }

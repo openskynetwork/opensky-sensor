@@ -11,7 +11,7 @@
 #include <endian.h>
 #include <inttypes.h>
 #include <unistd.h>
-#include "radarcape.h"
+#include "rc-parser.h"
 #include "rc-input.h"
 #include "core/openskytypes.h"
 #include "core/filter.h"
@@ -32,7 +32,7 @@ static uint8_t * bufCur;
 /** buffer end */
 static uint8_t * bufEnd;
 
-static struct RADARCAPE_Statistics stats;
+static struct RC_PARSER_Statistics stats;
 
 /** Radarcape options */
 enum RADARCAPE_OPTION {
@@ -434,7 +434,7 @@ static void resetStats()
 	memset(&stats, 0, sizeof stats);
 }
 
-void RADARCAPE_getStatistics(struct RADARCAPE_Statistics * statistics)
+void RC_PARSER_getStatistics(struct RC_PARSER_Statistics * statistics)
 {
 	memcpy(statistics, &stats, sizeof *statistics);
 }

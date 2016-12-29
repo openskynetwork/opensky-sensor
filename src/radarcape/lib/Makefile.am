@@ -36,7 +36,7 @@ opensky_lib_example_AM_CXXFLAGS=@PTHREAD_CFLAGS@
 opensky_lib_example_LDFLAGS=@PTHREAD_CFLAGS@ @PTHREAD_LIBS@
 opensky_lib_example_LDADD=libopensky.la
 
-opensky_lib_test_SOURCES=opensky-test.cc ../radarcape.c ../network.c
+opensky_lib_test_SOURCES=opensky-test.cc ../rc-parser.c ../network.c
 opensky_lib_test_CXXFLAGS=@PTHREAD_CFLAGS@ -I$(top_srcdir)/src
 opensky_lib_test_CFLAGS=@PTHREAD_CFLAGS@ -I$(top_srcdir)/src
 opensky_lib_test_LDFLAGS=@PTHREAD_CFLAGS@ @PTHREAD_LIBS@

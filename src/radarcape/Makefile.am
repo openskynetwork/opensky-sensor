@@ -17,7 +17,7 @@ endif
 # common sources of radarcape input
 radarcape_sources = main.c \
 	watchdog.h fpga.h \
-	rc-input.h radarcape.h radarcape.c
+	rc-input.h rc-parser.h rc-parser.c
 
 # sources for binaries
 openskyd_rc_SOURCES = $(radarcape_sources) uart.c \

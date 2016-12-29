@@ -18,10 +18,10 @@ LDADD = @CHECK_LIBS@ @PTHREAD_LIBS@ @PTHREAD_CFLAGS@ \
 test_buffer_SOURCES = test_buffer.c
 test_buffer_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
-test_radarcape_SOURCES = test_radarcape.c ../radarcape/radarcape.c
+test_radarcape_SOURCES = test_radarcape.c ../radarcape/rc-parser.c
 test_radarcape_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
-test_recv_SOURCES = test_recv.c ../radarcape/radarcape.c
+test_recv_SOURCES = test_recv.c ../radarcape/rc-parser.c
 test_recv_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 
 test_gps_SOURCES = test_gps.c
@@ -31,14 +31,14 @@ test_lib_SOURCES = test_lib.cc libdummy.c ../radarcape/lib/opensky.cc
 test_lib_CXXFLAGS = @CHECK_CFLAGS@ $(AM_CXXFLAGS) -I$(srcdir)/../radarcape/lib
 
 perf_radarcape_SOURCES = perf_radarcape.c input_perf.h input_perf.c \
-	../radarcape/radarcape.c
+	../radarcape/rc-parser.c
 perf_radarcape_CFLAGS = $(AM_CFLAGS)
 perf_radarcape_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@ \
 	../core/libcore.a ../util/libutil.a
 perf_radarcape_LDFLAGS =
 
 perf_buffer_SOURCES = perf_buffer.c input_perf.h input_perf.c \
-	../radarcape/radarcape.c
+	../radarcape/rc-parser.c
 perf_buffer_CFLAGS = $(AM_CFLAGS)
 perf_buffer_LDADD = @PTHREAD_LIBS@ @PTHREAD_CFLAGS@ \
 	../core/libcore.a ../util/libutil.a
