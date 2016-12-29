@@ -14,7 +14,9 @@
 
 namespace OpenSky {
 
+/** Message log stream */
 static std::ostream * msgLog = &std::cout;
+/** Error log stream */
 static std::ostream * errLog = &std::cerr;
 
 __attribute__((visibility("default")))
@@ -26,6 +28,7 @@ void setLogStreams(std::ostream & msgLog, std::ostream & errLog)
 
 }
 
+/** Log level prefixes */
 static const char * levelNames[] = {
 	/* [LOG_LEVEL_INFO] = */ "INFO",
 	/* [LOG_LEVEL_DEBUG] = */ "DEBUG",
@@ -34,6 +37,12 @@ static const char * levelNames[] = {
 	/* [LOG_LEVEL_EMERG] = */ "EMERG"
 };
 
+/** Print log message with printf-like formatting.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param prefix Component name
+ * @param fmt printf format string
+ */
 __attribute__((format(printf, 3, 4)))
 void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 {
@@ -45,6 +54,7 @@ void LOG_logf(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
 	LOG_log(level, prefix, str);
 }
 
+/** Get log output stream by log level */
 static std::ostream & getStream(enum LOG_LEVEL level)
 {
 	if (unlikely(level == LOG_LEVEL_ERROR || level == LOG_LEVEL_EMERG))
@@ -53,6 +63,12 @@ static std::ostream & getStream(enum LOG_LEVEL level)
 		return *OpenSky::msgLog;
 }
 
+/** Print log message.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param prefix Component name
+ * @param str log message
+ */
 void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 {
 	int r;
@@ -70,12 +86,24 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 	}
 }
 
+/** Flush the log */
 void LOG_flush()
 {
+	int r;
+	CANCEL_DISABLE(&r);
 	std::flush(*OpenSky::msgLog);
 	std::flush(*OpenSky::errLog);
+	CANCEL_RESTORE(&r);
 }
 
+/** Print log message with error code.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param err error code
+ * @param prefix Component name
+ * @param fmt format string
+ * @param ap argument list for format
+ */
 static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	const char * fmt, va_list ap)
 {
@@ -116,6 +144,12 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	}
 }
 
+/** Print log message with errno.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param prefix Component name
+ * @param fmt format string
+ */
 __attribute__((format(printf, 3, 4)))
 void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt,
 	...)
@@ -126,6 +160,13 @@ void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt,
 	va_end(ap);
 }
 
+/** Print log message with error code.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param err error code
+ * @param prefix Component name
+ * @param fmt format string
+ */
 __attribute__((format(printf, 4, 5)))
 void LOG_errno2(enum LOG_LEVEL level, int err, const char * prefix,
 	const char * fmt, ...)

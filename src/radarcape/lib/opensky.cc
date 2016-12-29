@@ -27,8 +27,13 @@
 
 extern "C" {
 
+/** Reconfigure the input from the filter configuration */
 void INPUT_reconfigure() {}
 
+/** Get serial number: generated from MAC.
+ * @param serial buffer for serial number
+ * @return status of serial number
+ */
 enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 {
 	return SERIAL_ETH_getSerial(serial);
@@ -38,11 +43,15 @@ enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 
 namespace OpenSky {
 
+/** Component: Prefix */
 static const char PFX[] = "OpenSky";
 
+/** Library state: configure called */
 static bool configured = false;
+/** Library state: currently feeding */
 static bool running = false;
 
+/** Time state */
 static GpsTimeStatus_t gpsTimeStatus = GpsTimeInvalid;
 
 #pragma GCC visibility push(default)
@@ -77,7 +86,6 @@ void configure()
 }
 
 // TODO: race between disable and output_message
-//TODO: message log levels -> exit or no exit
 
 void enable()
 {
@@ -151,5 +159,7 @@ void setGpsPosition(double latitude, double longitude, double altitude)
 {
 	GPS_setPosition(latitude, longitude, altitude);
 }
+
+#pragma GCC visibility pop
 
 }
