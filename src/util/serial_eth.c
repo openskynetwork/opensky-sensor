@@ -24,8 +24,10 @@
 /** Component: Prefix */
 static const char PFX[] = "SERIAL";
 
+#ifndef ETHER_DEV
 /** Default ethernet device name */
-#define ETHERNET_DEVICE_NAME "eth0"
+#define ETHER_DEV "eth0"
+#endif
 
 /** whether the serial number has already been resolved */
 static bool cachedSerial;
@@ -104,7 +106,7 @@ enum SERIAL_RETURN SERIAL_ETH_getSerial(uint32_t * serial)
 		return SERIAL_RETURN_SUCCESS;
 	}
 
-	const char * device = ETHERNET_DEVICE_NAME;
+	const char * device = ETHER_DEV;
 
 	_Static_assert(IFHWADDRLEN == 6,
 		"Length Ethernet MAC address is not 6 bytes");
