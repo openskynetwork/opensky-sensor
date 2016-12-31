@@ -1,12 +1,15 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <iostream>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <pthread.h>
 #include "opensky.hh"
 #include "util/log.h"
 #include "util/threads.h"
@@ -27,6 +30,9 @@ void setLogStreams(std::ostream & msgLog, std::ostream & errLog)
 }
 
 }
+
+/** Mutex: only one thread can log */
+static pthread_mutex_t logMutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** Log level prefixes */
 static const char * levelNames[] = {
@@ -73,11 +79,15 @@ void LOG_log(enum LOG_LEVEL level, const char * prefix, const char * str)
 {
 	int r;
 	CANCEL_DISABLE(&r);
+	pthread_mutex_lock(&logMutex);
+
 	std::ostream & stream = getStream(level);
 	stream << '[' << levelNames[level] << ']';
 	if (prefix)
 		stream << ' ' << '[' << prefix << ']';
 	stream << ' ' << str << std::endl;
+
+	pthread_mutex_unlock(&logMutex);
 	CANCEL_RESTORE(&r);
 
 	if (unlikely(level == LOG_LEVEL_EMERG)) {
@@ -124,6 +134,7 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 
 	int r;
 	CANCEL_DISABLE(&r);
+	pthread_mutex_lock(&logMutex);
 
 	std::ostream & stream = getStream(level);
 	stream << '[' << levelNames[level] << ']';
@@ -136,6 +147,7 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	else
 		stream << ": Unknown error (" << err << ')' << std::endl;
 
+	pthread_mutex_unlock(&logMutex);
 	CANCEL_RESTORE(&r);
 
 	if (unlikely(level == LOG_LEVEL_EMERG)) {

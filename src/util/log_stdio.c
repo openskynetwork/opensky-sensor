@@ -1,5 +1,8 @@
 /* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdarg.h>
 #include <stdlib.h>
 #include <errno.h>
