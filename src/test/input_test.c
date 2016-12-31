@@ -5,7 +5,6 @@
 #endif
 #include <check.h>
 #include <stdlib.h>
-#include <endian.h>
 #include <ctype.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -13,6 +12,7 @@
 #include "core/openskytypes.h"
 #include "core/input.h"
 #include "radarcape/rc-input.h"
+#include "util/port/endian.h"
 
 struct TEST test;
 

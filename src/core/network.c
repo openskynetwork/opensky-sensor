@@ -9,7 +9,6 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-#include <endian.h>
 #include <stdbool.h>
 #include <netdb.h>
 #include <time.h>

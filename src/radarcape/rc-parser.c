@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <endian.h>
 #include <inttypes.h>
 #include <unistd.h>
 #include "rc-parser.h"
@@ -21,6 +20,7 @@
 #include "util/cfgfile.h"
 #include "util/threads.h"
 #include "util/util.h"
+#include "util/port/endian.h"
 
 /** Component: Prefix */
 static const char PFX[] = "RC";

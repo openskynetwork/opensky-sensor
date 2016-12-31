@@ -4,12 +4,12 @@
 #include <config.h>
 #endif
 #include <stdlib.h>
-#include <endian.h>
 #include <ctype.h>
 #include <string.h>
 #include <pthread.h>
 #include "input_perf.h"
 #include "core/input.h"
+#include "util/port/endian.h"
 
 static uint8_t * buffer;
 static size_t bufLen;

@@ -30,7 +30,7 @@ AC_SEARCH_LIBS([clock_gettime],[rt posix4])
 
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h limits.h netdb.h netinet/in.h])
 AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h])
-AC_CHECK_HEADERS([termios.h unistd.h sys/time.h])
+AC_CHECK_HEADERS([termios.h unistd.h sys/time.h endian.h])
 
 AC_CHECK_HEADER_STDBOOL
 AC_C_INLINE

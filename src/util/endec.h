@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <endian.h>
+#include "port/endian.h"
 
 #ifdef __cplusplus
 extern "C" {

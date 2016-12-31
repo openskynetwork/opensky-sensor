@@ -7,12 +7,12 @@
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
-#include <endian.h>
 #include "tb.h"
 #include "filter.h"
 #include "network.h"
 #include "util/log.h"
 #include "util/util.h"
+#include "util/port/endian.h"
 
 /** Component: Prefix */
 static const char PFX[] = "TB";

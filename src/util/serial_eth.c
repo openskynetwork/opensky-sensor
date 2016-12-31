@@ -9,7 +9,6 @@
 #include <netdb.h>
 #include <linux/if_arp.h>
 #include <string.h>
-#include <endian.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <stdlib.h>
@@ -20,6 +19,7 @@
 #include "serial_eth.h"
 #include "log.h"
 #include "threads.h"
+#include "port/endian.h"
 
 /** Component: Prefix */
 static const char PFX[] = "SERIAL";
