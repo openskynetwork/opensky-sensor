@@ -1,5 +1,15 @@
 
-noinst_LIBRARIES = libtrimble-uart.a libtrimble-net.a libtrimble-dummy.a
+noinst_LIBRARIES =
+
+if RADARCAPE_STANDALONE
+noinst_LIBRARIES += libtrimble-uart.a
+endif
+if RADARCAPE_NETWORK
+noinst_LIBRARIES += libtrimble-net.a
+endif
+if RADARCAPE_DUMMY
+noinst_LIBRARIES += libtrimble-dummy.a
+endif
 
 # sources for trimble GPS modul
 common_sources = trimble_recv.h trimble_recv.c trimble_parser.h \
