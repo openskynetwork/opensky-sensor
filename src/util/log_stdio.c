@@ -105,8 +105,9 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 
 	vprintf(fmt, ap);
 
-	char errbuf[100];
 	char * errstr;
+#ifdef HAVE_STRERROR_R
+	char errbuf[100];
 #ifdef STRERROR_R_CHAR_P
 	errstr = strerror_r(err, errbuf, sizeof errbuf);
 #else
@@ -115,6 +116,9 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 		errstr = errbuf;
 	else
 		errstr = NULL;
+#endif
+#else
+	errstr = strerror(err);
 #endif
 
 	if (errstr)

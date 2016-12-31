@@ -120,8 +120,9 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 	char str[2048];
 	vsnprintf(str, sizeof str, fmt, ap);
 
-	char errbuf[100];
 	char * errstr;
+#ifdef HAVE_STRERROR_R
+	char errbuf[100];
 #if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
 	int rc = strerror_r(err, errbuf, sizeof errbuf);
 	if (rc == 0)
@@ -130,6 +131,9 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 		errstr = NULL;
 #else
 	errstr = strerror_r(err, errbuf, sizeof errbuf);
+#endif
+#else
+	errstr = strerror(err);
 #endif
 
 	int r;
