@@ -171,7 +171,7 @@ static void processPacket(const struct TB_Packet * packet)
 		if (payloadLen != processor->payloadLen) {
 			/* expected length does not match -> discard */
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Packet of type %" PRIuFAST16 " has "
-				"a size mismatch (payload len=%" PRIuFAST16 "), discarding",
+				"a size mismatch (payload len=%zu), discarding",
 				packet->type, payloadLen);
 		} else {
 			/* call processor */
