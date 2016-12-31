@@ -69,8 +69,10 @@ enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
  */
 int main(int argc, char * argv[])
 {
+#ifdef HAVE_SETLINEBUF
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
+#endif
 
 	MAIN_progName = argv[0];
 

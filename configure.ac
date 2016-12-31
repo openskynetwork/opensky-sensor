@@ -60,6 +60,7 @@ AC_FUNC_STRTOD
 AC_CHECK_FUNCS([clock_gettime gettimeofday mkdir strcasecmp])
 AC_CHECK_FUNCS([memchr memmove memset munmap pow setenv socket])
 AC_CHECK_FUNCS([strerror strncasecmp strtoul])
+AC_CHECK_FUNCS([setlinebuf])
 
 AX_PTHREAD
 

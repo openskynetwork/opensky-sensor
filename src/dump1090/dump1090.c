@@ -95,8 +95,10 @@ static void ensureDir(const char * path)
  */
 int main(int argc, char * argv[])
 {
+#ifdef HAVE_SETLINEBUF
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
+#endif
 
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
