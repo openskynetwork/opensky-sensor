@@ -101,7 +101,7 @@ AC_ARG_ENABLE([local-files],
    esac], [enableval=no])
 AM_CONDITIONAL([LOCAL_FILES], [test x$enableval = xyes])
 AS_IF([test x$enableval = xyes],
-  [AC_DEFINE([LOCAL_FILES], [1], [Add watchdog component])])
+  [AC_DEFINE([LOCAL_FILES], [1], [Use local files for development])])
 
 AC_ARG_ENABLE([radarcape-standalone],
   [AS_HELP_STRING([--enable-radarcape-standalone],
