@@ -107,14 +107,14 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
 
 	char errbuf[100];
 	char * errstr;
-#if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
+#ifdef STRERROR_R_CHAR_P
+	errstr = strerror_r(err, errbuf, sizeof errbuf);
+#else
 	int rc = strerror_r(err, errbuf, sizeof errbuf);
 	if (rc == 0)
 		errstr = errbuf;
 	else
 		errstr = NULL;
-#else
-	errstr = strerror_r(err, errbuf, sizeof errbuf);
 #endif
 
 	if (errstr)
