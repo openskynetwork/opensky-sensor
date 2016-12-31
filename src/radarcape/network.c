@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <netdb.h>
 #include "rc-input.h"
 #include "util/net_common.h"
 #include "util/cfgfile.h"

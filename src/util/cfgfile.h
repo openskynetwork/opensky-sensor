@@ -5,8 +5,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <limits.h>
-#include <netdb.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
