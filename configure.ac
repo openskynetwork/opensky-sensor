@@ -27,10 +27,6 @@ dnl test for std headers
 AC_HEADER_STDC
 
 AC_SEARCH_LIBS([clock_gettime],[rt posix4])
-AC_CHECK_FUNCS([clock_gettime gettimeofday mkdir strcasecmp])
-AC_FUNC_REALLOC
-AC_FUNC_STRERROR_R
-AC_FUNC_STRTOD
 
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h limits.h netdb.h netinet/in.h])
 AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h])
@@ -58,7 +54,11 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_MKTIME
 AC_FUNC_MMAP
-AC_CHECK_FUNCS([clock_gettime memchr memmove memset munmap pow setenv socket])
+AC_FUNC_REALLOC
+AC_FUNC_STRERROR_R
+AC_FUNC_STRTOD
+AC_CHECK_FUNCS([clock_gettime gettimeofday mkdir strcasecmp])
+AC_CHECK_FUNCS([memchr memmove memset munmap pow setenv socket])
 AC_CHECK_FUNCS([strerror strncasecmp strtoul])
 
 AX_PTHREAD
