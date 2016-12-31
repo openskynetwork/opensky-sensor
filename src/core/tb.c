@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
+#include <endian.h>
 #include "tb.h"
 #include "filter.h"
 #include "network.h"
