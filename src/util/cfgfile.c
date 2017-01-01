@@ -24,6 +24,7 @@
 #include "cfgfile.h"
 #include "util.h"
 #include "list.h"
+#include "port/misc.h"
 
 /** Component: Prefix */
 static const char PFX[] = "CFG";
@@ -452,8 +453,8 @@ static inline bool parseString(const char * value, size_t valLen, char * str,
 	size_t sz)
 {
 	if (valLen > sz - 1) {
-		err(LOG_LEVEL_ERROR, "Value too long (max. length %zu expected)",
-			sz - 1);
+		err(LOG_LEVEL_ERROR, "Value too long (max. length %" PRI_SIZE_T
+			" expected)", sz - 1);
 		return false;
 	}
 	memcpy(str, value, valLen);

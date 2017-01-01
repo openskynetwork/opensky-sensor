@@ -13,6 +13,7 @@
 #include "util/log.h"
 #include "util/util.h"
 #include "util/port/endian.h"
+#include "util/port/misc.h"
 
 /** Component: Prefix */
 static const char PFX[] = "TB";
@@ -171,7 +172,7 @@ static void processPacket(const struct TB_Packet * packet)
 		if (payloadLen != processor->payloadLen) {
 			/* expected length does not match -> discard */
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Packet of type %" PRIuFAST16 " has "
-				"a size mismatch (payload len=%zu), discarding",
+				"a size mismatch (payload len=%" PRI_SIZE_T "), discarding",
 				packet->type, payloadLen);
 		} else {
 			/* call processor */

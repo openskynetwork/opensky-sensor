@@ -19,12 +19,13 @@
 #include "util/threads.h"
 #include "util/util.h"
 #include "util/list.h"
+#include "util/port/misc.h"
 
 /** Component: Prefix */
 static const char PFX[] = "BUF";
 
 /* Define to 1 to enable debugging messages */
-//#define BUF_DEBUG 1
+#define BUF_DEBUG 1
 
 /* Forward declaration */
 struct Pool;
@@ -316,8 +317,8 @@ static inline struct FrameLink * getFrameFromPool()
 	} else if (LIST_length(&dynPools) < dynMaxPools && createDynPool()) {
 		/* pool was empty, but we just created another one */
 #ifdef BUF_DEBUG
-		LOG_logf(LOG_LEVEL_DEBUG, PFX, "Created another pool (%zu/%zu)",
-			LIST_length(&dynPools), dynMaxPools);
+		LOG_logf(LOG_LEVEL_DEBUG, PFX, "Created another pool (%" PRI_SIZE_T
+			"/%" PRI_SIZE_T ")", LIST_length(&dynPools), dynMaxPools);
 #endif
 		stats.discardedCur = 0;
 		ret = LIST_itemSafe(&pool, LIST_shift(&pool), struct FrameLink, list);
@@ -561,8 +562,9 @@ static void collectPools()
 		}
 	}
 #ifdef BUF_DEBUG
-	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Collected %zu of %zu frames from overall "
-		"pool to their dynamic pools", prevSize - LIST_length(&pool), prevSize);
+	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Collected %" PRI_SIZE_T " of %" PRI_SIZE_T
+		" frames from overall pool to their dynamic pools",
+		prevSize - LIST_length(&pool), prevSize);
 #endif
 }
 
@@ -611,8 +613,8 @@ static void destroyUnusedPools()
 		}
 	}
 #ifdef BUF_DEBUG
-	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Destroyed %zu of %zu dynamic pools",
-		prevSize - LIST_length(&dynPools), prevSize);
+	LOG_logf(LOG_LEVEL_DEBUG, PFX, "Destroyed %" PRI_SIZE_T " of %" PRI_SIZE_T
+		" dynamic pools", prevSize - LIST_length(&dynPools), prevSize);
 #endif
 }
 

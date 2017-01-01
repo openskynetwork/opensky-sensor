@@ -11,6 +11,7 @@
 #include "util/statistics.h"
 #include "util/cfgfile.h"
 #include "util/util.h"
+#include "util/port/misc.h"
 
 /** Mode-S frame types, as bitmask for filtering*/
 enum MODES_TYPE {
