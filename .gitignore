@@ -15,6 +15,7 @@ src/**/.deps/
 src/Makefile
 stamp-h1
 build/
+build-win/
 build-aux/
 m4/
 .dirstamp

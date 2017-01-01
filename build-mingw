@@ -1,0 +1,4 @@
+#!/bin/bash
+
+../configure --host=x86_64-w64-mingw32 --enable-maintainer-mode --enable-local-files --enable-dump1090 --disable-static --disable-cleanup-routines ac_cv_func_realloc_0_nonnull=yes ac_cv_func_malloc_0_nonnull=yes CFLAGS="-O0 -g -Wall -Werror" CXXFLAGS="-O0 -g -Wall -Werror"
+
