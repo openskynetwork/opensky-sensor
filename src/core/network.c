@@ -12,6 +12,7 @@
 #include <endian.h>
 #include <stdbool.h>
 #include <netdb.h>
+#include <time.h>
 #include "network.h"
 #include "util/log.h"
 #include "util/net_common.h"
