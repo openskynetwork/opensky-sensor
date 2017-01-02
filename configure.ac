@@ -33,7 +33,7 @@ AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h sys/ioctl.h])
 AC_CHECK_HEADERS([sys/socket.h], [SOCKET_POSIX=1], [SOCKET_POSIX=0])
 AC_CHECK_HEADERS([winsock2.h], [SOCKET_WINSOCK=1], [SOCKET_WINSOCK=0])
 AC_CHECK_HEADERS([sys/mman.h], [MMAP_POSIX=1], [MMAP_POSIX=0])
-AC_CHECK_HEADERS([termios.h unistd.h sys/time.h endian.h features.h])
+AC_CHECK_HEADERS([termios.h unistd.h sys/time.h endian.h features.h direct.h])
 
 AC_CHECK_HEADER_STDBOOL
 AC_C_INLINE

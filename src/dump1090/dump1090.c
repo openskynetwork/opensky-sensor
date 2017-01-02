@@ -17,6 +17,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif
 #include "core/buffer.h"
 #include "core/network.h"
 #include "core/tb.h"
@@ -74,7 +77,11 @@ static void ensureDir(const char * path)
 	int rc = stat(path, &st);
 	if (rc == -1) {
 		if (errno == ENOENT) {
+#if !defined(__WIN32__) && !defined(__WIN64__)
 			rc = mkdir(path, 0755);
+#else
+			rc = _mkdir(path);
+#endif
 			if (rc == -1) {
 				LOG_errno(LOG_LEVEL_EMERG, PFX,
 					"Could not create configuration directory '%s'", path);
