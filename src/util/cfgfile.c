@@ -152,6 +152,7 @@ bool CFG_readFile(const char * file, bool warnUnknownSection,
 	return success;
 }
 
+#ifdef HAVE_SCANDIR
 /** Filter callback for scandir: take only files into account which begin with a
  * number and end with ".conf"
  * @param ent directory entry
@@ -254,6 +255,74 @@ ret:
 
 	return ret;
 }
+#else
+/** Read all files in a directory.
+ * @param path directory path
+ * @param warnUnknownSection warn if section is unknown
+ * @param warnUnknownOption warn if options is unknown
+ * @param onErrorUseDefault if option value cannot be parsed, use default value
+ *  Otherwise, parsing that file will fail
+ * @param stopOnFirstError fail parsing on first error or try to resume with
+ *  next file(s)
+ * @return true if parsing ALL files succeeded
+ */
+bool CFG_readDirectory(const char * path, bool warnUnknownSection,
+	bool warnUnknownOption, bool onErrorUseDefault,
+	bool stopOnFirstError)
+{
+	/* get all filenames which begin with a number and end with ".conf" */
+
+	DIR * dir = opendir(path);
+	if (dir == NULL) {
+		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not traverse path '%s'", path);
+		return false;
+	}
+
+	/* prepare filename */
+	char filename[PATH_MAX];
+	size_t len = strlen(path);
+	if (len > PATH_MAX - 1) {
+		LOG_logf(LOG_LEVEL_ERROR, PFX, "Path '%s' too long", path);
+		return false;
+	}
+	strncpy(filename, path, sizeof filename);
+	filename[len] = '\\';
+	char * foffset = filename + len + 1;
+	len = sizeof filename - (len + 1);
+
+	/* iterate over all files */
+	bool ret = false;
+	struct dirent * ent;
+	while ((ent = readdir(dir)) != NULL) {
+		/* build filename */
+		const char * fname = ent->d_name;
+		size_t flen = strlen(fname);
+
+		if (flen < 5 || strcmp(fname + flen - 5, ".conf"))
+			continue;
+
+		if (flen > len) {
+			LOG_logf(LOG_LEVEL_ERROR, PFX, "Path '%s\\%s' is too long", path,
+				fname);
+			if (stopOnFirstError)
+				goto ret;
+			continue;
+		}
+		strncpy(foffset, fname, len);
+
+		/* read file */
+		if (!CFG_readFile(filename, warnUnknownSection, warnUnknownOption,
+			onErrorUseDefault) && stopOnFirstError)
+			goto ret;
+	}
+	ret = true;
+
+ret:
+	closedir(dir);
+
+	return ret;
+}
+#endif
 
 /** Check two strings for equality (neglecting the case) where one string is
  * not NUL-terminated.
