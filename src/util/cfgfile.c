@@ -3,11 +3,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -25,6 +20,7 @@
 #include "util.h"
 #include "list.h"
 #include "port/misc.h"
+#include "port/mmap.h"
 
 /** Component: Prefix */
 static const char PFX[] = "CFG";
@@ -134,40 +130,20 @@ bool CFG_readFile(const char * file, bool warnUnknownSection,
 	optWarnUnknownOption = warnUnknownOption;
 	optOnErrorUseDefault = onErrorUseDefault;
 
-	/* open input file */
-	int fd = open(file, O_RDONLY | O_CLOEXEC);
-	if (fd < 0) {
-		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not open '%s'", file);
+	struct MMAP * map = MMAP_open(PFX, file);
+	if (map == NULL)
 		return false;
-	}
-
-	/* stat input file for its size */
-	struct stat st;
-	if (fstat(fd, &st) < 0) {
-		close(fd);
-		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not stat '%s'", file);
-		return false;
-	}
-
-	/* mmap input file and close file descriptor */
-	char * buffer = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	close(fd);
-	if (buffer == MAP_FAILED) {
-		LOG_errno(LOG_LEVEL_ERROR, PFX, "Could not mmap '%s'", file);
-		return false;
-	}
 
 	/* initialize parser */
-	bufferInput = buffer;
-	bufferSize = st.st_size;
+	bufferInput = MMAP_getPtr(map);
+	bufferSize = MMAP_getSize(map);
 	bufferLine = 1;
 	fileName = file;
 
 	/* actually read configuration */
 	bool success = readCfg();
 
-	/* unmap file */
-	munmap(buffer, st.st_size);
+	MMAP_close(map);
 
 	/* fix configuration */
 	if (success)

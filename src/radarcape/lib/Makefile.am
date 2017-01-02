@@ -24,6 +24,7 @@ libopensky_la_SOURCES=opensky.hh opensky.cc MessageTypes.h GpsStatus.h \
 	../../util/util.h ../../util/util.c \
 	../../util/log.h log_lib.cc \
 	../../util/cfgfile.h ../../util/cfgfile.c \
+	../../util/port/mmap.h ../../util/port/mmap-posix.c \
 	../../util/serial_eth.h ../../util/serial_eth.c
 
 # version info: CURRENT (=iface version) : REVISION (internal changes only) : AGE (delta to last iface supported)

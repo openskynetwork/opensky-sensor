@@ -32,6 +32,7 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h limits.h netdb.h netinet/in.h])
 AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h sys/ioctl.h])
 AC_CHECK_HEADERS([sys/socket.h], [SOCKET_POSIX=1], [SOCKET_POSIX=0])
 AC_CHECK_HEADERS([winsock2.h], [SOCKET_WINSOCK=1], [SOCKET_WINSOCK=0])
+AC_CHECK_HEADERS([sys/mman.h], [MMAP_POSIX=1], [MMAP_POSIX=0])
 AC_CHECK_HEADERS([termios.h unistd.h sys/time.h endian.h features.h])
 
 AC_CHECK_HEADER_STDBOOL
@@ -174,6 +175,8 @@ AM_CONDITIONAL([DUMP1090], [test x$enableval = xyes])
 
 AM_CONDITIONAL([SOCKET_POSIX], [test $SOCKET_POSIX = 1])
 AM_CONDITIONAL([SOCKET_WINSOCK], [test $SOCKET_WINSOCK = 1])
+AM_CONDITIONAL([MMAP_POSIX], [test $MMAP_POSIX = 1])
+
 
 AC_ARG_VAR([ETHER_DEV], [Set the name of the ethernet device @<:@eth0@:>@])
 AS_IF([test x${ETHER_DEV} != x],
