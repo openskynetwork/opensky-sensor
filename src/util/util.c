@@ -6,8 +6,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#ifdef HAVE_SETUID
 #include <pwd.h>
 #include <grp.h>
+#endif
 #include <stdlib.h>
 #include <limits.h>
 #include <signal.h>
@@ -15,11 +17,13 @@
 #include "log.h"
 
 /** Component: Prefix */
+__attribute__((unused))
 static const char PFX[] = "UTIL";
 
 /** Drop privileges by switching uid and gid to nobody */
 void UTIL_dropPrivileges()
 {
+#ifdef HAVE_SETUID
 	if (getuid() != 0)
 		return;
 
@@ -53,6 +57,7 @@ void UTIL_dropPrivileges()
 	setgroups(0, NULL);
 	if (setgid(g_nobody)) {}
 	if (setuid(u_nobody)) {}
+#endif
 }
 
 /** Get a random number.

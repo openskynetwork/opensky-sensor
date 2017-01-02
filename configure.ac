@@ -63,7 +63,7 @@ AC_CHECK_FUNCS([clock_gettime gettimeofday mkdir strcasecmp])
 AC_CHECK_FUNCS([memchr memmove memset munmap pow setenv socket])
 AC_CHECK_FUNCS([strerror strncasecmp strtoul])
 AC_CHECK_FUNCS([setlinebuf])
-AC_CHECK_FUNCS([getaddrinfo])
+AC_CHECK_FUNCS([getaddrinfo setuid])
 
 AX_PTHREAD
 
