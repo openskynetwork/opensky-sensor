@@ -76,7 +76,7 @@ uint32_t UTIL_randInt(uint32_t n)
 /** Wait for SIGINT and return then */
 void UTIL_waitSigInt()
 {
-#ifdef CLEANUP_ROUTINES
+#if defined(CLEANUP_ROUTINES) && defined(HAVE_SIGWAIT)
 	sigset_t set, oldset;
 	sigemptyset(&set);
 	sigaddset(&set, SIGINT);
@@ -97,7 +97,12 @@ void UTIL_waitSigInt()
 	pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 #else
 	/* never return */
+#ifdef HAVE_PAUSE
 	while (true)
 		pause();
+#else
+	while (true)
+		sleep(100000);
+#endif
 #endif
 }

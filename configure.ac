@@ -62,8 +62,9 @@ AC_FUNC_STRTOD
 AC_CHECK_FUNCS([clock_gettime gettimeofday mkdir strcasecmp])
 AC_CHECK_FUNCS([memchr memmove memset munmap pow setenv socket])
 AC_CHECK_FUNCS([strerror strncasecmp strtoul])
-AC_CHECK_FUNCS([setlinebuf])
-AC_CHECK_FUNCS([getaddrinfo setuid])
+AC_CHECK_FUNCS([setlinebuf pause sigwait])
+AC_CHECK_FUNCS([getaddrinfo setuid scandir])
+AC_CHECK_FUNCS([wait], [WAIT_POSIX=1], [WAIT_POSIX=0])
 
 AX_PTHREAD
 
