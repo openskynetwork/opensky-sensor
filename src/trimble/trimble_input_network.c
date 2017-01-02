@@ -13,7 +13,6 @@
 #include <sys/socket.h>
 #include <stdbool.h>
 #include <assert.h>
-#include <netdb.h>
 #include "trimble_input.h"
 #include "util/net_common.h"
 #include "util/cfgfile.h"
@@ -32,7 +31,7 @@ static char cfgHost[NI_MAXHOST];
 static uint_fast16_t cfgPort;
 
 /** socket descriptor */
-static int sock;
+static sock_t sock;
 
 static bool checkCfg(const struct CFG_Section * sect);
 static bool doConnect();
@@ -89,7 +88,7 @@ static bool checkCfg(const struct CFG_Section * sect)
 /** Initialize Trimble input */
 void TRIMBLE_INPUT_init()
 {
-	sock = -1;
+	sock = SOCK_INVALID;
 }
 
 /** Disconnect Trimble input */
@@ -101,10 +100,10 @@ void TRIMBLE_INPUT_disconnect()
 /** Close connection */
 static void closeConn()
 {
-	if (sock != -1) {
-		shutdown(sock, SHUT_RDWR);
-		close(sock);
-		sock = -1;
+	if (sock != SOCK_INVALID) {
+		SOCK_shutdown(sock, SHUT_RDWR);
+		SOCK_close(sock);
+		sock = SOCK_INVALID;
 	}
 }
 
@@ -123,7 +122,7 @@ static bool doConnect()
 	closeConn();
 
 	sock = NETC_connect(PFX, cfgHost, cfgPort);
-	return sock != -1;
+	return sock != SOCK_INVALID;
 }
 
 /** Read from Trimble receiver.
@@ -133,9 +132,9 @@ static bool doConnect()
  */
 size_t TRIMBLE_INPUT_read(uint8_t * buf, size_t bufLen)
 {
-	ssize_t rc = recv(sock, buf, bufLen, 0);
+	ssize_t rc = SOCK_recv(sock, buf, bufLen, 0);
 	if (unlikely(rc < 0)) {
-		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not receive from network");
+		LOG_errnet(LOG_LEVEL_WARN, PFX, "Could not receive from network");
 		closeConn();
 		return 0;
 	} else {

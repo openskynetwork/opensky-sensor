@@ -12,6 +12,7 @@
 #include "log.h"
 #include "threads.h"
 #include "util.h"
+#include "port/socket.h"
 
 /** Log level Names */
 static const char * levelNames[] = {
@@ -143,7 +144,8 @@ static void logWithErr(enum LOG_LEVEL level, int err, const char * prefix,
  * @param fmt format string
  */
 __attribute__((format(printf, 3, 4)))
-void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt, ...)
+void LOG_errno(enum LOG_LEVEL level, const char * prefix, const char * fmt,
+	...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -165,6 +167,58 @@ void LOG_errno2(enum LOG_LEVEL level, int err, const char * prefix,
 	va_list ap;
 	va_start(ap, fmt);
 	logWithErr(level, err, prefix, fmt, ap);
+	va_end(ap);
+}
+
+/** Print log message with error of network.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param prefix Component name
+ * @param fmt format string
+ */
+__attribute__((format(printf, 3, 4)))
+void LOG_errnet(enum LOG_LEVEL level, const char * prefix, const char * fmt,
+	...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+#ifdef HAVE_SYS_SOCKET_H
+	logWithErr(level, errno, prefix, fmt, ap);
+#else
+	int err = SOCK_getError();
+
+	int r;
+	CANCEL_DISABLE(&r);
+	pthread_mutex_lock(&stdioMutex);
+
+	printf("[%s] ", levelNames[level]);
+	if (prefix)
+		printf("[%s] ", prefix);
+
+	vprintf(fmt, ap);
+
+	LPSTR errstr = NULL;
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+		0, err, 0, (LPSTR)&errstr, 0, 0);
+
+	if (errstr) {
+		size_t len = strlen(errstr);
+		if (len >= 2)
+			errstr[len - 2] = '\0';
+		printf(": %s (%d)\n", errstr, err);
+		LocalFree(errstr);
+	} else {
+		printf(": Unknown Error (%d)\n", err);
+	}
+
+	pthread_mutex_unlock(&stdioMutex);
+	CANCEL_RESTORE(&r);
+
+	if (unlikely(level == LOG_LEVEL_EMERG)) {
+		LOG_flush();
+		abort();
+	}
+#endif
 	va_end(ap);
 }
 

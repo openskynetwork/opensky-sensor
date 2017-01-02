@@ -14,6 +14,7 @@
 #include "util/log.h"
 #include "util/threads.h"
 #include "util/util.h"
+#include "util/port/socket.h"
 
 namespace OpenSky {
 
@@ -190,5 +191,60 @@ void LOG_errno2(enum LOG_LEVEL level, int err, const char * prefix,
 	va_list ap;
 	va_start(ap, fmt);
 	logWithErr(level, err, prefix, fmt, ap);
+	va_end(ap);
+}
+
+/** Print log message with error of network.
+ * @param level Log level. If it is LOG_LEVEL_EMERG, the function will abort
+ *  the process.
+ * @param prefix Component name
+ * @param fmt format string
+ */
+__attribute__((format(printf, 3, 4)))
+void LOG_errnet(enum LOG_LEVEL level, const char * prefix, const char * fmt,
+	...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+#ifdef HAVE_SYS_SOCKET_H
+	logWithErr(level, errno, prefix, fmt, ap);
+#else
+	int err = SOCK_getError();
+
+	char str[2048];
+	vsnprintf(str, sizeof str, fmt, ap);
+
+	int r;
+	CANCEL_DISABLE(&r);
+	pthread_mutex_lock(&logMutex);
+
+	LPSTR errstr = NULL;
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+		0, err, 0, (LPSTR)&errstr, 0, 0);
+
+	std::ostream & stream = getStream(level);
+	stream << '[' << levelNames[level] << ']';
+	if (prefix)
+		stream << ' ' << '[' << prefix << ']';
+	stream << ' ' << str;
+
+	if (errstr) {
+		size_t len = strlen(errstr);
+		if (len >= 2)
+			errstr[len - 2] = '\0';
+		stream << ':' << errstr << ' ' << '(' << err << ')' << std::endl;
+		LocalFree(errstr);
+	} else {
+		stream << ": Unknown error (" << err << ')' << std::endl;
+	}
+
+	pthread_mutex_unlock(&logMutex);
+	CANCEL_RESTORE(&r);
+
+	if (unlikely(level == LOG_LEVEL_EMERG)) {
+		LOG_flush();
+		abort();
+	}
+#endif
 	va_end(ap);
 }

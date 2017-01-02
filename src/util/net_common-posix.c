@@ -4,7 +4,6 @@
 #include <config.h>
 #endif
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <stdlib.h>
@@ -16,6 +15,7 @@
 #include "log.h"
 #include "threads.h"
 #include "util.h"
+#include "port/socket.h"
 
 /** Private data for addresses */
 struct Hosts {
@@ -45,10 +45,10 @@ static void cleanup(struct Hosts * hosts)
  * @param port port to connect to
  * @return socket descriptor or -1 upon failure
  */
-int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
+sock_t NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 {
 	struct addrinfo * host = NULL, hints;
-	int sock = -1;
+	sock_t sock = SOCK_INVALID;
 
 	/* must be pointer for correct cleanup */
 	struct Hosts * hosts = malloc(sizeof *hosts);
@@ -124,16 +124,16 @@ int NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 			PRIu16, hostName, ip, port);
 
 		/* create socket */
-		sock = socket(host->ai_family, host->ai_socktype | SOCK_CLOEXEC,
+		sock = SOCK_socket(host->ai_family, host->ai_socktype | SOCK_CLOEXEC,
 			host->ai_protocol);
-		if (sock < 0)
-			LOG_errno(LOG_LEVEL_ERROR, prefix, "could not create socket");
+		if (sock == SOCK_INVALID)
+			LOG_errnet(LOG_LEVEL_ERROR, prefix, "could not create socket");
 
 		/* connect socket */
-		rc = connect(sock, addr, host->ai_addrlen);
-		if (rc < 0) {
-			LOG_errno(LOG_LEVEL_WARN, prefix, "Could not connect");
-			close(sock);
+		rc = SOCK_connect(sock, addr, host->ai_addrlen);
+		if (rc == SOCK_ERROR) {
+			LOG_errnet(LOG_LEVEL_WARN, prefix, "Could not connect");
+			SOCK_close(sock);
 		} else {
 			LOG_logf(LOG_LEVEL_INFO, prefix, "connected to '%s'", hostName);
 			break;

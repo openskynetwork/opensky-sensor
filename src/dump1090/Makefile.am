@@ -13,6 +13,10 @@ openskyd_dump1090_SOURCES = dump1090.c req-serial.h req-serial.c \
 openskyd_dump1090_LIBS = @PTHREAD_LIBS@
 openskyd_dump1090_LDADD = ../core/libcore.a ../util/libutil.a
 
+if SOCKET_WINSOCK
+openskyd_dump1090_LDADD += -lws2_32
+endif
+
 # common compile flags
 AM_CFLAGS = @PTHREAD_CFLAGS@ -I$(top_srcdir)/src
 

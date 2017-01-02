@@ -29,7 +29,9 @@ AC_HEADER_STDC
 AC_SEARCH_LIBS([clock_gettime],[rt posix4])
 
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h limits.h netdb.h netinet/in.h])
-AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h])
+AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h sys/ioctl.h])
+AC_CHECK_HEADERS([sys/socket.h], [SOCKET_POSIX=1], [SOCKET_POSIX=0])
+AC_CHECK_HEADERS([winsock2.h], [SOCKET_WINSOCK=1], [SOCKET_WINSOCK=0])
 AC_CHECK_HEADERS([termios.h unistd.h sys/time.h endian.h features.h])
 
 AC_CHECK_HEADER_STDBOOL
@@ -61,6 +63,7 @@ AC_CHECK_FUNCS([clock_gettime gettimeofday mkdir strcasecmp])
 AC_CHECK_FUNCS([memchr memmove memset munmap pow setenv socket])
 AC_CHECK_FUNCS([strerror strncasecmp strtoul])
 AC_CHECK_FUNCS([setlinebuf])
+AC_CHECK_FUNCS([getaddrinfo])
 
 AX_PTHREAD
 
@@ -166,6 +169,9 @@ AC_ARG_ENABLE([dump1090],
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-dump1090]) ;;
    esac], [enableval=no])
 AM_CONDITIONAL([DUMP1090], [test x$enableval = xyes])
+
+AM_CONDITIONAL([SOCKET_POSIX], [test $SOCKET_POSIX = 1])
+AM_CONDITIONAL([SOCKET_WINSOCK], [test $SOCKET_WINSOCK = 1])
 
 AC_ARG_VAR([ETHER_DEV], [Set the name of the ethernet device @<:@eth0@:>@])
 AS_IF([test x${ETHER_DEV} != x],

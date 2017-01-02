@@ -31,6 +31,7 @@
 #include "util/log.h"
 #include "util/util.h"
 #include "util/serial_eth.h"
+#include "util/port/socket.h"
 #include "trimble/trimble_recv.h"
 
 /** Component: Prefix */
@@ -73,6 +74,8 @@ int main(int argc, char * argv[])
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
 #endif
+
+	SOCK_init();
 
 	MAIN_progName = argv[0];
 
@@ -177,6 +180,8 @@ int main(int argc, char * argv[])
 
 	COMP_unregisterAll();
 	CFG_unregisterAll();
+
+	SOCK_cleanup();
 
 	return EXIT_SUCCESS;
 }

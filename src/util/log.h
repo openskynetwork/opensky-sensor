@@ -36,6 +36,10 @@ __attribute__((format(printf, 4, 5)))
 void LOG_errno2(enum LOG_LEVEL level, int err, const char * prefix,
 	const char * fmt, ...);
 
+__attribute__((format(printf, 3, 4)))
+void LOG_errnet(enum LOG_LEVEL level, const char * prefix, const char * fmt,
+	...);
+
 #ifdef __cplusplus
 }
 #endif

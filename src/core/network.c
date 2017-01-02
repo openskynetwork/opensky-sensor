@@ -4,13 +4,11 @@
 #include <config.h>
 #endif
 #include <pthread.h>
-#include <sys/socket.h>
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <netdb.h>
 #include <time.h>
 #include "network.h"
 #include "util/log.h"
@@ -19,6 +17,7 @@
 #include "util/cfgfile.h"
 #include "util/threads.h"
 #include "util/util.h"
+#include "util/port/socket.h"
 
 /* Define to 1 to enable debugging messages */
 //#define DEBUG 1
@@ -30,9 +29,9 @@ static const char PFX[] = "NET";
 #define RECONNET_INTERVAL 10
 
 /** Networking socket: receiving socket */
-static int recvsock;
+static sock_t recvsock;
 /** Networking socket: sending socket */
-static int sendsock;
+static sock_t sendsock;
 
 /** Mutex for all shared variables */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -99,7 +98,7 @@ static struct NET_Statistics stats;
 static time_t onlineSince;
 
 static void mainloop();
-static int tryConnect();
+static sock_t tryConnect();
 static enum ACTION emitDisconnect(enum EMIT_BY by);
 static bool trySend(const void * buf, size_t len);
 static void resetStats();
@@ -170,14 +169,14 @@ static void cleanupMain()
 		switch (transState) {
 		case TRANSIT_NONE:
 		case TRANSIT_SEND:
-			shutdown(recvsock, SHUT_RDWR);
-			close(recvsock);
-			recvsock = -1;
+			SOCK_shutdown(recvsock, SHUT_RDWR);
+			SOCK_close(recvsock);
+			recvsock = SOCK_INVALID;
 			break;
 		case TRANSIT_RECV:
-			shutdown(sendsock, SHUT_RDWR);
-			close(sendsock);
-			sendsock = -1;
+			SOCK_shutdown(sendsock, SHUT_RDWR);
+			SOCK_close(sendsock);
+			sendsock = SOCK_INVALID;
 			break;
 		}
 	}
@@ -195,9 +194,9 @@ static void mainloop()
 	CLEANUP_PUSH(&cleanupMain, NULL);
 	while (true) {
 		assert(connState == CONN_STATE_DISCONNECTED);
-		int sock;
+		sock_t sock;
 		++stats.connectionAttempts;
-		while ((sock = tryConnect(&sock)) == -1) {
+		while ((sock = tryConnect(&sock)) == SOCK_INVALID) {
 			++stats.disconnects;
 			sleep(RECONNET_INTERVAL);
 			++stats.connectionAttempts;
@@ -231,13 +230,13 @@ static void mainloop()
 }
 
 /** Try to connect to the OpenSky Network.
- * @return socket descriptor or -1 on failure.
+ * @return socket descriptor or SOCK_INVALID on failure.
  */
-static int tryConnect()
+static sock_t tryConnect()
 {
-	int sock = NETC_connect("NET", cfgHost, cfgPort);
+	sock_t sock = NETC_connect("NET", cfgHost, cfgPort);
 	if (sock < 0)
-		sock = -1;
+		sock = SOCK_INVALID;
 	return sock;
 }
 
@@ -258,8 +257,8 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 	CLEANUP_PUSH_LOCK(&mutex);
 
 	/* determine socket */
-	int * mysock;
-	int othsock;
+	sock_t * mysock;
+	sock_t othsock;
 	if (by == EMIT_BY_RECV) {
 		mysock = &recvsock;
 		othsock = sendsock;
@@ -284,8 +283,8 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 			/* shutdown the socket (but leave it open, so the follower can
 			 * see the failure) */
 			logDisconnect();
-			shutdown(*mysock, SHUT_RDWR);
-			*mysock = -1;
+			SOCK_shutdown(*mysock, SHUT_RDWR);
+			*mysock = SOCK_INVALID;
 			transState = (enum TRANSIT_STATE)by;
 			connState = CONN_STATE_DISCONNECTED;
 			stats.onlineSecs += time(NULL) - onlineSince;
@@ -295,16 +294,16 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 			 * while the follower did not recognize the first failure yet
 			 *  -> close the socket */
 			logDisconnect();
-			shutdown(*mysock, SHUT_RDWR);
-			close(*mysock);
-			*mysock = -1;
+			SOCK_shutdown(*mysock, SHUT_RDWR);
+			SOCK_close(*mysock);
+			*mysock = SOCK_INVALID;
 			connState = CONN_STATE_DISCONNECTED;
 			stats.onlineSecs += time(NULL) - onlineSince;
 			pthread_cond_broadcast(&cond);
 		} else {
 			/* we are connected and the follower has seen the failure
 			 * -> close the stale socket and synchronize with the leader */
-			close(*mysock);
+			SOCK_close(*mysock);
 			*mysock = othsock;
 			transState = TRANSIT_NONE;
 		}
@@ -313,8 +312,8 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 		assert(transState != TRANSIT_NONE);
 		/* we have not been reconnected yet, but the follower has seen the
 		 * failure -> close the stale socket */
-		close(*mysock);
-		*mysock = -1;
+		SOCK_close(*mysock);
+		*mysock = SOCK_INVALID;
 		transState = TRANSIT_NONE;
 	}
 	act = connState == CONN_STATE_CONNECTED ? ACTION_RETRY : ACTION_NONE;
@@ -369,7 +368,7 @@ static bool trySend(const void * buf, size_t len)
 	const char * end = ptr + len;
 
 	do {
-		ssize_t rc = send(sendsock, ptr, len, MSG_NOSIGNAL);
+		ssize_t rc = SOCK_send(sendsock, ptr, len, 0);
 		if (rc <= 0) {
 			/* report failure */
 #ifdef DEBUG
@@ -410,7 +409,7 @@ bool NET_send(const void * buf, size_t len)
 ssize_t NET_receive(uint8_t * buf, size_t len)
 {
 	do {
-		ssize_t rc = recv(recvsock, buf, len, 0);
+		ssize_t rc = SOCK_recv(recvsock, buf, len, 0);
 		if (rc > 0) {
 			stats.bytesReceived += rc;
 			return rc;

@@ -31,6 +31,7 @@
 #include "util/statistics.h"
 #include "util/log.h"
 #include "util/util.h"
+#include "util/port/socket.h"
 #include "req-serial.h"
 #include "position.h"
 
@@ -99,6 +100,7 @@ int main(int argc, char * argv[])
 	/* force flushing of stdout and stderr on newline */
 	setlinebuf(stdout);
 #endif
+	SOCK_init();
 
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
@@ -155,6 +157,8 @@ int main(int argc, char * argv[])
 
 	COMP_unregisterAll();
 	CFG_unregisterAll();
+
+	SOCK_cleanup();
 
 	return EXIT_SUCCESS;
 }
