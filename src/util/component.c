@@ -374,8 +374,10 @@ static bool startThreaded(struct ComponentLink * ci)
 			"component %s", ci->comp->description);
 		return false;
 	} else {
+#ifdef HAVE_PTHREAD_SETNAME_NP
 		/* set its name for debugging purposes */
 		pthread_setname_np(ci->thread, ci->comp->description);
+#endif
 	}
 	return true;
 }
