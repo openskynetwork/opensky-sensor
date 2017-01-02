@@ -64,6 +64,7 @@ AC_CHECK_FUNCS([memchr memmove memset munmap pow setenv socket])
 AC_CHECK_FUNCS([strerror strncasecmp strtoul])
 AC_CHECK_FUNCS([setlinebuf pause sigwait])
 AC_CHECK_FUNCS([getaddrinfo setuid scandir])
+AC_CHECK_FUNCS([pthread_timedjoin_np])
 AC_CHECK_FUNCS([wait], [WAIT_POSIX=1], [WAIT_POSIX=0])
 
 AX_PTHREAD

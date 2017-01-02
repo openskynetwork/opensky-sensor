@@ -380,6 +380,7 @@ static bool startThreaded(struct ComponentLink * ci)
 	return true;
 }
 
+#ifdef HAVE_PTHREAD_TIMEDJOIN_NP
 /** Try to join a thread with a timeout of one second.
  * @param ci threaded component to be stopped
  * @return the value of pthread_timedjoin_np(), especially 0 on success and
@@ -392,6 +393,7 @@ static int tryJoin(const struct ComponentLink * ci)
 	ts.tv_sec += 1;
 	return pthread_timedjoin_np(ci->thread, NULL, &ts);
 }
+#endif
 
 /** Stop a threaded component.
  * @param ci component to be stopped
@@ -402,20 +404,27 @@ static int tryJoin(const struct ComponentLink * ci)
 static bool stopThreaded(const struct ComponentLink * ci, bool deferred)
 {
 	if (deferred) {
+#ifdef HAVE_PTHREAD_TIMEDJOIN_NP
 		if (tryJoin(ci) != 0) {
 			if (!silent)
 				LOG_logf(LOG_LEVEL_WARN, PFX, "Component %s could not be "
 					"joined", ci->comp->description);
 			return false;
 		}
+#endif
+		pthread_join(ci->thread, NULL);
 	} else {
 		pthread_cancel(ci->thread);
+#if HAVE_PTHREAD_TIMEDJOIN_NP
 		if (tryJoin(ci) != 0) {
 			if (!silent)
 				LOG_logf(LOG_LEVEL_WARN, PFX, "Component %s could not be "
 					"joined, deferring", ci->comp->description);
 			return false;
 		}
+#else
+		return false;
+#endif
 	}
 	return true;
 }
