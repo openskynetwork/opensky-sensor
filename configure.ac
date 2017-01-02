@@ -176,6 +176,7 @@ AM_CONDITIONAL([DUMP1090], [test x$enableval = xyes])
 AM_CONDITIONAL([SOCKET_POSIX], [test $SOCKET_POSIX = 1])
 AM_CONDITIONAL([SOCKET_WINSOCK], [test $SOCKET_WINSOCK = 1])
 AM_CONDITIONAL([MMAP_POSIX], [test $MMAP_POSIX = 1])
+AM_CONDITIONAL([WAIT_POSIX], [test $WAIT_POSIX = 1])
 
 
 AC_ARG_VAR([ETHER_DEV], [Set the name of the ethernet device @<:@eth0@:>@])
