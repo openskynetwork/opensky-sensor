@@ -373,7 +373,7 @@ static enum SECTION_STATE parseSection()
 		err(LOG_LEVEL_ERROR, "] expected before end of line");
 		return SECTION_STATE_UNRECOVERABLE;
 	}
-	if (c != n - 1) {
+	if (c != n - 1 && (c != n - 2 || n[-1] != '\r')) {
 		err(LOG_LEVEL_ERROR, "newline after ] expected");
 		return SECTION_STATE_UNRECOVERABLE;
 	}
@@ -383,8 +383,8 @@ static enum SECTION_STATE parseSection()
 	const char * const buf = bufferInput + 1;
 
 	/* advance parser */
-	bufferInput += len + 3;
-	bufferSize -= len + 3;
+	bufferSize -= n + 1 - bufferInput;
+	bufferInput = n + 1;
 	++bufferLine;
 
 	/* search section: check if there is at least one section with that name */
@@ -638,6 +638,10 @@ static bool parseOption()
 			++value;
 		size_t valLen = n - value;
 
+		/* eliminate \r at the end of the value */
+		if (value[valLen - 1] == '\r')
+			--valLen;
+
 		/* get option by section and key name */
 		const struct CFG_Option * opt = getOption(sectionName, sectionNameLen,
 			key, keyLen);
@@ -677,6 +681,10 @@ static bool readCfg()
 			if (sectionState == SECTION_STATE_UNRECOVERABLE)
 				return false;
 		break;
+		case '\r':
+			++bufferInput;
+			--bufferSize;
+			break;
 		case '\n':
 			++bufferInput;
 			--bufferSize;
