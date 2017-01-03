@@ -9,6 +9,8 @@ IDR_MAINMENU MENU
 BEGIN
   POPUP "&File"
   BEGIN
+    MENUITEM "&Start",                 ID_FILE_START
+    MENUITEM "Sto&p",                  ID_FILE_STOP
     MENUITEM "E&xit",                  ID_FILE_EXIT
   END
   POPUP "&Help"

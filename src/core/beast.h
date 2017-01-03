@@ -55,6 +55,8 @@ enum BEAST_DEVICE_TYPE {
 	BEAST_DEVICE_TYPE_RADARCAPE_LIB = 4,
 	/** Dump1090 Feeder */
 	BEAST_DEVICE_TYPE_FEEDER = 5,
+	/** Windows Feeder */
+	BEAST_DEVICE_TYPE_WIN_FEEDER = 6
 };
 
 /** Maximal length of username. MUST match the server side */

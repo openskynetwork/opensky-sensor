@@ -5,7 +5,9 @@ if WINFEEDER
 bin_PROGRAMS += openskyd-win32
 endif
 
-openskyd_win32_SOURCES = winmain.c resource.h opensky.rc
+openskyd_win32_SOURCES = winmain.c resource.h opensky.rc feeder.h feeder.c \
+	../dump1090/position.c ../dump1090/req-serial.c \
+	../radarcape/rc-parser.c ../radarcape/network.c
 dist_data_DATA = opensky.ico
 
 # compiler libs

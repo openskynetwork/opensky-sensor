@@ -1,17 +1,25 @@
+/* Copyright (c) 2015-2017 OpenSky Network <contact@opensky-network.org> */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <winsock2.h>
 #include <windows.h>
 #include <commctrl.h>
 #include <stddef.h>
 #define __CRT_STRSAFE_IMPL
 #include <strsafe.h>
 #include "resource.h"
+#include "feeder.h"
+#include "util/port/socket.h"
 
 #include <stdio.h>
 
 #define WM_APP_TRAY (WM_APP + 1)
 
-LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-INT_PTR CALLBACK AboutDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
+static INT_PTR CALLBACK AboutDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 	LPARAM lParam);
 
 static HMENU hTrayMenu = NULL;
@@ -23,9 +31,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	WNDCLASSEX wc;
 	LPCTSTR MainWndClass = TEXT("OpenSky Feeder");
 	HWND hWnd;
-	HACCEL hAccelerators;
 	HMENU hSysMenu;
 	MSG msg;
+
+	SOCK_init();
+	FEEDER_init();
 
 	/* initialise common controls. */
 	icc.dwSize = sizeof(icc);
@@ -96,18 +106,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	// Show window and force a paint.
 	//ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
+	//UpdateWindow(hWnd);
 
 	// Main message loop.
 	while (GetMessage(&msg, NULL, 0, 0) > 0) {
-		if (!TranslateAccelerator(msg.hwnd, hAccelerators, &msg)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 
 	DestroyMenu(hTrayParentMenu);
 	Shell_NotifyIcon(NIM_DELETE, &niData);
+
+	FEEDER_cleanup();
+	SOCK_cleanup();
 
 	return (int)msg.wParam;
 }
@@ -144,7 +155,7 @@ static void setMainWindowVisibility(HWND hWnd, enum VISIBILITY visibility)
 }
 
 // Window procedure for our main window.
-LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static HINSTANCE hInstance;
 
@@ -164,6 +175,17 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case ID_SHOW_MAINWIN: {
 			setMainWindowVisibility(hWnd, VISIBILITY_SHOW);
+			return 0;
+		}
+
+		case ID_FILE_START: {
+			FEEDER_configure();
+			FEEDER_start();
+			return 0;
+		}
+
+		case ID_FILE_STOP: {
+			FEEDER_stop();
 			return 0;
 		}
 		}
@@ -222,7 +244,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 // Dialog procedure for our "about" dialog.
-INT_PTR CALLBACK AboutDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
+static INT_PTR CALLBACK AboutDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
     LPARAM lParam)
 {
 	switch (uMsg) {

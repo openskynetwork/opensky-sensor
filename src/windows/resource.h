@@ -4,8 +4,10 @@
 #define IDD_ABOUTDIALOG                104
 #define IDR_TRAYMENU                   105
 #define ID_FILE_EXIT                   40001
-#define ID_HELP_ABOUT                  40002
-#define ID_SHOW_MAINWIN                40003
+#define ID_FILE_START                  40002
+#define ID_FILE_STOP                   40003
+#define ID_HELP_ABOUT                  40004
+#define ID_SHOW_MAINWIN                40005
 
 #ifndef IDC_STATIC
   #define IDC_STATIC                   -1
