@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016 SeRo Systems <contact@sero-systems.de> */
+/* Copyright (c) 2015-2017 SeRo Systems <contact@sero-systems.de> */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

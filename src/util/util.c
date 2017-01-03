@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
+/* Copyright (c) 2015-2017 OpenSky Network <contact@opensky-network.org> */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016 OpenSky Network <contact@opensky-network.org> */
+/* Copyright (c) 2015-2017 OpenSky Network <contact@opensky-network.org> */
 
 #ifndef _HAVE_NET_COMMON_H
 #define _HAVE_NET_COMMON_H
