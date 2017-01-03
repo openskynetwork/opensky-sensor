@@ -198,10 +198,22 @@ AC_ARG_ENABLE([dump1090],
    esac], [enableval=no])
 AM_CONDITIONAL([DUMP1090], [test x$enableval = xyes])
 
+AC_ARG_ENABLE([win32],
+  [AS_HELP_STRING([--enable-win32],
+    [Build windows daemon to connect to feeder @<:@no@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-win32]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([WINFEEDER], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 0],
+	[AC_MSG_ERROR([Cannot build windows binaries without mingw])])
+
 AM_CONDITIONAL([SOCKET_POSIX], [test $SOCKET_POSIX = 1])
 AM_CONDITIONAL([SOCKET_WINSOCK], [test $SOCKET_WINSOCK = 1])
 AM_CONDITIONAL([MMAP_POSIX], [test $MMAP_POSIX = 1])
 AM_CONDITIONAL([WAIT_POSIX], [test $WAIT_POSIX = 1])
+AM_CONDITIONAL([HOST_IS_MINGW], [test $HOST_IS_MINGW = 1])
 
 AC_ARG_VAR([ETHER_DEV], [Set the name of the ethernet device @<:@eth0@:>@])
 AS_IF([test x${ETHER_DEV} != x],
@@ -257,4 +269,4 @@ AS_IF([test x"$with_pthreadCancellationPoints" != x"no"],
 dnl output directive
 AC_OUTPUT([Makefile src/Makefile src/core/Makefile src/util/Makefile
 	src/trimble/Makefile src/radarcape/Makefile src/radarcape/lib/Makefile
-	src/dump1090/Makefile src/test/Makefile])
+	src/dump1090/Makefile src/windows/Makefile src/test/Makefile])
