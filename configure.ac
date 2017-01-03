@@ -23,6 +23,19 @@ AC_PROG_MAKE_SET
 AM_PROG_AR
 AC_PROG_LIBTOOL
 
+case "$host" in
+  *cygwin* | *mingw* )
+    AC_CHECK_TOOL([WINDRES], [windres], [:])
+    HOST_IS_MINGW=1
+    ac_cv_func_realloc_0_nonnull=yes
+    ac_cv_func_malloc_0_nonnull=yes
+  ;;
+  *)
+    WINDRES=""
+    HOST_IS_MINGW=0
+  ;;
+esac
+
 dnl test for std headers
 AC_HEADER_STDC
 
@@ -118,6 +131,8 @@ AC_ARG_ENABLE([radarcape-standalone],
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-standalone]) ;;
    esac], [enableval=no])
 AM_CONDITIONAL([RADARCAPE_STANDALONE], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 1],
+	[AC_MSG_ERROR([Cannot build radarcape binaries with mingw])])
 
 AC_ARG_ENABLE([radarcape-network],
   [AS_HELP_STRING([--enable-radarcape-network],
@@ -127,6 +142,8 @@ AC_ARG_ENABLE([radarcape-network],
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-network]) ;;
    esac], [enableval=no])
 AM_CONDITIONAL([RADARCAPE_NETWORK], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 1],
+	[AC_MSG_ERROR([Cannot build radarcape binaries with mingw])])
 
 AC_ARG_ENABLE([radarcape-dummy],
   [AS_HELP_STRING([--enable-radarcape-dummy],
@@ -136,6 +153,8 @@ AC_ARG_ENABLE([radarcape-dummy],
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-dummy]) ;;
    esac], [enableval=no])
 AM_CONDITIONAL([RADARCAPE_DUMMY], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 1],
+	[AC_MSG_ERROR([Cannot build radarcape binaries with mingw])])
 
 AC_ARG_ENABLE([watchdog-daemon],
   [AS_HELP_STRING([--enable-watchdog-daemon],
@@ -145,6 +164,8 @@ AC_ARG_ENABLE([watchdog-daemon],
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-watchdog-daemon]) ;;
    esac], [enableval=no])
 AM_CONDITIONAL([RADARCAPE_WATCHDOG], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 1],
+	[AC_MSG_ERROR([Cannot build radarcape binaries with mingw])])
 
 AC_ARG_ENABLE([radarcape-library],
   [AS_HELP_STRING([--enable-radarcape-library],
@@ -154,6 +175,8 @@ AC_ARG_ENABLE([radarcape-library],
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-library]) ;;
    esac], [enableval=no])
 AM_CONDITIONAL([RADARCAPE_LIBRARY], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 1],
+	[AC_MSG_ERROR([Cannot build radarcape binaries with mingw])])
 
 AC_ARG_ENABLE([radarcape-library-examples],
   [AS_HELP_STRING([--enable-radarcape-library-examples],
@@ -163,6 +186,8 @@ AC_ARG_ENABLE([radarcape-library-examples],
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-library-examples]) ;;
    esac], [enableval=false])
 AM_CONDITIONAL([RADARCAPE_LIBRARY_EXAMPLES], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 1],
+	[AC_MSG_ERROR([Cannot build radarcape binaries with mingw])])
 
 AC_ARG_ENABLE([dump1090],
   [AS_HELP_STRING([--enable-dump1090],
