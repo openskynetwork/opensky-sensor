@@ -16,6 +16,7 @@
 #include "util/cfgfile.h"
 #include "util/util.h"
 #include "util/log.h"
+#include "util/threads.h"
 
 /** Component: Prefix */
 static const char PFX[] = "TRIMBLE";
@@ -63,7 +64,7 @@ static void closeUart()
 void TRIMBLE_INPUT_connect()
 {
 	while (!doConnect())
-		sleep(RECONNECT_INTERVAL);
+		sleepCancelable(RECONNECT_INTERVAL);
 }
 
 /** Connect to UART.

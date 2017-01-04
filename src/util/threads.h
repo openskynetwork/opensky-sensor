@@ -4,6 +4,13 @@
 #define _HAVE_THREADS_H
 
 #include <pthread.h>
+#include <stdbool.h>
+
+#ifndef PTHREAD_CANCELLATION_POINTS
+#include <time.h>
+#include <errno.h>
+#include <unistd.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,6 +73,38 @@ static void CLEANUP_UNLOCK(pthread_mutex_t * mutex)
 #define CLEANUP_PUSH_LOCK(mutex) \
 	CLEANUP_PUSH(&CLEANUP_UNLOCK, mutex); \
 	pthread_mutex_lock(mutex);
+
+#ifdef PTHREAD_CANCELLATION_POINTS
+
+#define sleepCancelable(seconds) sleep(seconds)
+
+#else
+
+static inline unsigned int sleepCancelable(unsigned int seconds)
+{
+	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
+	struct timespec ts;
+	CLEANUP_PUSH_LOCK(&mutex);
+	clock_gettime(CLOCK_REALTIME, &ts);
+	ts.tv_sec += seconds;
+	while (true) {
+		int rc = pthread_cond_timedwait(&cond, &mutex, &ts);
+		if (rc == ETIMEDOUT)
+			break;
+		else if (rc != 0) {
+			/* not very clean, but should not happen anyway */
+			sleep(seconds);
+			pthread_testcancel();
+			break;
+		}
+	}
+	CLEANUP_POP();
+	return 0;
+}
+
+#endif
 
 #ifdef __cplusplus
 }

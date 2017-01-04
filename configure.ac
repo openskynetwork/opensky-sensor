@@ -203,7 +203,6 @@ AM_CONDITIONAL([SOCKET_WINSOCK], [test $SOCKET_WINSOCK = 1])
 AM_CONDITIONAL([MMAP_POSIX], [test $MMAP_POSIX = 1])
 AM_CONDITIONAL([WAIT_POSIX], [test $WAIT_POSIX = 1])
 
-
 AC_ARG_VAR([ETHER_DEV], [Set the name of the ethernet device @<:@eth0@:>@])
 AS_IF([test x${ETHER_DEV} != x],
   [AC_DEFINE_UNQUOTED([ETHER_DEV], ["${ETHER_DEV}"],
@@ -243,6 +242,17 @@ AS_IF([test x"$with_pacman" != x"no"],
      [AC_MSG_ERROR([pacman required, but not found.])])])])
 AS_IF([test x"$with_pacman" != x"no"],
   [AC_DEFINE([WITH_PACMAN], [1], [Enable pacman integration])])
+
+AC_ARG_WITH([pthreadCancellationPoints],
+  [AS_HELP_STRING([--with-pthreadCancellationPoints],
+    [Assume pthread has working cancellation points @<:@guess@:>@])],
+  [:],[with_pthreadCancellationPoints=guess])
+AS_IF([test x"$with_pthreadCancellationPoints" = x"guess"],
+  [AS_IF([test $HOST_IS_MINGW = 0], [with_pthreadCancellationPoints=yes],
+    [with_pthreadCancellationPoints=no])])
+AS_IF([test x"$with_pthreadCancellationPoints" != x"no"],
+  [AC_DEFINE([PTHREAD_CANCELLATION_POINTS], [1],
+  [Assume pthread has working cancellation points])])
 
 dnl output directive
 AC_OUTPUT([Makefile src/Makefile src/core/Makefile src/util/Makefile

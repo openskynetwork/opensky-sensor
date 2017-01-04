@@ -198,7 +198,7 @@ static void mainloop()
 		++stats.connectionAttempts;
 		while ((sock = tryConnect(&sock)) == SOCK_INVALID) {
 			++stats.disconnects;
-			sleep(RECONNET_INTERVAL);
+			sleepCancelable(RECONNET_INTERVAL);
 			++stats.connectionAttempts;
 		}
 
@@ -368,7 +368,7 @@ static bool trySend(const void * buf, size_t len)
 	const char * end = ptr + len;
 
 	do {
-		ssize_t rc = SOCK_send(sendsock, ptr, len, 0);
+		ssize_t rc = SOCK_sendCancelable(sendsock, ptr, len, 0);
 		if (rc <= 0) {
 			/* report failure */
 #ifdef DEBUG
@@ -409,7 +409,7 @@ bool NET_send(const void * buf, size_t len)
 ssize_t NET_receive(uint8_t * buf, size_t len)
 {
 	do {
-		ssize_t rc = SOCK_recv(recvsock, buf, len, 0);
+		ssize_t rc = SOCK_recvCancelable(recvsock, buf, len, 0);
 		if (rc > 0) {
 			stats.bytesReceived += rc;
 			return rc;

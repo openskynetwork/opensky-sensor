@@ -125,6 +125,7 @@ sock_t NETC_connect(const char * prefix, const char * hostName, uint16_t port)
 			LOG_logf(LOG_LEVEL_INFO, prefix, "connected to '%s'", hostName);
 			break;
 		}
+		pthread_testcancel();
 	}
 	CLEANUP_POP();
 

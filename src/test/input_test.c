@@ -13,6 +13,7 @@
 #include "core/input.h"
 #include "radarcape/rc-input.h"
 #include "util/port/endian.h"
+#include "util/threads.h"
 
 struct TEST test;
 
@@ -40,7 +41,7 @@ size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
 	if (test.curBuffer == test.nBuffers) {
 		if (test.noRet)
 			while (true)
-				sleep(10);
+				sleepCancelable(10);
 		else
 			return 0;
 	}

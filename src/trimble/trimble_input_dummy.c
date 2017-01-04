@@ -5,6 +5,7 @@
 #endif
 #include <unistd.h>
 #include "trimble_input.h"
+#include "util/threads.h"
 
 /** Register Trimble input */
 void TRIMBLE_INPUT_register()
@@ -34,7 +35,7 @@ void TRIMBLE_INPUT_connect()
 size_t TRIMBLE_INPUT_read(uint8_t * buf, size_t bufLen)
 {
 	while (true) {
-		sleep(10);
+		sleepCancelable(10);
 	}
 }
 

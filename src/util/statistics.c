@@ -86,7 +86,7 @@ static void mainloop()
 	snapshot.timestamp = time(NULL);
 
 	while (true) {
-		sleep(cfgInterval);
+		sleepCancelable(cfgInterval);
 
 		__attribute__((unused)) int r;
 		CANCEL_DISABLE(&r);

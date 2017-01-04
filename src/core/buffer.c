@@ -239,7 +239,7 @@ static void destruct()
 static void mainloop()
 {
 	while (true) {
-		sleep(cfg.gcInterval);
+		sleepCancelable(cfg.gcInterval);
 		pthread_mutex_lock(&mutex);
 		if (LIST_length(&queue) <
 			(LIST_length(&dynPools) * cfg.dynBacklog) / cfg.gcLevel) {

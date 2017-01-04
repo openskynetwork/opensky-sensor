@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include "watchdog.h"
 #include "gpio.h"
+#include "util/threads.h"
 #include "util/statistics.h"
 
 /** Watchdog GPIO number */
@@ -45,6 +46,6 @@ static void mainloop()
 	while (1) {
 		GPIO_set(GPIO);
 		GPIO_clear(GPIO);
-		sleep(INTERVAL);
+		sleepCancelable(INTERVAL);
 	}
 }

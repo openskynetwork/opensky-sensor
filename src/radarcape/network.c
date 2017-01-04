@@ -14,6 +14,7 @@
 #include "util/cfgfile.h"
 #include "util/util.h"
 #include "util/log.h"
+#include "util/threads.h"
 
 /** Component: Prefix */
 static const char PFX[] = "INPUT";
@@ -110,7 +111,7 @@ static void closeConn()
 void RC_INPUT_connect()
 {
 	while (!doConnect())
-		sleep(RECONNECT_INTERVAL);
+		sleepCancelable(RECONNECT_INTERVAL);
 }
 
 /** Connect to host.
@@ -131,7 +132,7 @@ static bool doConnect()
  */
 size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
 {
-	ssize_t rc = SOCK_recv(sock, buf, bufLen, 0);
+	ssize_t rc = SOCK_recvCancelable(sock, buf, bufLen, 0);
 	if (unlikely(rc < 0)) {
 		LOG_errnet(LOG_LEVEL_WARN, PFX, "Could not receive from network");
 		closeConn();
@@ -148,7 +149,7 @@ size_t RC_INPUT_read(uint8_t * buf, size_t bufLen)
  */
 size_t RC_INPUT_write(uint8_t * buf, size_t bufLen)
 {
-	ssize_t rc = SOCK_send(sock, buf, bufLen, 0);
+	ssize_t rc = SOCK_sendCancelable(sock, buf, bufLen, 0);
 	if (unlikely(rc <= 0)) {
 		LOG_errnet(LOG_LEVEL_WARN, PFX, "Could not send to network");
 		return 0;
