@@ -3,6 +3,8 @@
 #define IDR_ACCELERATOR                103
 #define IDD_ABOUTDIALOG                104
 #define IDR_TRAYMENU                   105
+#define IDC_MAIN_EDIT                  106
+#define IDC_MAIN_GROUP                 107
 #define ID_FILE_EXIT                   40001
 #define ID_FILE_START                  40002
 #define ID_FILE_STOP                   40003

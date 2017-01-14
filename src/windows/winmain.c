@@ -12,6 +12,7 @@
 #include "resource.h"
 #include "feeder.h"
 #include "util/port/socket.h"
+#include "util/util.h"
 
 #include <stdio.h>
 
@@ -154,6 +155,48 @@ static void setMainWindowVisibility(HWND hWnd, enum VISIBILITY visibility)
 	ShowWindow(hWnd, visible ? SW_RESTORE : SW_HIDE);
 }
 
+static void createWindow(HWND hWnd)
+{
+	HWND hGroup;
+
+	hGroup = CreateWindowEx(WS_EX_STATICEDGE, TEXT("BUTTON"), TEXT("Log"),
+		WS_CHILD | WS_GROUP | BS_GROUPBOX, 0, 0, 0, 0, hWnd, (HMENU)IDC_MAIN_GROUP,
+		GetModuleHandle(NULL), NULL);
+	if (hGroup == NULL)
+		MessageBox(hWnd, TEXT("Could not create group box."), TEXT("Error"), MB_OK | MB_ICONERROR);
+	//SendMessage(hGroup, WM_SETTEXT, 0, (LPARAM)TEXT("Hons"));
+
+
+	HFONT hfDefault;
+	HWND hEdit;
+
+	hEdit = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("EDIT"), TEXT(""),
+		WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL,
+		0, 0, 0, 0, hGroup, (HMENU)IDC_MAIN_EDIT, GetModuleHandle(NULL), NULL);
+	if(hEdit == NULL)
+		MessageBox(hWnd, TEXT("Could not create edit box."), TEXT("Error"), MB_OK | MB_ICONERROR);
+
+	hfDefault = GetStockObject(DEFAULT_GUI_FONT);
+	SendMessage(hEdit, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE, 0));
+}
+
+static void resizeWindow(HWND hWnd)
+{
+	HWND hGroup;
+	HWND hEdit;
+	RECT rcClient;
+
+	GetClientRect(hWnd, &rcClient);
+
+	hGroup = GetDlgItem(hWnd, IDC_MAIN_GROUP);
+	SetWindowPos(hGroup, NULL, 0, 0, rcClient.right, rcClient.bottom, SWP_SHOWWINDOW | SWP_NOZORDER);
+
+	GetClientRect(hGroup, &rcClient);
+
+	hEdit = GetDlgItem(hGroup, IDC_MAIN_EDIT);
+	SetWindowPos(hEdit, NULL, 5, 20, rcClient.right-10, rcClient.bottom-25, SWP_NOZORDER);
+}
+
 // Window procedure for our main window.
 static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -205,6 +248,17 @@ static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		return 0;
 	}
 
+	case WM_CREATE: {
+		hInstance = ((LPCREATESTRUCT)lParam)->hInstance;
+		createWindow(hWnd);
+		break;
+	}
+
+	case WM_SIZE: {
+		resizeWindow(hWnd);
+		break;
+	}
+
 	case WM_CLOSE: {
 		setMainWindowVisibility(hWnd, VISIBILITY_HIDE);
 		return 0;
@@ -227,11 +281,6 @@ static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		}
 		}
 		break;
-	}
-
-	case WM_CREATE: {
-		hInstance = ((LPCREATESTRUCT)lParam)->hInstance;
-		return 0;
 	}
 
 	case WM_DESTROY: {
