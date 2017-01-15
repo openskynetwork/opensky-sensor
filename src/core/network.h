@@ -8,11 +8,11 @@
 #include <stdlib.h>
 #include "util/component.h"
 
-extern const struct Component NET_comp;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern const struct Component NET_comp;
 
 void NET_waitConnected();
 
