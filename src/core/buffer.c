@@ -211,7 +211,7 @@ static bool construct()
 
 	newFrame = currentFrame = NULL;
 
-	dynMaxIncrements = BUF_cfgHistory ? cfgDynIncrement : 0;
+	dynMaxIncrements = cfgHistory ? cfgDynIncrement : 0;
 
 	if (!deployPool(&staticPool, cfgStatBacklog)) {
 		LOG_errno(LOG_LEVEL_ERROR, PFX, "malloc failed");
@@ -270,7 +270,7 @@ void BUF_flush()
 	append(&pool, &queue);
 	clear(&queue);
 	pthread_mutex_unlock(&mutex);
-	++stats.flushes;
+	++STAT_stats.BUF_flushes;
 }
 
 void BUF_flushUnlessHistoryEnabled()
