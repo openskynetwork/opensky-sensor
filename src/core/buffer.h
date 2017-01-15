@@ -12,6 +12,21 @@
 extern "C" {
 #endif
 
+struct BUFFER_Statistics {
+	uint64_t queueSize;
+	uint64_t maxQueueSize;
+	uint64_t discardedCur;
+	uint64_t discardedAll;
+	uint64_t discardedMax;
+	uint64_t poolSize;
+	uint64_t dynPools;
+	uint64_t dynPoolsAll;
+	uint64_t dynPoolsMax;
+	uint64_t uncollectedPools;
+	uint64_t flushes;
+	uint64_t GCruns;
+};
+
 extern const struct Component BUF_comp;
 
 void BUF_flush();
@@ -27,6 +42,8 @@ const struct OPENSKY_RawFrame * BUF_getFrame();
 const struct OPENSKY_RawFrame * BUF_getFrameTimeout(uint_fast32_t timeout_ms);
 void BUF_releaseFrame(const struct OPENSKY_RawFrame * frame);
 void BUF_putFrame(const struct OPENSKY_RawFrame * frame);
+
+void BUFFER_getStatistics(struct BUFFER_Statistics * statistics);
 
 #ifdef __cplusplus
 }

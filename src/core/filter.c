@@ -4,6 +4,8 @@
 #include <config.h>
 #endif
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 #include "filter.h"
 #include "input.h"
 #include "util/statistics.h"
@@ -26,6 +28,8 @@ enum MODES_TYPE {
 static enum MODES_TYPE modeSFilter;
 
 struct FILTER_Configuration FILTER_cfg;
+
+static struct FILTER_Statistics stats;
 
 static const struct CFG_Section cfg = {
 	.name = "FILTER",
@@ -56,11 +60,13 @@ static const struct CFG_Section cfg = {
 static bool isSynchronized;
 
 static bool construct();
+static void resetStats();
 
 const struct Component FILTER_comp = {
 	.description = "FILTER",
 	.config = &cfg,
 	.onConstruct = &construct,
+	.onReset = &resetStats,
 	.dependencies = { NULL }
 };
 
@@ -71,6 +77,16 @@ static bool construct()
 	FILTER_reset();
 
 	return true;
+}
+
+static void resetStats()
+{
+	memset(&stats, 0, sizeof stats);
+}
+
+void FILTER_getStatistics(struct FILTER_Statistics * statistics)
+{
+	memcpy(statistics, &stats, sizeof *statistics);
 }
 
 void FILTER_reset()
@@ -98,12 +114,12 @@ void FILTER_setSynchronized(bool synchronized)
 
 bool FILTER_filter(enum OPENSKY_FRAME_TYPE frameType, uint8_t firstByte)
 {
-	++STAT_stats.RECV_frameType[frameType];
+	++stats.framesByType[frameType];
 
 	if (unlikely(!isSynchronized)) {
-		++STAT_stats.RECV_framesUnsynchronized;
+		++stats.unsynchronized;
 		if (FILTER_cfg.sync) {
-			++STAT_stats.RECV_framesFiltered;
+			++stats.filtered;
 			return false;
 		}
 	}
@@ -111,16 +127,16 @@ bool FILTER_filter(enum OPENSKY_FRAME_TYPE frameType, uint8_t firstByte)
 	/* apply filter */
 	if (frameType != OPENSKY_FRAME_TYPE_MODE_S_LONG &&
 		frameType != OPENSKY_FRAME_TYPE_MODE_S_SHORT) {
-		++STAT_stats.RECV_framesFiltered;
+		++stats.filtered;
 		return false;
 	}
 
 	uint_fast32_t ftype = (firstByte >> 3) & 0x1f;
-	++STAT_stats.RECV_modeSType[ftype];
+	++stats.modeSByType[ftype];
 	/* apply filter */
 	if (!((1 << ftype) & modeSFilter)) {
-		++STAT_stats.RECV_framesFiltered;
-		++STAT_stats.RECV_modeSFiltered;
+		++stats.filtered;
+		++stats.modeSfiltered;
 		return false;
 	}
 

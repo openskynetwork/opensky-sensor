@@ -24,6 +24,8 @@ struct Component {
 	bool (*onStart)();
 	bool (*onStop)(bool deferred);
 
+	void (*onReset)();
+
 	bool * enabled;
 	bool * start;
 
@@ -43,6 +45,7 @@ bool COMP_initAll();
 void COMP_destructAll();
 bool COMP_startAll();
 void COMP_stopAll();
+void COMP_resetAll();
 
 #ifdef __cplusplus
 }

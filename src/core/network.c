@@ -17,6 +17,7 @@
 #include "util/statistics.h"
 #include "util/cfgfile.h"
 #include "util/threads.h"
+#include "util/util.h"
 
 //#define DEBUG
 
@@ -28,6 +29,9 @@ static char cfgHost[NI_MAXHOST];
 static uint_fast16_t cfgPort;
 
 static bool checkCfg(const struct CFG_Section * sect);
+
+static struct NET_Statistics stats;
+static time_t onlineSince;
 
 static const struct CFG_Section cfg = {
 	.name = "NETWORK",
@@ -100,6 +104,7 @@ static enum CONN_STATE connState;
 static enum TRANSIT_STATE transState;
 
 static void mainloop();
+static void resetStats();
 static int tryConnect();
 static enum ACTION emitDisconnect(enum EMIT_BY by);
 static bool trySend(const void * buf, size_t len);
@@ -108,6 +113,7 @@ const struct Component NET_comp = {
 	.description = PFX,
 	.main = &mainloop,
 	.config = &cfg,
+	.onReset = &resetStats,
 	.dependencies = { NULL }
 };
 
@@ -167,13 +173,14 @@ static void mainloop()
 	while (true) {
 		assert (connState == CONN_STATE_DISCONNECTED);
 		int sock;
+		++stats.connectionAttempts;
 		while ((sock = tryConnect(&sock)) == -1) {
-			++STAT_stats.NET_connectsFail;
+			++stats.disconnects;
 			sleep(RECONNET_INTERVAL);
+			++stats.connectionAttempts;
 		}
 
 		/* connection established */
-		++STAT_stats.NET_connectsSuccess;
 
 		switch (transState) {
 		case TRANSIT_NONE:
@@ -190,9 +197,12 @@ static void mainloop()
 		connState = CONN_STATE_CONNECTED;
 		pthread_cond_broadcast(&cond);
 
+		onlineSince = time(NULL);
+
 		/* wait for failure */
 		while (connState != CONN_STATE_DISCONNECTED)
 			pthread_cond_wait(&cond, &mutex);
+		++stats.disconnects;
 	}
 	CLEANUP_POP();
 }
@@ -246,6 +256,7 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 			*mysock = -1;
 			transState = by;
 			connState = CONN_STATE_DISCONNECTED;
+			stats.onlineSecs += time(NULL) - onlineSince;
 			pthread_cond_broadcast(&cond);
 		} else if (transState == (enum TRANSIT_STATE)by) {
 			/* we were connected, but the leader reported another failure
@@ -256,6 +267,7 @@ static enum ACTION emitDisconnect(enum EMIT_BY by)
 			close(*mysock);
 			*mysock = -1;
 			connState = CONN_STATE_DISCONNECTED;
+			stats.onlineSecs += time(NULL) - onlineSince;
 			pthread_cond_broadcast(&cond);
 		} else {
 			/* we are connected and the follower has seen the failure
@@ -305,14 +317,13 @@ static bool trySend(const void * buf, size_t len)
 				rc == 0 || errno == EPIPE ? "Connection lost" :
 				strerror(errno));
 #endif
-			++STAT_stats.NET_msgsFailed;
 			emitDisconnect(EMIT_BY_SEND);
 			return false;
 		}
 		ptr += rc;
 	} while (ptr != end);
 
-	++STAT_stats.NET_msgsSent;
+	stats.bytesSent += len;
 
 	return true;
 }
@@ -350,13 +361,30 @@ ssize_t NET_receive(uint8_t * buf, size_t len)
 {
 	do {
 		ssize_t rc = recv(recvsock, buf, len, 0);
-		if (rc > 0)
+		if (rc > 0) {
+			stats.bytesReceived += rc;
 			return rc;
+		}
 #ifdef DEBUG
 		LOG_logf(LOG_LEVEL_INFO, PFX, "could not receive: %s",
 			rc == 0 ? "Connection lost" : strerror(errno));
 #endif
-		++STAT_stats.NET_msgsRecvFailed;
 	} while (emitDisconnect(EMIT_BY_RECV) == ACTION_RETRY);
 	return 0;
+}
+
+static void resetStats()
+{
+	pthread_mutex_lock(&mutex);
+	memset(&stats, 0, sizeof stats);
+	pthread_mutex_unlock(&mutex);
+}
+
+void NET_getStatistics(struct NET_Statistics * statistics)
+{
+	/* copy unlocked. It's o.k. to have inconsistent statistics */
+	memcpy(statistics, &stats, sizeof *statistics);
+	statistics->isOnline = connState == CONN_STATE_CONNECTED;
+	if (statistics->isOnline)
+		statistics->onlineSecs += time(NULL) - onlineSince;
 }

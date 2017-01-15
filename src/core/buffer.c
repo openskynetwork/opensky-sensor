@@ -10,9 +10,11 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdio.h>
+#include <inttypes.h>
+#include <string.h>
 #include "buffer.h"
 #include "util/log.h"
-#include "util/statistics.h"
 #include "util/cfgfile.h"
 #include "util/threads.h"
 #include "util/util.h"
@@ -69,10 +71,6 @@ static size_t dynIncrements;
 /** Dynamic Pool List */
 static struct Pool * dynPools;
 
-/** Number of frames discarded in an overflow situation */
-static uint_fast64_t overCapacity;
-static uint_fast64_t overCapacityMax;
-
 /** Overall Pool */
 static struct FrameList pool;
 /** Output Queue */
@@ -99,7 +97,7 @@ static uint32_t cfgGCLevel;
 static bool construct();
 static void destruct();
 static void mainloop();
-
+static void resetStats();
 static void cfgFix(const struct CFG_Section * sect);
 
 static const struct CFG_Section cfg = {
@@ -158,6 +156,8 @@ static const struct CFG_Section cfg = {
 	}
 };
 
+static struct BUFFER_Statistics stats;
+
 const struct Component BUF_comp = {
 	.description = PFX,
 	.start = &cfgGC,
@@ -165,6 +165,7 @@ const struct Component BUF_comp = {
 	.onDestruct = &destruct,
 	.main = &mainloop,
 	.config = &cfg,
+	.onReset = &resetStats,
 	.dependencies = { NULL }
 };
 
@@ -232,7 +233,7 @@ static void destruct()
 }
 
 /** Gargabe collector mainloop.
- * \note intialize garbage collection first using BUF_initGC */
+ * \note initialize garbage collection first using BUF_initGC */
 static void mainloop()
 {
 	while (true) {
@@ -255,7 +256,7 @@ void BUF_runGC()
 
 static void gc()
 {
-	++STAT_stats.BUF_GCRuns;
+	++stats.GCruns;
 #ifdef BUF_DEBUG
 	LOG_log(LOG_LEVEL_DEBUG, PFX, "Running Garbage Collector");
 #endif
@@ -270,7 +271,7 @@ void BUF_flush()
 	append(&pool, &queue);
 	clear(&queue);
 	pthread_mutex_unlock(&mutex);
-	++STAT_stats.BUF_flushes;
+	++stats.flushes;
 }
 
 void BUF_flushUnlessHistoryEnabled()
@@ -290,15 +291,15 @@ static inline struct FrameLink * getFrameFromPool()
 	if (likely(pool.head)) {
 		/* pool is not empty -> unlink and return first frame */
 		ret = shift(&pool);
-		overCapacity = 0;
+		stats.discardedCur = 0;
 	} else if (uncollectPools()) {
 		/* pool was empty, but we could uncollect a pool which was about to be
 		 *  garbage collected */
 #ifdef BUF_DEBUG
 		LOG_log(LOG_LEVEL_DEBUG, PFX, "Uncollected pool");
 #endif
-		++STAT_stats.BUF_uncollects;
-		overCapacity = 0;
+		++stats.uncollectedPools;
+		stats.discardedCur = 0;
 		ret = shift(&pool);
 	} else if (dynIncrements < dynMaxIncrements && createDynPool()) {
 		/* pool was empty, but we just created another one */
@@ -306,7 +307,7 @@ static inline struct FrameLink * getFrameFromPool()
 		LOG_logf(LOG_LEVEL_DEBUG, PFX, "Created another pool (%zu/%zu)",
 			dynIncrements, dynMaxIncrements);
 #endif
-		overCapacity = 0;
+		stats.discardedCur = 0;
 		ret = shift(&pool);
 	} else {
 		/* no more space in the pool and no more pools
@@ -314,9 +315,10 @@ static inline struct FrameLink * getFrameFromPool()
 #if defined(BUF_DEBUG) && BUF_DEBUG > 1
 		LOG_log(LOG_LEVEL_DEBUG, PFX, "Sacrificing oldest frame");
 #endif
-		if (++overCapacity > overCapacityMax)
-			overCapacityMax = overCapacity;
-		++STAT_stats.BUF_sacrifices;
+		++stats.discardedCur;
+		++stats.discardedAll;
+		if (stats.discardedCur > stats.discardedMax)
+			stats.discardedMax = stats.discardedCur;
 		ret = shift(&queue);
 	}
 
@@ -349,10 +351,10 @@ void BUF_commitFrame(struct OPENSKY_RawFrame * frame)
 	pthread_mutex_lock(&mutex);
 	push(&queue, newFrame);
 	pthread_cond_broadcast(&cond);
-	pthread_mutex_unlock(&mutex);
 
-	if (unlikely(queue.size > STAT_stats.BUF_maxQueue))
-		STAT_stats.BUF_maxQueue = queue.size;
+	if (unlikely(queue.size > stats.maxQueueSize))
+		stats.maxQueueSize = queue.size;
+	pthread_mutex_unlock(&mutex);
 
 	newFrame = NULL;
 }
@@ -528,9 +530,9 @@ static bool createDynPool()
 	dynPools = newPool;
 	++dynIncrements;
 
-	++STAT_stats.BUF_poolsCreated;
-	if (unlikely(dynIncrements > STAT_stats.BUF_maxPools))
-		STAT_stats.BUF_maxPools = dynIncrements;
+	++stats.dynPoolsAll;
+	if (unlikely(dynIncrements > stats.dynPoolsMax))
+		stats.dynPoolsMax = dynIncrements;
 
 	return true;
 }
@@ -633,6 +635,24 @@ static void destroyUnusedPools()
 		prevSize - dynIncrements, prevSize);
 #endif
 }
+
+static void resetStats()
+{
+	pthread_mutex_lock(&mutex);
+	memset(&stats, 0, sizeof stats);
+	pthread_mutex_unlock(&mutex);
+}
+
+void BUFFER_getStatistics(struct BUFFER_Statistics * statistics)
+{
+	pthread_mutex_lock(&mutex);
+	memcpy(statistics, &stats, sizeof *statistics);
+	statistics->queueSize = queue.size;
+	statistics->poolSize = pool.size;
+	statistics->dynPools = dynIncrements;
+	pthread_mutex_unlock(&mutex);
+}
+
 
 /** Unqueue the first element of a list and return it.
  * \param list list container

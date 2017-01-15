@@ -8,6 +8,7 @@
 #include <check.h>
 #include <unistd.h>
 #include <endian.h>
+#include <signal.h>
 #include "radarcape/lib/opensky.hh"
 #include "core/buffer.h"
 #include "core/openskytypes.h"
@@ -348,7 +349,7 @@ static Suite * lib_suite()
 	Suite * s = suite_create("Lib");
 
 	TCase * tc = tcase_create("StartStop");
-	tcase_add_exit_test(tc, test_start_fail, 1);
+	tcase_add_test_raise_signal(tc, test_start_fail, SIGABRT);
 	tcase_add_test(tc, test_start_stop);
 	tcase_add_test(tc, test_deviceId);
 	suite_add_tcase(s, tc);

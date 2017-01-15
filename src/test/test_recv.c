@@ -13,7 +13,7 @@
 #include "core/openskytypes.h"
 #include "core/recv.h"
 #include "core/buffer.h"
-#include "util/statistics.h"
+#include "core/filter.h"
 #include "util/cfgfile.h"
 
 static void setup()
@@ -56,10 +56,11 @@ START_TEST(test_recv_frame)
 	ck_assert_ptr_ne(frame, NULL);
 	ck_assert_uint_eq(frame->raw_len, len);
 	ck_assert(!memcmp(frame->raw, frm, len));
-	ck_assert_uint_eq(STAT_stats.RECV_frameType[OPENSKY_FRAME_TYPE_MODE_S_LONG],
-		1);
-	ck_assert_uint_eq(STAT_stats.RECV_modeSType[('a' >> 3) & 0x1f], 1);
-	ck_assert_uint_eq(STAT_stats.RECV_framesUnsynchronized, 1);
+	struct FILTER_Statistics stats;
+	FILTER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.framesByType[OPENSKY_FRAME_TYPE_MODE_S_LONG], 1);
+	ck_assert_uint_eq(stats.modeSByType[('a' >> 3) & 0x1f], 1);
+	ck_assert_uint_eq(stats.unsynchronized, 1);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -84,7 +85,9 @@ START_TEST(test_filter_unsynchronized)
 
 	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_eq(frame, NULL);
-	ck_assert_uint_eq(STAT_stats.RECV_framesUnsynchronized, 1);
+	struct FILTER_Statistics stats;
+	FILTER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.unsynchronized, 1);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -114,7 +117,9 @@ START_TEST(test_filter_synchronized)
 	ck_assert_ptr_ne(frame, NULL);
 	ck_assert_uint_eq(frame->raw_len, len2);
 	ck_assert(!memcmp(frame->raw, frm2, len2));
-	ck_assert_uint_eq(STAT_stats.RECV_framesUnsynchronized, 0);
+	struct FILTER_Statistics stats;
+	FILTER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.unsynchronized, 0);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -139,7 +144,9 @@ START_TEST(test_filter_modeac)
 
 	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_eq(frame, NULL);
-	ck_assert_uint_eq(STAT_stats.RECV_framesFiltered, 1);
+	struct FILTER_Statistics stats;
+	FILTER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.filtered, 1);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -164,8 +171,10 @@ START_TEST(test_filter_type)
 
 	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_eq(frame, NULL);
-	ck_assert_uint_eq(STAT_stats.RECV_framesFiltered, 1);
-	ck_assert_uint_eq(STAT_stats.RECV_modeSFiltered, 1);
+	struct FILTER_Statistics stats;
+	FILTER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.filtered, 1);
+	ck_assert_uint_eq(stats.modeSfiltered, 1);
 
 	COMP_stopAll();
 	COMP_destructAll();
@@ -193,7 +202,10 @@ START_TEST(test_filter_extsquitter)
 	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(250);
 	ck_assert_ptr_ne(frame, NULL);
 
-	ck_assert_uint_eq(STAT_stats.RECV_modeSType[_i], 1);
+	struct FILTER_Statistics stats;
+	FILTER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.filtered, 0);
+	ck_assert_uint_eq(stats.modeSByType[_i], 1);
 
 	COMP_stopAll();
 	COMP_destructAll();

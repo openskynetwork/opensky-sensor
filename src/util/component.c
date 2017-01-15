@@ -425,3 +425,11 @@ static void destructUntil(const struct ComponentI * end)
 	for (ci = end->prev; ci; ci = ci->prev)
 		destruct(ci);
 }
+
+void COMP_resetAll()
+{
+	struct ComponentI * ci;
+	for (ci = head; ci; ci = ci->next)
+		if (ci->comp->onReset)
+			ci->comp->onReset();
+}

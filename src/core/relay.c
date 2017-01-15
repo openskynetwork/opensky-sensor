@@ -13,7 +13,6 @@
 #include "util/cfgfile.h"
 #include "util/threads.h"
 #include "util/util.h"
-#include "util/statistics.h"
 
 static void mainloop();
 
@@ -52,7 +51,6 @@ static inline bool sendFrame(const struct OPENSKY_RawFrame * frame)
 static inline bool sendKeepalive()
 {
 	char buf[] = { BEAST_SYNC, BEAST_TYPE_KEEP_ALIVE };
-	++STAT_stats.NET_keepAlives;
 	return NET_send(buf, sizeof buf);
 }
 

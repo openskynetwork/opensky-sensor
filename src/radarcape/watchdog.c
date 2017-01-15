@@ -44,9 +44,6 @@ static void mainloop()
 	while (1) {
 		GPIO_set(GPIO);
 		GPIO_clear(GPIO);
-#ifndef WD_ONLY
-		++STAT_stats.WD_events;
-#endif
 		sleep(REPEAT);
 	}
 }

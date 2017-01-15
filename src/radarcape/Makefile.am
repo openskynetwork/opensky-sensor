@@ -17,7 +17,7 @@ endif
 # common sources of radarcape input
 radarcape_sources = main.c \
 	watchdog.h fpga.h \
-	rc-input.h radarcape.c \
+	rc-input.h radarcape.h radarcape.c \
 	../gps/gps_input.h \
 	../gps/gps_recv.h ../gps/gps_recv.c ../gps/gps_parser.h ../gps/gps_parser.c
 

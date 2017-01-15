@@ -10,12 +10,6 @@
 #include "util/cfgfile.h"
 #include "util/component.h"
 
-extern "C" {
-
-void BUF_fillStatistics() {}
-
-}
-
 int main()
 {
 	COMP_register(&INPUT_comp);

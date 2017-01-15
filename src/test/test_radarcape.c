@@ -13,8 +13,8 @@
 #include "core/filter.h"
 #include "core/buffer.h"
 #include "util/component.h"
-#include "util/statistics.h"
 #include "util/cfgfile.h"
+#include "radarcape/radarcape.h"
 
 static void setup()
 {
@@ -367,7 +367,10 @@ START_TEST(test_decode_unsynchronized_start)
 	ck_assert(!memcmp(decoded.payload, "ab", 2));
 	ck_assert_uint_eq(frame.raw_len, len);
 	ck_assert(!memcmp(frame.raw, frm + 2, len));
-	ck_assert_uint_eq(STAT_stats.RECV_outOfSync, 1);
+
+	struct RADARCAPE_Statistics stats;
+	RADARCAPE_getStatistics(&stats);
+	ck_assert_uint_eq(stats.outOfSync, 1);
 }
 END_TEST
 
@@ -398,7 +401,9 @@ START_TEST(test_decode_unsynchronized_type)
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
 	ck_assert_uint_eq(frame.raw_len, len);
 	ck_assert(!memcmp(frame.raw, frm + 5, len));
-	ck_assert_uint_eq(STAT_stats.RECV_outOfSync, 1);
+	struct RADARCAPE_Statistics stats;
+	RADARCAPE_getStatistics(&stats);
+	ck_assert_uint_eq(stats.outOfSync, 1);
 }
 END_TEST
 
@@ -429,7 +434,9 @@ START_TEST(test_decode_unsynchronized_header)
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
 	ck_assert_uint_eq(frame.raw_len, len);
 	ck_assert(!memcmp(frame.raw, frm + 4, len));
-	ck_assert_uint_eq(STAT_stats.RECV_outOfSync, 1);
+	struct RADARCAPE_Statistics stats;
+	RADARCAPE_getStatistics(&stats);
+	ck_assert_uint_eq(stats.outOfSync, 1);
 }
 END_TEST
 
@@ -460,7 +467,9 @@ START_TEST(test_decode_unsynchronized_payload)
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
 	ck_assert_uint_eq(frame.raw_len, len);
 	ck_assert(!memcmp(frame.raw, frm + 9, len));
-	ck_assert_uint_eq(STAT_stats.RECV_outOfSync, 1);
+	struct RADARCAPE_Statistics stats;
+	RADARCAPE_getStatistics(&stats);
+	ck_assert_uint_eq(stats.outOfSync, 1);
 }
 END_TEST
 
@@ -766,7 +775,9 @@ START_TEST(test_synchronize_peek_unsync)
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
 	ck_assert_uint_eq(frame.raw_len, len);
 	ck_assert(!memcmp(frame.raw, frm + 4, len));
-	ck_assert_uint_eq(STAT_stats.RECV_outOfSync, 1);
+	struct RADARCAPE_Statistics stats;
+	RADARCAPE_getStatistics(&stats);
+	ck_assert_uint_eq(stats.outOfSync, 1);
 }
 END_TEST
 
@@ -801,7 +812,9 @@ START_TEST(test_synchronize_peek_unsync_at_end)
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
 	ck_assert_uint_eq(frame.raw_len, len);
 	ck_assert(!memcmp(frame.raw, frm2 + 1, len));
-	ck_assert_uint_eq(STAT_stats.RECV_outOfSync, 1);
+	struct RADARCAPE_Statistics stats;
+	RADARCAPE_getStatistics(&stats);
+	ck_assert_uint_eq(stats.outOfSync, 1);
 }
 END_TEST
 
@@ -835,7 +848,9 @@ START_TEST(test_synchronize_peek_sync_at_end)
 	ck_assert(!memcmp(decoded.payload, "abcdefghijklmn", 14));
 	ck_assert_uint_eq(frame.raw_len, len);
 	ck_assert(!memcmp(frame.raw, frm2, len));
-	ck_assert_uint_eq(STAT_stats.RECV_outOfSync, 1);
+	struct RADARCAPE_Statistics stats;
+	RADARCAPE_getStatistics(&stats);
+	ck_assert_uint_eq(stats.outOfSync, 1);
 }
 END_TEST
 

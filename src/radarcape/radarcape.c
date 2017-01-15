@@ -11,6 +11,7 @@
 #include <endian.h>
 #include <inttypes.h>
 #include <unistd.h>
+#include "radarcape.h"
 #include "rc-input.h"
 #include "core/openskytypes.h"
 #include "core/filter.h"
@@ -29,6 +30,8 @@ static uint8_t buf[128];
 static uint8_t * bufCur;
 /** buffer end */
 static uint8_t * bufEnd;
+
+static struct RADARCAPE_Statistics stats;
 
 /** Radarcape Options */
 enum RADARCAPE_OPTION {
@@ -100,12 +103,14 @@ static struct CFG_Section cfg = {
 };
 
 static bool construct();
+static void resetStats();
 
 const struct Component INPUT_comp = {
 	.description = PFX,
 	.onRegister = &RC_INPUT_register,
 	.onConstruct = &construct,
 	.config = &cfg,
+	.onReset = &resetStats,
 	.dependencies = { NULL }
 };
 
@@ -203,7 +208,7 @@ bool INPUT_getFrame(struct OPENSKY_RawFrame * raw,
 		if (unlikely(sync != BEAST_SYNC)) {
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Out of Sync: got 0x%02" PRIx8
 				" instead of 0x%02x", sync, BEAST_SYNC);
-			++STAT_stats.RECV_outOfSync;
+			++stats.outOfSync;
 synchronize:
 			if (unlikely(!synchronize()))
 				return false;
@@ -231,12 +236,12 @@ decode_frame:
 		case BEAST_SYNC: /* resynchronize */
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Out of Sync: got unescaped 0x%02x "
 				"in frame, resynchronizing", BEAST_SYNC);
-			++STAT_stats.RECV_outOfSync;
+			++stats.outOfSync;
 			goto synchronize;
 		default:
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Unknown frame type %c, "
 				"resynchronizing", type);
-			++STAT_stats.RECV_frameTypeUnknown;
+			++stats.frameTypeUnknown;
 			goto synchronize;
 		}
 		decoded->frameType = type - '1';
@@ -248,7 +253,7 @@ decode_frame:
 		__attribute__((aligned(8))) union { uint8_t u8[7]; uint64_t u64; } hdr;
 		enum DECODE_STATUS rs = decode(hdr.u8, sizeof hdr.u8, raw);
 		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
-			++STAT_stats.RECV_outOfSync;
+			++stats.outOfSync;
 			goto decode_frame;
 		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
@@ -259,7 +264,7 @@ decode_frame:
 		/* read payload */
 		rs = decode(decoded->payload, payload_len, raw);
 		if (unlikely(rs == DECODE_STATUS_RESYNC)) {
-			++STAT_stats.RECV_outOfSync;
+			++stats.outOfSync;
 			goto decode_frame;
 		} else if (unlikely(rs == DECODE_STATUS_CONNFAIL))
 			return false;
@@ -399,4 +404,14 @@ redo:
 		}
 	} while (likely(discardAndFill()));
 	return false;
+}
+
+static void resetStats()
+{
+	memset(&stats, 0, sizeof stats);
+}
+
+void RADARCAPE_getStatistics(struct RADARCAPE_Statistics * statistics)
+{
+	memcpy(statistics, &stats, sizeof *statistics);
 }

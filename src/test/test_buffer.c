@@ -9,7 +9,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "core/buffer.h"
-#include "util/statistics.h"
 #include "util/component.h"
 #include "util/cfgfile.h"
 
@@ -269,8 +268,9 @@ START_TEST(test_sacrifice)
 	frame4 = BUF_getFrameTimeout(0);
 	ck_assert_ptr_eq(frame4, NULL);
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_sacrifices, 1);
+	struct BUFFER_Statistics stats;
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.discardedAll, 1);
 }
 END_TEST
 
@@ -294,8 +294,9 @@ START_TEST(test_sacrifice_n)
 	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(0);
 	ck_assert_ptr_eq(frame, NULL);
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_sacrifices, _i);
+	struct BUFFER_Statistics stats;
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.discardedAll, _i);
 }
 END_TEST
 
@@ -328,8 +329,9 @@ START_TEST(test_sacrifice_get)
 	frame2 = BUF_getFrameTimeout(0);
 	ck_assert_ptr_eq(frame2, NULL);
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_sacrifices, 1);
+	struct BUFFER_Statistics stats;
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.discardedAll, 1);
 }
 END_TEST
 
@@ -366,8 +368,9 @@ START_TEST(test_sacrifice_put_get)
 	frame5 = BUF_getFrameTimeout(0);
 	ck_assert_ptr_eq(frame5, NULL);
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_sacrifices, 1);
+	struct BUFFER_Statistics stats;
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.discardedAll, 1);
 }
 END_TEST
 
@@ -418,8 +421,9 @@ START_TEST(test_dynamic_sacrifice)
 	const struct OPENSKY_RawFrame * frame = BUF_getFrameTimeout(0);
 	ck_assert_ptr_eq(frame, NULL);
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_sacrifices, 1);
+	struct BUFFER_Statistics stats;
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.discardedAll, 1);
 
 	COMP_destructAll();
 }
@@ -454,8 +458,9 @@ START_TEST(test_dynamic_exhaust)
 	while ((frame2 = BUF_getFrameTimeout(0)) != NULL)
 		BUF_releaseFrame(frame2);
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_sacrifices, 1);
+	struct BUFFER_Statistics stats;
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.discardedAll, 1);
 
 	COMP_destructAll();
 }
@@ -487,7 +492,10 @@ START_TEST(test_dynamic_uncollect)
 	ck_assert_ptr_eq(static1_1, static1);
 	BUF_releaseFrame(static1_1);
 
-	ck_assert_uint_eq(STAT_stats.BUF_uncollects, 0);
+	struct BUFFER_Statistics stats;
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.uncollectedPools, 0);
+
 	BUF_runGC();
 
 	struct OPENSKY_RawFrame * static1_2 = BUF_newFrame();
@@ -500,7 +508,8 @@ START_TEST(test_dynamic_uncollect)
 	ck_assert_ptr_ne(dynamic2, static2);
 	ck_assert_ptr_ne(dynamic2, dynamic1);
 	BUF_commitFrame(dynamic2);
-	ck_assert_uint_eq(STAT_stats.BUF_uncollects, 1);
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.uncollectedPools, 1);
 
 	const struct OPENSKY_RawFrame * frame;
 	frame = BUF_getFrame();
@@ -537,23 +546,24 @@ START_TEST(test_dynamic_destroy)
 	ck_assert_ptr_ne(static2, NULL);
 	BUF_commitFrame(static2);
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_pools, 0);
+	struct BUFFER_Statistics stats;
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.dynPools, 0);
 	struct OPENSKY_RawFrame * dynamic1 = BUF_newFrame();
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_pools, 1);
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.dynPools, 1);
 	ck_assert_ptr_ne(dynamic1, NULL);
 	ck_assert_ptr_ne(dynamic1, static1);
 	ck_assert_ptr_ne(dynamic1, static2);
 	BUF_commitFrame(dynamic1);
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_pools, 1);
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.dynPools, 1);
 
 	BUF_runGC();
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_pools, 1);
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.dynPools, 1);
 
 	const struct OPENSKY_RawFrame * frame;
 	frame = BUF_getFrame();
@@ -568,11 +578,11 @@ START_TEST(test_dynamic_destroy)
 
 	ck_assert_ptr_eq(BUF_getFrameTimeout(0), NULL);
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_pools, 1);
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.dynPools, 1);
 	BUF_runGC();
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_pools, 0);
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.dynPools, 0);
 
 	COMP_destructAll();
 }
@@ -604,13 +614,14 @@ START_TEST(test_dynamic_destroy_2nd)
 
 	BUF_commitFrame(frame);
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_pools, 2);
+	struct BUFFER_Statistics stats;
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.dynPools, 2);
 
 	BUF_runGC();
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_pools, 1);
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.dynPools, 1);
 
 	COMP_destructAll();
 }
@@ -627,15 +638,16 @@ START_TEST(test_flush)
 		BUF_commitFrame(frame);
 	}
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_queue, 10 - _i);
-	ck_assert_uint_eq(STAT_stats.BUF_flushes, 0);
+	struct BUFFER_Statistics stats;
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.queueSize, 10 - _i);
+	ck_assert_uint_eq(stats.flushes, 0);
 
 	BUF_flush();
 
-	BUF_fillStatistics();
-	ck_assert_uint_eq(STAT_stats.BUF_queue, 0);
-	ck_assert_uint_eq(STAT_stats.BUF_flushes, 1);
+	BUFFER_getStatistics(&stats);
+	ck_assert_uint_eq(stats.queueSize, 0);
+	ck_assert_uint_eq(stats.flushes, 1);
 
 	ck_assert_ptr_eq(BUF_getFrameTimeout(0), NULL);
 }
