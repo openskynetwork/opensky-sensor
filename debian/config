@@ -8,7 +8,7 @@ version '2.0';
 settitle 'openskyd/title';
 
 my $first = 1;
-my @skip;
+my (undef, $user) = get "openskyd/username";
 
 while (1) {
 	my @fail = (
@@ -31,6 +31,13 @@ while (1) {
 	go();
 
 	$first = 0;
+}
+
+my (undef, $newuser) = get "openskyd/username";
+if (defined($user) && $user ne "" &&
+	(!defined($newuser) || $user ne $newuser)) {
+	input high => "openskyd/usernamechanged";
+	go();
 }
 
 # check if value is not empty

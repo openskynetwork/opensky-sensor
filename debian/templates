@@ -43,6 +43,13 @@ Description: This feeder only allows usernames up to length of 40 characters.
  Use a shorter name, or leave this field blank for now and send an email to
  <contact@opensky-network.org>.
 
+Template: openskyd/usernamechanged
+Type: error
+Description: You have changed your username. This is not supported by this feeder.
+ Please note, that your feeder data will still be associated with your old
+ username. If you need to change your username for this sensor,
+ please send an email to <contact@opensky-network.org>.
+
 Template: openskyd/port
 Type: string
 Default: 30005
