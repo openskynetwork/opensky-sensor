@@ -3,8 +3,5 @@ Upstream-Name: openskyd
 Source: http://www.opensky-network.org
 
 Files: *
-Copyright: 2015-2017 Markus Engel <engel@opensky-network.org>
-License: No License
- No redistribution or modification allowed.
- .
-
+Copyright: 2015-2017 OpenSky Network <contact@opensky-network.org>
+License: BSD-3-clause
