@@ -1,3 +1,10 @@
+openskyd (2.0.1-1) stable; urgency=low
+
+  [ debian ]
+  * Feeder: fixed range check for position
+
+ -- Markus Engel <engel@opensky-network.org>  Wed, 08 Mar 2017 19:37:50 +0100
+
 openskyd (2.0.0-1) stable; urgency=medium
 
   * Dump1090 feeder

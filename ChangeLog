@@ -1,3 +1,6 @@
+2017-03-08 Markus Engel <engel@opensky-network.org>
+	* Feeder: fixed range check for position
+	
 2016-11-27 Markus Engel <engel@opensky-network.org>
 	* Feeder: added dump1090 feeder with serial number protocol
 
