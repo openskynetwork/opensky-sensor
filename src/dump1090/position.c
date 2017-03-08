@@ -82,12 +82,12 @@ static bool checkCfg(const struct CFG_Section * sect)
 			LOG_logf(LOG_LEVEL_EMERG, PFX, "%s is not configured", opt->name);
 	}
 
-	if (latitude < -180 || latitude > 180)
-		LOG_log(LOG_LEVEL_EMERG, PFX, "Latitude must be given within +/-180 "
+	if (latitude < -90 || latitude > 90)
+		LOG_log(LOG_LEVEL_EMERG, PFX, "Latitude must be given within +/-90 "
 			"degrees");
 
-	if (longitude < -90 || longitude > 90)
-		LOG_log(LOG_LEVEL_EMERG, PFX, "Longitude must be given within +/-90 "
+	if (longitude < -180 || longitude > 180)
+		LOG_log(LOG_LEVEL_EMERG, PFX, "Longitude must be given within +/-180 "
 			"degrees");
 
 	return true;
