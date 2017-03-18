@@ -58,7 +58,7 @@ START_TEST(test_recv_frame)
 	ck_assert(!memcmp(frame->raw, frm, len));
 	struct FILTER_Statistics stats;
 	FILTER_getStatistics(&stats);
-	ck_assert_uint_eq(stats.framesByType[OPENSKY_FRAME_TYPE_MODE_S_LONG], 1);
+	ck_assert_uint_eq(stats.framesByType[OPENSKY_FRAME_TYPE_TO_INDEX(OPENSKY_FRAME_TYPE_MODE_S_LONG)], 1);
 	ck_assert_uint_eq(stats.modeSByType[('a' >> 3) & 0x1f], 1);
 	ck_assert_uint_eq(stats.unsynchronized, 1);
 

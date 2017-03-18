@@ -10,7 +10,7 @@
 #include <time.h>
 #include <errno.h>
 #include "core/serial.h"
-#include "core/beast.h"
+#include "core/openskytypes.h"
 #include "core/network.h"
 #include "core/tb.h"
 #include "util/threads.h"
@@ -138,7 +138,7 @@ cleanup:
 static bool sendSerialRequest()
 {
 	/* build message */
-	uint8_t buf[2] = { BEAST_SYNC, BEAST_TYPE_SERIAL_REQ };
+	uint8_t buf[2] = { OPENSKY_SYNC, OPENSKY_FRAME_TYPE_SERIAL_REQ };
 	/* send it */
 	return NET_send(buf, sizeof buf);
 }

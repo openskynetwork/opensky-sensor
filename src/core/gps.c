@@ -12,7 +12,7 @@
 #include <assert.h>
 #include "gps.h"
 #include "network.h"
-#include "beast.h"
+#include "openskytypes.h"
 #include "util/threads.h"
 #include "util/endec.h"
 #include "util/log.h"
@@ -67,7 +67,8 @@ void GPS_setPosition(double latitude, double longitude, double altitude)
 static bool sendPosition(const struct GPS_Position * position)
 {
 	/* build message */
-	uint8_t buf[2 + 3 * 8 * 2] = { BEAST_SYNC, BEAST_TYPE_GPS_POSITION };
+	uint8_t buf[2 + 3 * 8 * 2] = { OPENSKY_SYNC,
+		OPENSKY_FRAME_TYPE_GPS_POSITION };
 
 	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending position %+.4f°, %+.4f°, %+.2fm",
 		position->latitude, position->longitute, position->altitude);

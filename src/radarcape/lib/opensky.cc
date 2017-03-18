@@ -25,6 +25,11 @@
 #include "util/log.h"
 #include "util/serial_eth.h"
 
+static_assert((int)MessageType_ModeAC == (int)OPENSKY_FRAME_TYPE_MODE_AC &&
+	(int)MessageType_ModeSShort == (int)OPENSKY_FRAME_TYPE_MODE_S_SHORT &&
+	(int)MessageType_ModeSLong == (int)OPENSKY_FRAME_TYPE_MODE_S_LONG,
+	"Message type mismatch");
+
 extern "C" {
 
 /** Reconfigure the input from the filter configuration */
@@ -63,7 +68,7 @@ void init()
 	COMP_register(&FILTER_comp);
 	COMP_fixup();
 
-	LOGIN_setDeviceType(BEAST_DEVICE_TYPE_RADARCAPE_LIB);
+	LOGIN_setDeviceType(OPENSKY_DEVICE_TYPE_RADARCAPE_LIB);
 
 	CFG_loadDefaults();
 
@@ -141,14 +146,14 @@ void output_message(const unsigned char * const msg,
 		return;
 	}
 
-	enum OPENSKY_FRAME_TYPE frameType = (enum OPENSKY_FRAME_TYPE) (messageType - '1');
+	enum OPENSKY_FRAME_TYPE frameType = (enum OPENSKY_FRAME_TYPE)(messageType);
 
 	if (!FILTER_filter(frameType, msg[7]))
 		return;
 
 	struct OPENSKY_RawFrame * out = BUF_newFrame();
 	assert(out);
-	out->raw[0] = '\x1a';
+	out->raw[0] = BEAST_SYNC;
 	out->raw[1] = (uint8_t) messageType;
 	out->rawLen = BEAST_encode(out->raw + 2, msg, msgLen) + 2;
 

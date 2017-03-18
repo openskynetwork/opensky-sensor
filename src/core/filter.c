@@ -148,7 +148,7 @@ void FILTER_setSynchronized(bool synchronized)
  */
 bool FILTER_filter(enum OPENSKY_FRAME_TYPE frameType, uint8_t firstByte)
 {
-	++stats.framesByType[frameType];
+	++stats.framesByType[OPENSKY_FRAME_TYPE_TO_INDEX(frameType)];
 
 	/* apply synchronization filter */
 	if (unlikely(!isSynchronized)) {

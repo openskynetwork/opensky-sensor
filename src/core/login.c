@@ -21,9 +21,9 @@
 static const char PFX[] = "LOGIN";
 
 /** Device Type, must be set using @LOGIN_login */
-static enum BEAST_DEVICE_TYPE deviceType = BEAST_DEVICE_TYPE_INVALID;
+static enum OPENSKY_DEVICE_TYPE deviceType = OPENSKY_DEVICE_TYPE_INVALID;
 /** OpenSky user name (can be empty by setting the first byte to \0 */
-static char user[BEAST_MAX_USERNAME + 1];
+static char user[OPENSKY_MAX_USERNAME + 1];
 
 /** Daemon Version */
 struct Version {
@@ -56,10 +56,10 @@ bool LOGIN_login()
 /** Set device type. Must be called once, before trying to login
  * @param type device type
  */
-void LOGIN_setDeviceType(enum BEAST_DEVICE_TYPE type)
+void LOGIN_setDeviceType(enum OPENSKY_DEVICE_TYPE type)
 {
-	assert(deviceType == BEAST_DEVICE_TYPE_INVALID);
-	assert(type != BEAST_DEVICE_TYPE_INVALID);
+	assert(deviceType == OPENSKY_DEVICE_TYPE_INVALID);
+	assert(type != OPENSKY_DEVICE_TYPE_INVALID);
 	deviceType = type;
 }
 
@@ -72,7 +72,7 @@ void LOGIN_setUsername(const char * username)
 
 	if (username) {
 		size_t len = strlen(username);
-		if (len > BEAST_MAX_USERNAME) {
+		if (len > OPENSKY_MAX_USERNAME) {
 			LOG_logf(LOG_LEVEL_WARN, PFX,
 				"Username '%s' is too long, not sending any", username);
 		} else {
@@ -118,10 +118,10 @@ static void getVersion(struct Version * version)
  */
 static bool sendDeviceId()
 {
-	assert(deviceType != BEAST_DEVICE_TYPE_INVALID);
+	assert(deviceType != OPENSKY_DEVICE_TYPE_INVALID);
 
 	/* build message */
-	uint8_t buf[2 + 4 * 4 * 2] = { BEAST_SYNC, BEAST_TYPE_DEVICE_ID };
+	uint8_t buf[2 + 4 * 4 * 2] = { OPENSKY_SYNC, OPENSKY_FRAME_TYPE_DEVICE_ID };
 
 	/* encode device type into message */
 	uint8_t * ptr = buf + 2;
@@ -151,7 +151,7 @@ static bool sendDeviceId()
 static bool sendSerial()
 {
 	/* build message */
-	uint8_t buf[2 + 4 * 2] = { BEAST_SYNC, BEAST_TYPE_SERIAL };
+	uint8_t buf[2 + 4 * 2] = { OPENSKY_SYNC, OPENSKY_FRAME_TYPE_SERIAL };
 
 	/* note: getting the serial number can involve message exchange with the
 	 * OpenSky network, which can also fail.
@@ -194,18 +194,20 @@ static bool sendUsername()
 		return true;
 
 	size_t ulen = strlen(user);
-	if (ulen > BEAST_MAX_USERNAME) {
+	if (ulen > OPENSKY_MAX_USERNAME) {
 		LOG_logf(LOG_LEVEL_WARN, PFX, "Username '%s' will be truncated to %u "
-			"characters", user, BEAST_MAX_USERNAME);
+			"characters", user, OPENSKY_MAX_USERNAME);
 	}
 
 	/* build message */
-	uint8_t buf[2 + 2 * BEAST_MAX_USERNAME] = { BEAST_SYNC, BEAST_TYPE_USER };
+	uint8_t buf[2 + 2 * OPENSKY_MAX_USERNAME] = { OPENSKY_SYNC,
+		OPENSKY_FRAME_TYPE_USER };
 	/* encode user name into message */
-	size_t len = 2 + BEAST_encode(buf + 2, (uint8_t*)user, BEAST_MAX_USERNAME);
+	size_t len = 2 + BEAST_encode(buf + 2, (uint8_t*)user,
+		OPENSKY_MAX_USERNAME);
 
-	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Username '%.*s'", BEAST_MAX_USERNAME,
-		user);
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Username '%.*s'",
+		OPENSKY_MAX_USERNAME, user);
 
 	/* send it */
 	return NET_send(buf, len);

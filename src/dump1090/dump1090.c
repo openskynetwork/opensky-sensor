@@ -49,7 +49,7 @@ static const char PFX[] = "MAIN";
 #endif
 
 /** Configuration: user name */
-static char username[BEAST_MAX_USERNAME + 1];
+static char username[OPENSKY_MAX_USERNAME + 1];
 
 /** Configuration Descriptor */
 static struct CFG_Section cfgDesc =
@@ -61,7 +61,7 @@ static struct CFG_Section cfgDesc =
 			.name = "Username",
 			.type = CFG_VALUE_TYPE_STRING,
 			.var = &username,
-			.maxlen = BEAST_MAX_USERNAME,
+			.maxlen = OPENSKY_MAX_USERNAME,
 		}
 	}
 };
@@ -149,7 +149,7 @@ int main(int argc, char * argv[])
 			"quitting");
 	}
 
-	LOGIN_setDeviceType(BEAST_DEVICE_TYPE_FEEDER);
+	LOGIN_setDeviceType(OPENSKY_DEVICE_TYPE_FEEDER);
 	LOGIN_setUsername(username);
 
 	if (!COMP_startAll()) {

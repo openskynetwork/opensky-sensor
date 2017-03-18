@@ -66,7 +66,7 @@ static inline bool sendFrame(const struct OPENSKY_RawFrame * frame)
 static inline bool sendKeepalive()
 {
 	/* Build message */
-	char buf[] = { BEAST_SYNC, BEAST_TYPE_KEEP_ALIVE };
+	char buf[] = { OPENSKY_SYNC, OPENSKY_FRAME_TYPE_KEEP_ALIVE };
 	/* send it */
 	return NET_send(buf, sizeof buf);
 }

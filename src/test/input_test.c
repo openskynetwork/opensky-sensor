@@ -66,7 +66,7 @@ size_t RC_INPUT_write(uint8_t * buf, size_t bufLen)
 	ck_assert(!(bufLen % 3));
 	uint32_t off;
 	for (off = 0; off < bufLen; off += 3) {
-		ck_assert_int_eq(buf[off + 0], '\x1a');
+		ck_assert_int_eq(buf[off + 0], BEAST_SYNC);
 		ck_assert_int_eq(buf[off + 1], '1');
 		uint8_t type = buf[off + 2];
 		ck_assert(('c' <= type && type <= 'j') ||
@@ -82,8 +82,8 @@ size_t RC_INPUT_write(uint8_t * buf, size_t bufLen)
 
 static inline void append(uint8_t ** buf, uint8_t c)
 {
-	if ((*(*buf)++ = c) == 0x1a)
-		*(*buf)++ = 0x1a;
+	if ((*(*buf)++ = c) == BEAST_SYNC)
+		*(*buf)++ = BEAST_SYNC;
 }
 
 static inline void encode(uint8_t ** buf, const uint8_t * src, size_t len)
@@ -95,8 +95,8 @@ static inline void encode(uint8_t ** buf, const uint8_t * src, size_t len)
 size_t RC_INPUT_buildFrame(uint8_t * buf, enum OPENSKY_FRAME_TYPE type,
 	uint64_t mlat, int8_t siglevel, const char * payload, size_t payloadLen)
 {
-	buf[0] = '\x1a';
-	buf[1] = type + '1';
+	buf[0] = BEAST_SYNC;
+	buf[1] = type;
 
 	uint8_t * ptr = buf + 2;
 	mlat = htobe64(mlat);

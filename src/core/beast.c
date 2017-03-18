@@ -6,7 +6,11 @@
 #include <stdbool.h>
 #include <string.h>
 #include "beast.h"
+#include "openskytypes.h"
 #include "util/util.h"
+
+_Static_assert((int)BEAST_SYNC == (int)OPENSKY_SYNC,
+	"Mismatch in SYNC");
 
 /** Escape all SYNC characters in a packet to comply with the beast frame
  *   format.

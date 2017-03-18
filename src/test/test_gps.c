@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "core/gps.h"
-#include "core/beast.h"
+#include "core/openskytypes.h"
 #include "core/network.h"
 #include "util/endec.h"
 
@@ -20,8 +20,8 @@ bool NET_send(const void * buf, size_t len)
 	ck_assert_uint_eq(len, 2 + sizeof(uint64_t) * 3);
 
 	const uint8_t * b = buf;
-	ck_assert_uint_eq(b[0], BEAST_SYNC);
-	ck_assert_uint_eq(b[1], BEAST_TYPE_GPS_POSITION);
+	ck_assert_uint_eq(b[0], OPENSKY_SYNC);
+	ck_assert_uint_eq(b[1], OPENSKY_FRAME_TYPE_GPS_POSITION);
 
 	memcpy(sentPosition, b + 2, len - 2);
 

@@ -13,12 +13,13 @@
 #include "core/buffer.h"
 #include "core/openskytypes.h"
 #include "core/login.h"
+#include "core/openskytypes.h"
 
-static enum BEAST_DEVICE_TYPE deviceType;
+static enum OPENSKY_DEVICE_TYPE deviceType;
 
 extern "C" {
 
-void LOGIN_setDeviceType(enum BEAST_DEVICE_TYPE type)
+void LOGIN_setDeviceType(enum OPENSKY_DEVICE_TYPE type)
 {
 	deviceType = type;
 }
@@ -62,7 +63,7 @@ static void sendFrame(const struct OPENSKY_DecodedFrame * frame)
 	memcpy(msg, &mlat, 6);
 	msg[6] = frame->siglevel;
 	memcpy(&msg[7], frame->payload, frame->payloadLen);
-	OpenSky::output_message(msg, (enum MessageType_T)(frame->frameType + '1'));
+	OpenSky::output_message(msg, (enum MessageType_T)(frame->frameType));
 }
 
 static void unraw(uint8_t * buf, size_t len, const uint8_t ** raw,
@@ -74,10 +75,10 @@ static void unraw(uint8_t * buf, size_t len, const uint8_t ** raw,
 		uint8_t chr = *((*raw)++);
 		*buf++ = chr;
 		--*rawLen;
-		if (chr == '\x1a') {
+		if (chr == BEAST_SYNC) {
 			ck_assert_uint_ne(*rawLen, 0);
 			chr = *((*raw)++);
-			ck_assert_uint_eq(chr, '\x1a');
+			ck_assert_uint_eq(chr, BEAST_SYNC);
 			--*rawLen;
 		}
 	}
@@ -90,10 +91,10 @@ static void checkRaw(const struct OPENSKY_RawFrame * raw,
 	ck_assert_uint_ge(raw->rawLen, 9);
 
 	/* sync */
-	ck_assert_uint_eq(raw->raw[0], '\x1a');
+	ck_assert_uint_eq(raw->raw[0], OPENSKY_SYNC);
 
 	/* frame type */
-	enum OPENSKY_FRAME_TYPE frameType = (enum OPENSKY_FRAME_TYPE)(raw->raw[1] - '1');
+	enum OPENSKY_FRAME_TYPE frameType = (enum OPENSKY_FRAME_TYPE)raw->raw[1];
 	ck_assert_uint_ge(frameType, OPENSKY_FRAME_TYPE_MODE_AC);
 	ck_assert_uint_le(frameType, OPENSKY_FRAME_TYPE_STATUS);
 
@@ -130,7 +131,7 @@ END_TEST
 START_TEST(test_deviceId)
 {
 	OpenSky::init();
-	ck_assert_uint_eq(deviceType, BEAST_DEVICE_TYPE_RADARCAPE_LIB);
+	ck_assert_uint_eq(deviceType, OPENSKY_DEVICE_TYPE_RADARCAPE_LIB);
 }
 END_TEST
 
@@ -163,7 +164,7 @@ START_TEST(test_frame_siglevel)
 	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
-	frame.siglevel = '\x1a';
+	frame.siglevel = BEAST_SYNC;
 
 	sendFrame(&frame);
 
@@ -180,7 +181,7 @@ START_TEST(test_frame_mlat_begin)
 	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
-	const uint8_t mlat[] = { '1', 'x', 3, 2, 4, '\x1a' };
+	const uint8_t mlat[] = { '1', 'x', 3, 2, 4, BEAST_SYNC };
 	memcpy(&frame.mlat, mlat, 6);
 
 	sendFrame(&frame);
@@ -198,7 +199,7 @@ START_TEST(test_frame_mlat_begin2)
 	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
-	const uint8_t mlat[] = { '1', 'x', 3, 2, '\x1a', '\x1a' };
+	const uint8_t mlat[] = { '1', 'x', 3, 2, BEAST_SYNC, BEAST_SYNC };
 	memcpy(&frame.mlat, mlat, 6);
 
 	sendFrame(&frame);
@@ -216,7 +217,7 @@ START_TEST(test_frame_mlat_middle)
 	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
-	const uint8_t mlat[] = { '1', 'x', 3, '\x1a', 1, 2 };
+	const uint8_t mlat[] = { '1', 'x', 3, BEAST_SYNC, 1, 2 };
 	memcpy(&frame.mlat, mlat, 6);
 
 	sendFrame(&frame);
@@ -234,7 +235,7 @@ START_TEST(test_frame_mlat_middle3)
 	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
-	const uint8_t mlat[] = { 'x', '\x1a', '\x1a', '\x1a', 3, 0 };
+	const uint8_t mlat[] = { 'x', BEAST_SYNC, BEAST_SYNC, BEAST_SYNC, 3, 0 };
 	memcpy(&frame.mlat, mlat, 6);
 
 	sendFrame(&frame);
@@ -252,7 +253,7 @@ START_TEST(test_frame_mlat_end)
 	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
-	const uint8_t mlat[] = { '\x1a', 'x', 3, 0, 2, 1 };
+	const uint8_t mlat[] = { BEAST_SYNC, 'x', 3, 0, 2, 1 };
 	memcpy(&frame.mlat, mlat, 6);
 
 	sendFrame(&frame);
@@ -270,7 +271,7 @@ START_TEST(test_frame_mlat_end2)
 	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
-	const uint8_t mlat[] = { '\x1a', '\x1a', 'x', 3, 0, 2 };
+	const uint8_t mlat[] = { BEAST_SYNC, BEAST_SYNC, 'x', 3, 0, 2 };
 	memcpy(&frame.mlat, mlat, 6);
 
 	sendFrame(&frame);
@@ -288,7 +289,7 @@ START_TEST(test_frame_mlat_begin_middle_end)
 	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
-	const uint8_t mlat[] = { '\x1a', 'x', '\x1a', 1, 0, '\x1a' };
+	const uint8_t mlat[] = { BEAST_SYNC, 'x', BEAST_SYNC, 1, 0, BEAST_SYNC };
 	memcpy(&frame.mlat, mlat, 6);
 
 	sendFrame(&frame);
@@ -306,7 +307,7 @@ START_TEST(test_frame_payload)
 	struct OPENSKY_DecodedFrame frame;
 	fillFrame(&frame);
 
-	frame.payload[_i] = '\x1a';
+	frame.payload[_i] = BEAST_SYNC;
 
 	sendFrame(&frame);
 

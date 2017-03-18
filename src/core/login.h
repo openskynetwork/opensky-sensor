@@ -3,7 +3,7 @@
 #ifndef _HAVE_LOGIN_H
 #define _HAVE_LOGIN_H
 
-#include "beast.h"
+#include "openskytypes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,7 +11,7 @@ extern "C" {
 
 bool LOGIN_login();
 
-void LOGIN_setDeviceType(enum BEAST_DEVICE_TYPE id);
+void LOGIN_setDeviceType(enum OPENSKY_DEVICE_TYPE type);
 void LOGIN_setUsername(const char * username);
 
 #ifdef __cplusplus

@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "input_test.h"
+#include "core/beast.h"
 #include "core/openskytypes.h"
 #include "core/input.h"
 #include "core/filter.h"
@@ -316,10 +317,11 @@ START_TEST(test_decode_escape)
 {
 	uint8_t frm[46];
 	struct TEST_Buffer buf = { .payload = frm };
-	const char msg[] =
-			"\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a";
+	const char msg[] = { BEAST_SYNC, BEAST_SYNC, BEAST_SYNC, BEAST_SYNC,
+		BEAST_SYNC, BEAST_SYNC, BEAST_SYNC, BEAST_SYNC, BEAST_SYNC,
+		BEAST_SYNC, BEAST_SYNC, BEAST_SYNC, BEAST_SYNC, BEAST_SYNC };
 	size_t len = RC_INPUT_buildFrame(frm, OPENSKY_FRAME_TYPE_MODE_S_LONG,
-			UINT64_C(0x1a1a1a1a1a1a), 0x1a, msg, 14);
+			UINT64_C(0x1a1a1a1a1a1a), BEAST_SYNC, msg, 14);
 	buf.length = len;
 	test.buffers = &buf;
 	test.nBuffers = 1;
@@ -335,7 +337,7 @@ START_TEST(test_decode_escape)
 	ck_assert_uint_eq(decoded.frameType, OPENSKY_FRAME_TYPE_MODE_S_LONG);
 	ck_assert_uint_eq(decoded.mlat, UINT64_C(0x1a1a1a1a1a1a));
 	ck_assert_uint_eq(decoded.payloadLen, 14);
-	ck_assert_int_eq(decoded.siglevel, 0x1a);
+	ck_assert_int_eq(decoded.siglevel, BEAST_SYNC);
 	ck_assert(!memcmp(decoded.payload, msg, 14));
 	ck_assert_uint_eq(frame.rawLen, len);
 	ck_assert(!memcmp(frame.raw, frm, len));
@@ -750,8 +752,8 @@ START_TEST(test_synchronize_peek_unsync)
 	uint8_t frm[46 + 4];
 	struct TEST_Buffer buf = { .payload = frm };
 	frm[0] = 'a';
-	frm[1] = '\x1a';
-	frm[2] = '\x1a';
+	frm[1] = BEAST_SYNC;
+	frm[2] = BEAST_SYNC;
 	frm[3] = 'b';
 	size_t len = RC_INPUT_buildFrame(frm + 4,
 			OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
@@ -787,11 +789,11 @@ START_TEST(test_synchronize_peek_unsync_at_end)
 	uint8_t frm2[46 + 1];
 	struct TEST_Buffer buf[2] = { { .payload = frm }, { .payload = frm2 } };
 	frm[0] = 'a';
-	frm[1] = '\x1a';
+	frm[1] = BEAST_SYNC;
 	size_t len = RC_INPUT_buildFrame(frm2 + 1,
 			OPENSKY_FRAME_TYPE_MODE_S_LONG, UINT64_C(0xcafebabedead), -128,
 			"abcdefghijklmn", 14);
-	frm2[0] = '\x1a';
+	frm2[0] = BEAST_SYNC;
 	buf[0].length = sizeof frm;
 	buf[1].length = len + 1;
 	test.buffers = buf;
@@ -825,7 +827,7 @@ START_TEST(test_synchronize_peek_sync_at_end)
 	struct TEST_Buffer buf[2] = { { .payload = frm },
 			{ .payload = frm2 + 1 } };
 	frm[0] = 'a';
-	frm[1] = '\x1a';
+	frm[1] = BEAST_SYNC;
 	size_t len = RC_INPUT_buildFrame(frm2, OPENSKY_FRAME_TYPE_MODE_S_LONG,
 			UINT64_C(0xcafebabedead), -128, "abcdefghijklmn", 14);
 	buf[0].length = sizeof frm;

@@ -22,6 +22,12 @@
 #include "util/util.h"
 #include "util/port/endian.h"
 
+_Static_assert((int)BEAST_TYPE_MODE_AC == (int)OPENSKY_FRAME_TYPE_MODE_AC &&
+	(int)BEAST_TYPE_MODE_S_SHORT == (int)OPENSKY_FRAME_TYPE_MODE_S_SHORT &&
+	(int)BEAST_TYPE_MODE_S_LONG == (int)OPENSKY_FRAME_TYPE_MODE_S_LONG &&
+	(int)BEAST_TYPE_STATUS == (int)OPENSKY_FRAME_TYPE_STATUS,
+	"Message type mismatch");
+
 /** Component: Prefix */
 static const char PFX[] = "RC";
 
@@ -266,7 +272,7 @@ decode_frame:
 			++stats.frameTypeUnknown;
 			goto synchronize;
 		}
-		decoded->frameType = type - '1';
+		decoded->frameType = type;
 		decoded->payloadLen = payload_len;
 		raw->raw[1] = type;
 		raw->rawLen = 2;

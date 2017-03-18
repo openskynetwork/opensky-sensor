@@ -39,8 +39,8 @@ void RC_INPUT_connect() {}
 
 static void inline append(uint8_t ** buf, uint8_t c)
 {
-	if ((*(*buf)++ = c) == 0x1a)
-		*(*buf)++ = 0x1a;
+	if ((*(*buf)++ = c) == BEAST_SYNC)
+		*(*buf)++ = BEAST_SYNC;
 }
 
 static void inline encode(uint8_t ** buf, const uint8_t * src, size_t len)
