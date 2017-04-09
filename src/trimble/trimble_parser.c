@@ -85,23 +85,23 @@ void TRIMBLE_PARSER_disconnect()
 /** Get a frame from the receiver
  * @param buf buffer to receive into
  * @param bufLen size of buffer to receive into
- * @return length which was actually used
+ * @return length which was actually used or 0 on connection error
  */
 size_t TRIMBLE_PARSER_getFrame(uint8_t * buf, size_t bufLen)
 {
-	assert (bufLen > 0);
+	assert (bufLen > 1);
 
 	while (true) {
 		/* synchronize */
 		uint8_t bom;
 		if (unlikely(!next(&bom)))
-			return false;
+			return 0;
 		if (unlikely(bom != BOM)) {
 			LOG_logf(LOG_LEVEL_WARN, PFX, "Out of Sync: got 0x%02" PRIx8
 				" instead of BOM", bom);
 synchronize:
 			if (unlikely(!synchronize()))
-				return false;
+				return 0;
 		}
 
 		/* decode frame */

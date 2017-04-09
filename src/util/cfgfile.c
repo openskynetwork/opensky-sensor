@@ -934,7 +934,7 @@ static bool writeSections(FILE * file)
 			return false;
 
 		/* write options */
-		if (writeOptions(file, sect))
+		if (!writeOptions(file, sect))
 			return false;
 
 		/* write all options of all sections with the same name */

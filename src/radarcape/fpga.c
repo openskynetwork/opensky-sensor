@@ -97,11 +97,13 @@ static struct CFG_Section cfgDesc = {
 			.type = CFG_VALUE_TYPE_STRING,
 			.var = cfgFilename,
 			.maxlen = sizeof(cfgFilename),
+			.def = { .string = "openskyd.rbf" }
 		},
 		{
 			.name = "Configure",
 			.type = CFG_VALUE_TYPE_BOOL,
 			.var = &cfgConfigure,
+			.def = { .boolean = true }
 		}
 	}
 };

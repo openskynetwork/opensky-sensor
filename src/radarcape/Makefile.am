@@ -57,10 +57,10 @@ openskyd_rc_dummy_CFLAGS = $(AM_CFLAGS) -DINPUT_RADARCAPE_DUMMY
 rc_wd_CPPFLAGS = -DWD_ONLY $(AM_CPPFLAGS)
 
 # data files
-openskyd_rc_DATA = ../openskyd.conf
-openskyd_rcd_net_DATA = ../openskyd.conf
-openskyd_rc_dummy_DATA = ../openskyd.conf
-EXTRA_DIST = ../openskyd.conf
+openskyd_rc_DATA = openskyd.conf
+openskyd_rcd_net_DATA = openskyd.conf
+openskyd_rc_dummy_DATA = openskyd.conf
+EXTRA_DIST = openskyd.conf
 
 # configuration directory
 openskyd_rcdir = $(sysconfdir)

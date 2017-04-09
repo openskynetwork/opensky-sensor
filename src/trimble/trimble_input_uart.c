@@ -21,6 +21,9 @@
 /** Component: Prefix */
 static const char PFX[] = "TRIMBLE";
 
+#define BOM 0x10
+#define EOM 0x03
+
 /** Interval in seconds between two reconnection attempts */
 #define RECONNECT_INTERVAL 10
 /** UART Port */
@@ -91,16 +94,33 @@ static bool doConnect()
 	}
 	t.c_iflag = IGNPAR | PARMRK;
 	t.c_oflag = ONLCR;
-	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B9600 | PARENB | PARODD;
+	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | PARENB | PARODD;
 	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
-	t.c_ispeed = B9600;
-	t.c_ospeed = B9600;
+	cfsetispeed(&t, B9600);
+	cfsetospeed(&t, B9600);
 	if (tcsetattr(fd, TCSANOW, &t)) {
 		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not set UART settings");
 		closeUart();
 		return false;
 	}
 	tcflush(fd, TCIOFLUSH);
+
+	const uint8_t setSpeed[] = { BOM, 0xbc, 0x00, 0x0b, 0x0b, 0x03, 0x01, 0x00,
+		0x00, 0x02, 0x02, 0x00, BOM, EOM };
+	if (TRIMBLE_INPUT_write(setSpeed, sizeof setSpeed) != sizeof setSpeed)
+		return false;
+	t.c_iflag = IGNPAR;
+	cfsetispeed(&t, B115200);
+	cfsetospeed(&t, B115200);
+	if (tcsetattr(fd, TCSADRAIN, &t)) {
+		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not set UART settings");
+		closeUart();
+		return false;
+	}
+	if (TRIMBLE_INPUT_write(setSpeed, sizeof setSpeed) != sizeof setSpeed)
+		return false;
+	tcdrain(fd);
+	tcflush(fd, TCIFLUSH);
 
 	/* setup polling */
 	fds.events = POLLIN;

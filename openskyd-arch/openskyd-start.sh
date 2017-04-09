@@ -40,5 +40,5 @@ else
   fi
 fi
 
-exec /usr/bin/openskyd ${PARAM}
+exec /usr/bin/openskyd-rc ${PARAM}
 

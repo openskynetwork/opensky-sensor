@@ -90,11 +90,11 @@ static bool doConnect()
 	}
 	t.c_iflag = IGNPAR;
 	t.c_oflag = ONLCR;
-	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL | B3500000;
+	t.c_cflag = CS8 | CREAD | HUPCL | CLOCAL;
 	t.c_cflag |= CRTSCTS;
 	t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO);
-	t.c_ispeed = B3500000;
-	t.c_ospeed = B3500000;
+	cfsetispeed(&t, B3500000);
+	cfsetospeed(&t, B3500000);
 	if (tcsetattr(fd, TCSANOW, &t)) {
 		LOG_errno(LOG_LEVEL_WARN, PFX, "Could not set UART settings");
 		closeUart();

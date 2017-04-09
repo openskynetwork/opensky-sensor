@@ -1,6 +1,6 @@
 # Maintainer: OpenSky Network <contact@opensky-network.org>
 pkgname=('openskyd' 'openskyd-wd')
-pkgver=1.1.1
+pkgver=2.1.0
 pkgrel=1
 url="http://www.opensky-network.org"
 arch=('armv7h')
@@ -8,14 +8,13 @@ license=('custom')
 makedepends=(gcc binutils make pkg-config)
 checkdepends=(check)
 source=("${pkgname}-${pkgver}.tar.gz" "${pkgname}.service"
-  "${pkgname}-wd.service"
-	"${pkgname}-start.sh" "${pkgname}.rbf"
-	"BB-W-Radarcape-00A0.dtbo" "BB-B-Radarcape-00A0.dtbo");
+  "${pkgname}-wd.service" "${pkgname}-start.sh" "${pkgname}.rbf"
+  "BB-W-Radarcape-00A0.dtbo" "BB-B-Radarcape-00A0.dtbo");
 md5sums=('SKIP'
          'e196ebef4681cd476987b127f21b346b'
          '5ef32f225e19fa044ffd2b1a9b4ba4b2'
-         '8cb520bcf13ed0da3c6fa47042274df7'
-         '935d531b3d125960432f6c73eab458b0'
+         '4ef13e36a7430467dbc86dc38f3b57b4'
+         'b4e2362d8cb69d9cdd718134c68f3bfe'
          'fd78b4222eaf1e4f46621ddc17d554e3'
          '50ae4e63bf2e1b79bf372e77c1c6d614')
 
@@ -23,8 +22,8 @@ build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/openskyd \
     --enable-silent-rules \
-    --enable-input=uart --enable-standalone --enable-talkback \
-    --enable-wd --with-systemd --with-pacman --with-check
+    --enable-radarcape-standalone --enable-watchdog-daemon \
+    --with-systemd --with-pacman --with-check
   make
 }
 
@@ -43,11 +42,13 @@ package_openskyd() {
 
   cd "${srcdir}/${pkgname}-${pkgver}"
   make DESTDIR="${pkgdir}" install
-  rm "${pkgdir}/usr/bin/wd"
+  rm "${pkgdir}/usr/bin/rc-wd"
   install -Dm644 "${srcdir}/${pkgname}-${pkgver}/COPYING" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
   install -Dm644 "${srcdir}/${pkgname}.service" "${pkgdir}/usr/lib/systemd/system/${pkgname}.service"
   install -Dm755 "${srcdir}/${pkgname}-start.sh" "${pkgdir}/usr/bin/${pkgname}-start.sh"
   install -Dm644 "${srcdir}/${pkgname}.rbf" "${pkgdir}/usr/lib/openskyd/${pkgname}.rbf"
+  rm "${pkgdir}/etc/${pkgname}.conf"
+  touch "${pkgdir}/etc/${pkgname}.conf"
   install -Dm644 "${srcdir}/BB-B-Radarcape-00A0.dtbo" "${pkgdir}/usr/lib/firmware/BB-B-Radarcape-00A0.dtbo"
   install -Dm644 "${srcdir}/BB-W-Radarcape-00A0.dtbo" "${pkgdir}/usr/lib/firmware/BB-W-Radarcape-00A0.dtbo"
 }
@@ -59,7 +60,7 @@ package_openskyd-wd() {
   conflicts=('openskyd')
 
   cd "${srcdir}/openskyd-${pkgver}"
-  install -Dm755 "${srcdir}/openskyd-${pkgver}/src/wd" "${pkgdir}/usr/bin/${pkgname}"
+  install -Dm755 "${srcdir}/openskyd-${pkgver}/src/radarcape/rc-wd" "${pkgdir}/usr/bin/${pkgname}"
   install -Dm644 "${srcdir}/openskyd-${pkgver}/COPYING" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
   install -Dm644 "${srcdir}/${pkgname}.service" "${pkgdir}/usr/lib/systemd/system/${pkgname}.service"
   install -Dm644 "${srcdir}/openskyd.rbf" "${pkgdir}/usr/lib/openskyd/openskyd.rbf"
