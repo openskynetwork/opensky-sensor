@@ -1,5 +1,8 @@
 /* Copyright (c) 2015-2017 OpenSky Network <contact@opensky-network.org> */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
