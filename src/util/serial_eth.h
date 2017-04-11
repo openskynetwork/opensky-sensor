@@ -6,10 +6,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "core/serial.h"
+#include "component.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern const struct Component SERIAL_comp;
 
 enum SERIAL_RETURN SERIAL_ETH_getSerial(uint32_t * serial);
 

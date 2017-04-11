@@ -647,7 +647,9 @@ static bool parseOption()
 			key, keyLen);
 		if (opt != NULL) {
 			/* found */
-			if (!assignOptionFromString(opt, value, valLen)) {
+			if (valLen == 0) {
+				assignOptionFromDefault(opt);
+			} else if (!assignOptionFromString(opt, value, valLen)) {
 				/* could not parse */
 				if (optOnErrorUseDefault) /* use default */
 					assignOptionFromDefault(opt);
@@ -872,6 +874,12 @@ static bool writeOptions(FILE * file, const struct CFG_Section * section)
 	for (n = 0; n < section->n_opt; ++n) {
 		const struct CFG_Option * opt = &section->options[n];
 		const union CFG_Value * val = opt->var;
+
+		if (opt->given && !*opt->given && opt->defaultEmpty) {
+			fprintf(file, "; %s = \n", opt->name);
+			continue;
+		}
+
 		/* write option name */
 		fprintf(file, "%s = ", opt->name);
 

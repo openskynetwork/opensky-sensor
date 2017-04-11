@@ -16,6 +16,7 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "cfgfile.h"
 #include "serial_eth.h"
 #include "log.h"
 #include "threads.h"
@@ -33,6 +34,30 @@ static const char PFX[] = "SERIAL";
 static bool cachedSerial;
 /** the serial number, if cachedSerial is true */
 static uint32_t serialNo;
+
+/** Configuration Descriptor */
+static const struct CFG_Section cfgDesc =
+{
+	.name = "DEVICE",
+	.n_opt = 1,
+	.options = {
+		{
+			.name = "serial",
+			.type = CFG_VALUE_TYPE_INT,
+			.var = &serialNo,
+			.given = &cachedSerial,
+			.defaultEmpty = true,
+		}
+	}
+};
+
+/** Component Descriptor */
+const struct Component SERIAL_comp =
+{
+	.description = PFX,
+	.config = &cfgDesc,
+	.dependencies = { NULL }
+};
 
 /** Try to get the MAC address of an ethernet device using the socket API
  * @param dev ethernet device name

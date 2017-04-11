@@ -54,6 +54,8 @@ struct CFG_Option {
 	size_t maxlen;
 	/** Default value */
 	union CFG_Value def;
+	/** No default */
+	bool defaultEmpty;
 };
 
 /** Configuration section */

@@ -107,9 +107,6 @@ int main(int argc, char * argv[])
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_sec + tv.tv_usec);
 
-	if (!SERIAL_ETH_getSerial(NULL))
-		LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
-
 #if defined(INPUT_RADARCAPE_UART)
 	LOGIN_setDeviceType(OPENSKY_DEVICE_TYPE_RADARCAPE);
 #elif defined(INPUT_RADARCAPE_NETWORK)
@@ -128,6 +125,7 @@ int main(int argc, char * argv[])
 	COMP_register(&RELAY_comp);
 	COMP_register(&RECV_comp);
 	COMP_register(&STAT_comp);
+	COMP_register(&SERIAL_comp);
 	COMP_register(&TRIMBLE_comp);
 
 	COMP_fixup();
@@ -151,6 +149,9 @@ int main(int argc, char * argv[])
 		CFG_unregisterAll();
 		return EXIT_SUCCESS;
 	}
+
+	if (!SERIAL_ETH_getSerial(NULL))
+			LOG_log(LOG_LEVEL_EMERG, PFX, "No serial number configured");
 
 #ifdef STANDALONE
 	TB_register(TB_PACKET_TYPE_REVERSE_SHELL, 6, &TB_reverseShell);
