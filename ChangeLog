@@ -1,3 +1,6 @@
+2017-04-11 Markus Engel <engel@opensky-network.org>
+	* Radarcape: reintroduced possibility to override serial number
+	
 2017-04-09 Markus Engel <engel@opensky-network.org>
 	* Native: fixed GPS UART settings
 	* Trimble: fixed error handling in parser
