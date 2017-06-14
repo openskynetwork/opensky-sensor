@@ -1,5 +1,5 @@
 dnl initialize autoconf
-AC_INIT(openskyd, 2.1.1)
+AC_INIT(openskyd, 2.1.2)
 
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR([build-aux])
@@ -33,6 +33,13 @@ case "$host" in
   *)
     WINDRES=""
     HOST_IS_MINGW=0
+  ;;
+esac
+
+case "$host" in
+  *i?86* )
+    ac_cv_func_realloc_0_nonnull=yes
+    ac_cv_func_malloc_0_nonnull=yes
   ;;
 esac
 
