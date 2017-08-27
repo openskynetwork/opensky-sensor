@@ -1,0 +1,86 @@
+#!/bin/sh
+set -e
+
+. /usr/share/debconf/confmodule
+db_version 2.0
+	
+DAEMON_HOME=/var/lib/openskyd
+DAEMON_USER=openskyd
+DAEMON_NAME="OpenSky Feeder"
+DAEMON_GROUP=openskyd
+	
+case "$1" in
+	configure)
+
+	if ! getent group | grep -q "^$DAEMON_GROUP:"; then
+		echo -n "Adding group $DAEMON_GROUP.."
+		addgroup --quiet --system $DAEMON_GROUP 2>/dev/null || true
+		echo "..done"
+	fi
+	test -d $DAEMON_HOME || mkdir -p $DAEMON_HOME
+	if ! getent passwd | grep -q "^$DAEMON_USER:"; then
+		echo -n "Adding user $DAEMON_USER.."
+		adduser --quiet --system --ingroup $DAEMON_GROUP \
+			--no-create-home --disabled-password $DAEMON_USER \
+			2>/dev/null || true
+		echo "..done"
+		usermod -c "$DAEMON_NAME" -d "$DAEMON_HOME" \
+			-g "$DAEMON_GROUP" "$DAEMON_USER"
+	fi
+	test -d $DAEMON_HOME/conf.d || mkdir -p $DAEMON_HOME/conf.d
+
+	LAT=""
+	LONG=""
+	ALT=""
+	USER=""
+	PORT=""
+	HOST=""
+	db_get openskyd/latitude && LAT="$RET"
+	db_get openskyd/longitude && LONG="$RET"
+	db_get openskyd/altitude && ALT="$RET"
+	db_get openskyd/username && USER="$RET"
+	db_get openskyd/port && PORT="$RET"
+	db_get openskyd/host && HOST="$RET"
+	
+	if [ -z "$PORT" ]; then
+		PORT="30005"
+	fi
+	
+	if [ -z "$HOST" ]; then
+		HOST="localhost"
+	fi
+
+	echo "[GPS]" > $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "Latitude=$LAT" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "Longitude=$LONG" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "Altitude=$ALT" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "[IDENT]" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "Username=$USER" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "[INPUT]" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "Host=$HOST" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	echo "Port=$PORT" >> $DAEMON_HOME/conf.d/10-debconf.conf
+
+	if ! dpkg-statoverride --list $DAEMON_HOME >/dev/null; then
+		chown -R $DAEMON_USER:adm $DAEMON_HOME
+		chmod u=rwx,g=rxs,o= $DAEMON_HOME
+	fi
+	
+	echo "Your GPS location has been set to Lat: $LAT Long: $LONG Alt: $ALT"
+	if [ -n "$USER" ]; then
+		echo "Your Username has been set to $USER"
+	fi
+	echo "Dump1090 host has been set to $HOST:$PORT"
+	
+	if [ -z "$DEBCONF_RECONFIGURE" ] ; then
+		echo "Run 'dpkg-reconfigure opensky-feeder-donated' if you wish to change it."
+	fi
+	;;
+esac
+
+#DEBHELPER#
+
+db_stop
+
+exit 0

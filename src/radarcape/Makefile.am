@@ -21,7 +21,7 @@ radarcape_sources = main.c \
 
 # sources for binaries
 openskyd_rc_SOURCES = $(radarcape_sources) uart.c \
-	fpga.c watchdog.c gpio.h gpio.c tb_standalone.h tb_standalone.c
+	fpga.c watchdog.c gpio.h gpio.c tb-rshell.h tb-rshell.c tb-misc.h tb-misc.c
 openskyd_rcd_net_SOURCES = $(radarcape_sources) network.c
 openskyd_rc_dummy_SOURCES = $(radarcape_sources) dummy.c
 

@@ -1,5 +1,5 @@
 dnl initialize autoconf
-AC_INIT(openskyd, 2.1.2)
+AC_INIT(openskyd, 2.1.3)
 
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR([build-aux])
@@ -204,6 +204,15 @@ AC_ARG_ENABLE([dump1090],
     *)  AC_MSG_ERROR([bad value ${enableval} for --enable-dump1090]) ;;
    esac], [enableval=no])
 AM_CONDITIONAL([DUMP1090], [test x$enableval = xyes])
+
+AC_ARG_ENABLE([dump1090-rshell],
+  [AS_HELP_STRING([--enable-dump1090-rshell],
+    [Build daemon to connect to dump1090 feeder with reverse shell support @<:@no@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-dump1090-rshell]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([DUMP1090_RSHELL], [test x$enableval = xyes])
 
 AM_CONDITIONAL([SOCKET_POSIX], [test $SOCKET_POSIX = 1])
 AM_CONDITIONAL([SOCKET_WINSOCK], [test $SOCKET_WINSOCK = 1])

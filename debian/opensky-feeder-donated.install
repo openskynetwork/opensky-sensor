@@ -1,0 +1,5 @@
+#!/usr/bin/dh-exec
+
+usr/bin/openskyd-dump1090-rshell => usr/bin/openskyd-dump1090
+etc/openskyd/*
+

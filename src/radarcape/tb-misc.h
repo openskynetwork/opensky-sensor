@@ -1,15 +1,13 @@
 /* Copyright (c) 2015-2017 OpenSky Network <contact@opensky-network.org> */
 
-#ifndef _HAVE_TB_STANDALONE_H
-#define _HAVE_TB_STANDALONE_H
+#ifndef _HAVE_TB_MISC_H
+#define _HAVE_TB_MISC_H
 
 #include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-void TB_reverseShell(const uint8_t * payload);
 
 void TB_restartDaemon(const uint8_t * payload);
 

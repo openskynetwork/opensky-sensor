@@ -30,6 +30,7 @@
 #include "core/serial.h"
 #include "core/beast.h"
 #include "core/filter.h"
+#include "../radarcape/tb-rshell.h"
 #include "util/cfgfile.h"
 #include "util/statistics.h"
 #include "util/log.h"
@@ -143,6 +144,10 @@ int main(int argc, char * argv[])
 		LOG_log(LOG_LEVEL_EMERG, PFX,
 			"Configuration inconsistent, quitting");
 	}
+
+#ifdef DUMP1090_RSHELL
+	TB_register(TB_PACKET_TYPE_REVERSE_SHELL, 6, &TB_reverseShell);
+#endif
 
 	if (!COMP_initAll()) {
 		LOG_log(LOG_LEVEL_EMERG, PFX, "Could not initialize all components, "
