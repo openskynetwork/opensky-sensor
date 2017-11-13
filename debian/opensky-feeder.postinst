@@ -21,7 +21,8 @@ case "$1" in
 	if ! getent passwd | grep -q "^$DAEMON_USER:"; then
 		echo -n "Adding user $DAEMON_USER.."
 		adduser --quiet --system --ingroup $DAEMON_GROUP \
-			--no-create-home --disabled-password $DAEMON_USER \
+			--no-create-home --home /nonexistent \
+			--disabled-password $DAEMON_USER \
 			2>/dev/null || true
 		echo "..done"
 		usermod -c "$DAEMON_NAME" -d "$DAEMON_HOME" \

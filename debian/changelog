@@ -1,3 +1,9 @@
+openskyd (2.1.4-1) stable; urgency=low
+
+  * Fixed auxiliary configuration path for dump1090 feeder
+
+ -- Sero System GmbH <debian@sero-systems.de>  Sat, 21 Oct 2017 18:19:24 +0200
+
 openskyd (2.1.3-1) stable; urgency=low
 
   * Added features for donated sensors

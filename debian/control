@@ -2,18 +2,18 @@ Source: openskyd
 Section: custom
 Priority: optional
 Maintainer: OpenSky Network <contact@opensky-network.org>
-Build-Depends: debhelper (>= 9), autotools-dev, pkg-config, dh-systemd, dh-exec
-Standards-Version: 3.9.6
+Build-Depends: debhelper (>= 10), autotools-dev, autoconf-archive, pkg-config, dh-systemd, dh-exec
+Standards-Version: 3.9.8
 Homepage: http://opensky-network.org
 
 Package: opensky-feeder
 Conflicts: opensky-feeder-donated
 Architecture: any
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, adduser (>= 3.11)
-Description: Feed ADSB frames received from dump1090 into the OpenSky Network
+Description: Feeds ADS-B frames received from dump1090 into the OpenSky Network
 
 Package: opensky-feeder-donated
 Conflicts: opensky-feeder
 Architecture: any
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, adduser (>= 3.11), rcc
-Description: Feed ADSB frames received from dump1090 into the OpenSky Network
+Description: Feeds ADS-B frames received from dump1090 into the OpenSky Network
