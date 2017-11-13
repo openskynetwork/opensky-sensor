@@ -49,7 +49,7 @@ struct LIST_ListDC {
 /** Initialize the list. Must be called before using the list,
  *   except for replacing operations, such as LIST_separateFromD().
  * @note Can also be used to clear the list. When clearing the list, be sure to
- *   have acess to the list in another way.
+ *   have access to the list in another way.
  * @param list list to be initialized.
  */
 static inline void LIST_initD(struct LIST_ListD * list)
@@ -64,7 +64,7 @@ static inline void LIST_initD(struct LIST_ListD * list)
  */
 static inline bool LIST_emptyD(const struct LIST_ListD * list)
 {
-	/* list is empty, if the anchor points to itself */
+	/* list is empty if the anchor points to itself */
 	return list->head == &list->anchor;
 }
 
@@ -167,7 +167,7 @@ static inline void LIST_unshiftD(struct LIST_ListD * list,
 static inline void LIST_separateFromD(struct LIST_ListD * __restrict list,
 	struct LIST_ListD * __restrict newList, struct LIST_LinkD * pivot)
 {
-	if (unlikely(pivot != &list->anchor)) {
+	if (likely(pivot != &list->anchor)) {
 		/* note: we also know, that the source list is not empty here,
 		 *  otherwise the pivot would have been the anchor */
 
@@ -182,7 +182,7 @@ static inline void LIST_separateFromD(struct LIST_ListD * __restrict list,
 		list->tail->next = &list->anchor;
 		pivot->prev = &newList->anchor;
 	} else {
-		/* Also the case, if the source list was empty. Prevent linking the
+		/* Also the case if the source list was empty. Prevent linking the
 		 * anchor of the source list to the destination list. */
 		LIST_initD(newList);
 	}
@@ -205,11 +205,7 @@ static inline void LIST_separateFromD(struct LIST_ListD * __restrict list,
 static inline void LIST_separateUntilD(struct LIST_ListD * __restrict list,
 	struct LIST_ListD * __restrict newList, struct LIST_LinkD * pivot)
 {
-	if (unlikely(pivot == list->head)) {
-		/* Also the case, if the source list was empty. Prevent linking the
-		 *  anchor of the source list to the destination list. */
-		LIST_initD(newList);
-	} else {
+	if (likely(pivot != list->head)) {
 		/* note: we also know, that the source list is not empty here,
 		 *  otherwise the pivot would have been the head */
 
@@ -223,6 +219,10 @@ static inline void LIST_separateUntilD(struct LIST_ListD * __restrict list,
 		/* source list: tail is left untouched, tail is the pivot */
 		list->head = pivot;
 		pivot->prev = &list->anchor;
+	} else {
+		/* Also the case if the source list was empty. Prevent linking the
+		 *  anchor of the source list to the destination list. */
+		LIST_initD(newList);
 	}
 }
 
@@ -342,7 +342,7 @@ static inline struct LIST_LinkD * LIST_atD(struct LIST_ListD * list, size_t n)
 /** Initialize the list. Must be called before using the list,
  *   except for replacing operations, such as LIST_separateDC().
  * @note Can also be used to clear the list. When clearing the list, be sure to
- *   have acess to the list in another way.
+ *   have access to the list in another way.
  * @param list list to be initialized.
  */
 static inline void LIST_initDC(struct LIST_ListDC * list)
@@ -666,7 +666,7 @@ struct LIST_ListSC {
 
 /** Initialize the list. Must be called before using the list.
  * @note Can also be used to clear the list. When clearing the list, be sure to
- *   have acess to the list in another way.
+ *   have access to the list in another way.
  * @param list list to be initialized.
  */
 static inline void LIST_initS(struct LIST_ListS * list)
@@ -826,7 +826,7 @@ static inline struct LIST_LinkS * LIST_atS(struct LIST_ListS * list, size_t n)
 
 /** Initialize the list. Must be called before using the list.
  * @note Can also be used to clear the list. When clearing the list, be sure to
- *   have acess to the list in another way.
+ *   have access to the list in another way.
  * @param list list to be initialized.
  */
 static inline void LIST_initSC(struct LIST_ListSC * list)
