@@ -22,7 +22,11 @@ struct GPS_Position {
 
 void GPS_reset();
 
+void GPS_setPositionWithFix(double latitude, double longitude, double altitude);
+
 void GPS_setPosition(double latitude, double longitude, double altitude);
+
+void GPS_setHasFix(bool fix);
 
 bool GPS_sendPosition();
 

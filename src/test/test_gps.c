@@ -49,7 +49,7 @@ static void setAndGetRawPos(double latitude, double longitude, double altitude,
 	uint64_t * pos)
 {
 	getRawPos(latitude, longitude, altitude, pos);
-	GPS_setPosition(latitude, longitude, altitude);
+	GPS_setPositionWithFix(latitude, longitude, altitude);
 }
 
 START_TEST(test_send_position_without_pos)
@@ -128,7 +128,7 @@ START_TEST(test_send_position_with_need_reset)
 	ck_assert(!memcmp(sentPosition, rawPos, sizeof rawPos));
 
 	sent = false;
-	GPS_setPosition(10.0, 20.0, 100.0);
+	GPS_setPositionWithFix(10.0, 20.0, 100.0);
 	ck_assert(!sent);
 }
 END_TEST
@@ -149,7 +149,7 @@ START_TEST(test_send_after_reset)
 	ck_assert(GPS_sendPosition());
 	ck_assert(!sent);
 
-	GPS_setPosition(10.0, 20.0, 100.0);
+	GPS_setPositionWithFix(10.0, 20.0, 100.0);
 	ck_assert(sent);
 	ck_assert(!memcmp(sentPosition, rawPos, sizeof rawPos));
 }

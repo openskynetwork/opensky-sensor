@@ -24,11 +24,15 @@ static const char PFX[] = "GPS";
 static pthread_mutex_t posMutex = PTHREAD_MUTEX_INITIALIZER;
 /** Current GPS position */
 static struct GPS_Position position;
-/** Flag: is position valid */
+/** Flag: position was set */
 static bool hasPosition = false;
+/** Flag: is position valid */
+static bool hasFix = false;
 /** Flag: do we need a position (i.e.: if the position is updated, send it
  * immediately to the OpenSky Network*/
 static bool needPosition = false;
+
+static void sendPositionIfAvail();
 
 static bool sendPosition(const struct GPS_Position * position);
 
@@ -38,7 +42,25 @@ void GPS_reset()
 	pthread_mutex_lock(&posMutex);
 	needPosition = false;
 	hasPosition = false;
+	hasFix = false;
 	pthread_mutex_unlock(&posMutex);
+}
+
+/** Update current GPS position and fix */
+void GPS_setPositionWithFix(double latitude, double longitude, double altitude)
+{
+	CLEANUP_PUSH_LOCK(&posMutex);
+
+	position.latitude = latitude;
+	position.longitute = longitude;
+	position.altitude = altitude;
+
+	hasPosition = true;
+	hasFix = true;
+
+	sendPositionIfAvail();
+
+	CLEANUP_POP();
 }
 
 /** Update current GPS position */
@@ -52,13 +74,35 @@ void GPS_setPosition(double latitude, double longitude, double altitude)
 
 	hasPosition = true;
 
-	if (needPosition) {
-		/* note: if sending fails, we have to try it again */
-		needPosition = !sendPosition(&position);
-		if (needPosition)
-			LOG_log(LOG_LEVEL_INFO, PFX, "Could not send position, deferring");
-	}
+	sendPositionIfAvail();
+
 	CLEANUP_POP();
+}
+
+void GPS_setHasFix(bool fix) {
+	CLEANUP_PUSH_LOCK(&posMutex);
+
+	hasFix = fix;
+
+	sendPositionIfAvail();
+
+	CLEANUP_POP();
+}
+
+static void sendPositionIfAvail()
+{
+	if (needPosition) {
+		if (!hasPosition) {
+			LOG_log(LOG_LEVEL_INFO, PFX, "Should send position, but we do not have one -> deferring");
+		} else if (!hasFix) {
+			LOG_log(LOG_LEVEL_INFO, PFX, "Should send position, but have no fix -> deferring");
+		} else {
+			/* note: if sending fails, we have to try it again */
+			needPosition = !sendPosition(&position);
+			if (needPosition)
+				LOG_log(LOG_LEVEL_INFO, PFX, "Could not send position -> deferring");
+		}
+	}
 }
 
 /** Send a GPS position to the OpenSky Network
@@ -94,14 +138,20 @@ bool GPS_sendPosition()
 	struct GPS_Position pos;
 	pthread_mutex_lock(&posMutex);
 	if (!hasPosition) {
-		/* we do not have a position -> send it, when it becomes available */
+		LOG_log(LOG_LEVEL_INFO, PFX, "Should send position, but have none -> deferring");
 		needPosition = true;
 		pthread_mutex_unlock(&posMutex);
 		return true;
-	}
-	/* we have a position: copy it and send it (without the mutex) */
-	memcpy(&pos, &position, sizeof pos);
-	pthread_mutex_unlock(&posMutex);
+	} else if (!hasFix) {
+		LOG_log(LOG_LEVEL_INFO, PFX, "Should send position, but have no fix -> deferring");
+		needPosition = true;
+		pthread_mutex_unlock(&posMutex);
+		return true;
+	} else {
+		/* we have a position: copy it and send it (without the mutex) */
+		memcpy(&pos, &position, sizeof pos);
+		pthread_mutex_unlock(&posMutex);
 
-	return sendPosition(&pos);
+		return sendPosition(&pos);
+	}
 }

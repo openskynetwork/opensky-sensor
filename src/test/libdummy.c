@@ -15,3 +15,7 @@ void GPS_reset() {}
 
 void GPS_setPosition(double latitude, double longitude, double altitude) {}
 
+void GPS_setPositionWithFix(double latitude, double longitude, double altitude) {}
+
+void GPS_setHasFix(bool fix) {}
+

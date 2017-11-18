@@ -66,7 +66,7 @@ const struct Component GPS_comp = {
 /** Component entry point: set position */
 static void setPosition()
 {
-	GPS_setPosition(latitude, longitude, altitude);
+	GPS_setPositionWithFix(latitude, longitude, altitude);
 }
 
 /** Check configuration

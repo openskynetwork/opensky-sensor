@@ -123,6 +123,8 @@ void setGpsTimeStatus(const GpsTimeStatus_t gpsTimeStatus)
 {
 	OpenSky::gpsTimeStatus = gpsTimeStatus;
 	FILTER_setSynchronized(gpsTimeStatus != GpsTimeInvalid);
+
+	GPS_setHasFix(gpsTimeStatus == UsingGpsTime);
 }
 
 void output_message(const unsigned char * const msg,

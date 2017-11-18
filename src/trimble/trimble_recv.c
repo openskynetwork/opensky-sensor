@@ -302,7 +302,7 @@ static void posFrame(const uint8_t * buf)
 		return;
 	}
 
-	GPS_setPosition(latitude, longitude, altitude);
+	GPS_setPositionWithFix(latitude, longitude, altitude);
 
 #if 0
 	pthread_mutex_lock(&TRIMBLE_GPS_gps.mutex);
