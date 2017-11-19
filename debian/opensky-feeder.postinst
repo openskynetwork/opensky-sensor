@@ -34,12 +34,14 @@ case "$1" in
 	LONG=""
 	ALT=""
 	USER=""
+	SERIAL=""
 	PORT=""
 	HOST=""
 	db_get openskyd/latitude && LAT="$RET"
 	db_get openskyd/longitude && LONG="$RET"
 	db_get openskyd/altitude && ALT="$RET"
 	db_get openskyd/username && USER="$RET"
+	db_get openskyd/serial && SERIAL="$RET"
 	db_get openskyd/port && PORT="$RET"
 	db_get openskyd/host && HOST="$RET"
 	
@@ -62,15 +64,30 @@ case "$1" in
 	echo "[INPUT]" >> $DAEMON_HOME/conf.d/10-debconf.conf
 	echo "Host=$HOST" >> $DAEMON_HOME/conf.d/10-debconf.conf
 	echo "Port=$PORT" >> $DAEMON_HOME/conf.d/10-debconf.conf
-
+	
+	if [ -n "$SERIAL" ]; then
+		echo >> $DAEMON_HOME/conf.d/10-debconf.conf
+		echo "[DEVICE]" >> $DAEMON_HOME/conf.d/10-debconf.conf
+		echo "Serial=$SERIAL" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	fi
+	
 	if ! dpkg-statoverride --list $DAEMON_HOME >/dev/null; then
 		chown -R $DAEMON_USER:adm $DAEMON_HOME
 		chmod u=rwx,g=rxs,o= $DAEMON_HOME
 	fi
 	
+	if [ -n "$2" ] && [ -f $DAEMON_HOME/conf.d/10-serial.conf ]; then
+		mv $DAEMON_HOME/conf.d/10-serial.conf $DAEMON_HOME/conf.d/05-serial.conf
+	fi
+	
 	echo "Your GPS location has been set to Lat: $LAT Long: $LONG Alt: $ALT"
 	if [ -n "$USER" ]; then
 		echo "Your Username has been set to $USER"
+	fi
+	if [ -n "$SERIAL" ]; then
+		echo "Your Serial number has been set to $SERIAL"
+	else
+		echo "Using automatically assigned serial number"
 	fi
 	echo "Dump1090 host has been set to $HOST:$PORT"
 	

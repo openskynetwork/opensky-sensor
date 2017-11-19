@@ -50,6 +50,19 @@ Description: You have changed your username. This is not supported by this feede
  username. If you need to change your username for this sensor,
  please send an email to <contact@opensky-network.org>.
 
+Template: openskyd/serial
+Type: string
+Description: OpenSky Network Serial number:
+ .
+ Enter your serial number of this receiver.
+ .
+ Leave blank to use an automatically assigned serial number for this receiver.
+
+Template: openskyd/serialformat
+Type: error
+Description: Serial number must be a number.
+ Leave blank to use an automatically assigned serial number for this receiver.
+
 Template: openskyd/port
 Type: string
 Default: 30005

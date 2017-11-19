@@ -1,3 +1,7 @@
+2017-11-19 Markus Engel <engel@opensky-network.org>
+	* Feeder: let users change their serial number
+	* Lib: fixed GPS
+
 2017-05-12 Markus Engel <engel@opensky-network.org>
 	* Build: fixed i386 builds
 	
