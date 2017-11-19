@@ -178,8 +178,8 @@ static bool sendSerial()
 	ENDEC_fromu32(serialNumber, ca);
 	size_t len = 2 + BEAST_encode(buf + 2, ca, sizeof ca);
 
-	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Serial Number %" PRIu32,
-		serialNumber);
+	LOG_logf(LOG_LEVEL_INFO, PFX, "Sending Serial Number %" PRId32,
+		(int32_t)serialNumber);
 
 	/* send it */
 	return NET_send(buf, len);
