@@ -28,19 +28,19 @@ void setLogStreams(std::ostream & msgLog, std::ostream & errLog);
 /** Enable OpenSky feeder.
  * @note configure() should before enabling if the default configuration is not
  *  used.
- * @note setLogStreams() should before enabling.
+ * @note setLogStreams() should be called before enabling.
  */
 void enable();
 
 /** Disable OpenSky feeder. */
 void disable();
 
-/** Set the GPS Time Status.
+/** Set GPS Time Status.
  * @param gpsTimeStatus time status as given by GPS component
  */
 void setGpsTimeStatus(const GpsTimeStatus_t gpsTimeStatus);
 
-/** Set the GPS position.
+/** Set GPS position.
  * @param latitude latitude in degrees, as defined by WGS-84
  * @param longitude longitude in degrees, as defined by WGS-84
  * @param alitude altitude in meters */
