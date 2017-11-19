@@ -13,6 +13,8 @@ struct Component RELAY_comp = { .description = "RELAY_D",
 
 void GPS_reset() {}
 
+void GPS_resetNeedFlag() {}
+
 void GPS_setPosition(double latitude, double longitude, double altitude) {}
 
 void GPS_setPositionWithFix(double latitude, double longitude, double altitude) {}

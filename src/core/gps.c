@@ -46,6 +46,12 @@ void GPS_reset()
 	pthread_mutex_unlock(&posMutex);
 }
 
+/** Reset flag whether position is needed */
+void GPS_resetNeedFlag()
+{
+	needPosition = false;
+}
+
 /** Update current GPS position and fix */
 void GPS_setPositionWithFix(double latitude, double longitude, double altitude)
 {

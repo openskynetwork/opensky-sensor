@@ -102,7 +102,8 @@ void enable()
 
 	FILTER_reset();
 	FILTER_setSynchronized(gpsTimeStatus != GpsTimeInvalid);
-	GPS_reset();
+	GPS_resetNeedFlag();
+
 
 	BUF_flush();
 	COMP_startAll();

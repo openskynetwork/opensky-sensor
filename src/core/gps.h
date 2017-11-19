@@ -22,6 +22,8 @@ struct GPS_Position {
 
 void GPS_reset();
 
+void GPS_resetNeedFlag();
+
 void GPS_setPositionWithFix(double latitude, double longitude, double altitude);
 
 void GPS_setPosition(double latitude, double longitude, double altitude);
