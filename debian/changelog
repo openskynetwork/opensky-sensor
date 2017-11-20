@@ -1,7 +1,14 @@
-openskyd (2.1.4-1) stable; urgency=low
+openskyd (2.1.4-2) stable; urgency=low
+
+  * Changed information text in debconf
+
+ -- SeRo Systems GmbH <debian@sero-systems.de>  Mon, 20 Nov 2017 19:33:47 +0100
+
+openskyd (2.1.4-1) stable; urgency=medium
 
   * Fixed auxiliary configuration path for dump1090 feeder
   * Let users change their serial number from debconf
+  * Print serial number signed
 
  -- SeRo Systems GmbH <debian@sero-systems.de>  Sun, 19 Nov 2017 12:33:44 +0100
 

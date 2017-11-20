@@ -52,16 +52,16 @@ Description: You have changed your username. This is not supported by this feede
 
 Template: openskyd/serial
 Type: string
-Description: OpenSky Network Serial number:
+Description: Existing Receiver Serial Number:
  .
- Enter your serial number of this receiver.
+ Enter the serial number of your existing receiver.
  .
- Leave blank to use an automatically assigned serial number for this receiver.
+ If this is the first time you setup this receiver, leave this field blank.
 
 Template: openskyd/serialformat
 Type: error
 Description: Serial number must be a number.
- Leave blank to use an automatically assigned serial number for this receiver.
+ If this is the first time you setup this receiver, leave this field blank.
 
 Template: openskyd/port
 Type: string
