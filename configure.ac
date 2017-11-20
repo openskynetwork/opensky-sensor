@@ -39,6 +39,19 @@ if test "$cross_compiling" = yes; then
   ac_cv_func_malloc_0_nonnull=yes
 fi
 
+dnl check wether compiler has support for _Generic
+AC_MSG_CHECKING(whether C compiler supports _Generic)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#define GenericTest(x) (_Generic(x, int: 1, int *: 0))
+
+int compile_test (int argc, char **argv) {
+	int k = GenericTest(argc);
+	return k;
+}
+])],
+[AC_MSG_RESULT(yes)],
+[AC_MSG_FAILURE(compiler is too old)])
+
 dnl test for std headers
 AC_HEADER_STDC
 
