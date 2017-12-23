@@ -1351,6 +1351,7 @@ static void setupS()
  */
 static void testSIntegrity(struct LIST_ListSC * listS)
 {
+#ifdef HAS_GENERIC
 	/* the head is the anchor if and only if the tail is the anchor */
 	ck_assert_uint_eq((listS->listS.anchor.next == &listS->listS.anchor), (listS->listS.tail == &listS->listS.anchor));
 	/* the head is the anchor if and only if the count is zero or the list is tainted */
@@ -1367,6 +1368,9 @@ static void testSIntegrity(struct LIST_ListSC * listS)
 		++cnt;
 
 	ck_assert_uint_eq(listS->length, cnt);
+#else
+	testDIntegrity(listS);
+#endif
 }
 
 START_TEST(test_S_item2link)

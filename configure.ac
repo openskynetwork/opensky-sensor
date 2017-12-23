@@ -1,5 +1,5 @@
 dnl initialize autoconf
-AC_INIT(openskyd, 2.1.4)
+AC_INIT(openskyd, 2.1.5)
 
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR([build-aux])
@@ -49,8 +49,10 @@ int compile_test (int argc, char **argv) {
 	return k;
 }
 ])],
-[AC_MSG_RESULT(yes)],
-[AC_MSG_FAILURE(compiler is too old)])
+[has_generic=yes;AC_MSG_RESULT(yes)],
+[has_generic=no;AC_MSG_RESULT(no)])
+AS_IF([test x"$has_generic" == x"yes"],
+  [AC_DEFINE([HAS_GENERIC], [1], [Use C11 _Generic])])
 
 dnl test for std headers
 AC_HEADER_STDC

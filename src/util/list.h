@@ -1005,13 +1005,13 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 #define LIST_ListDC_INIT(name) \
 	{ { { &name.listD.anchor, &name.listD.anchor } }, 0, false }
 
+#if !defined(ECLIPSE) && defined(HAS_GENERIC)
 /** Initialize (statically) a double linked list.
  * @param name list name
  * @return initializer expression for the list
  */
 #define LIST_ListD_INIT(name) { { &name.anchor, &name.anchor } }
 
-#ifndef ECLIPSE
 /** Initialize (statically) a single linked list.
  * @param name list name
  * @return initializer expression for the list
@@ -1292,18 +1292,37 @@ static inline struct LIST_LinkS * LIST_atSC(struct LIST_ListSC * list, size_t n)
 	LIST_SelectSD((list), fromVector)((list), (vector), \
 		offsetof(__typeof__(*(vector)), member), n, (elemSize))
 #else
-/** Eclipse workaround: coerce single linked links to double linked links */
+
+/** Workaround: coerce single linked links to double linked links */
 #define LIST_LinkS LIST_LinkD
 
-/** Eclipse workaround: coerce single linked lists to double linked counted
- *   lists */
+/** Workaround: coerce single linked lists to double linked counted lists */
 #define LIST_ListS LIST_ListDC
+
+/** Workaround: coerce single linked counted lists to double linked counted
+ * lists */
+#define LIST_ListSC LIST_ListDC
+
+/** Workaround: coerce double linked lists to double linked counted lists */
+#define LIST_ListD LIST_ListDC
+
+/** Initialize (statically) a double linked list.
+ * @param name list name
+ * @return initializer expression for the list
+ */
+#define LIST_ListD_INIT(name) LIST_ListDC_INIT(name)
 
 /** Initialize (statically) a single linked list.
  * @param name list name
  * @return initializer expression for the list
  */
 #define LIST_ListS_INIT(name) LIST_ListDC_INIT(name)
+
+/** Initialize (statically) a single linked counted list.
+ * @param name list name
+ * @return initializer expression for the list
+ */
+#define LIST_ListSC_INIT(name) LIST_ListDC_INIT(name)
 
 /** Initialize the list. Must be called before using the list,
  *   except for replacing operations, such as LIST_separateFrom().
