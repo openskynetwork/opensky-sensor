@@ -117,8 +117,8 @@ enum SERIAL_RETURN SERIAL_getSerial(uint32_t * serial)
 			}
 		}
 
-		LOG_logf(LOG_LEVEL_INFO, PFX, "Got a new serial number: %" PRIu32,
-			serialNumber);
+		LOG_logf(LOG_LEVEL_INFO, PFX, "Got a new serial number: %" PRId32,
+			(int32_t)serialNumber);
 
 		/* got a new serial number -> save it */
 		if (!CFG_writeSection(LOCALSTATEDIR "/conf.d/05-serial.conf", &cfgDesc)) {
