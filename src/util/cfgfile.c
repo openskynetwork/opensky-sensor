@@ -160,7 +160,7 @@ bool CFG_readFile(const char * file, bool warnUnknownSection,
  */
 static int filterDirectory(const struct dirent * ent)
 {
-	if (ent->d_type != DT_REG)
+	if (ent->d_type != DT_REG && ent->d_type != DT_LNK)
 		return 0;
 	char first = ent->d_name[0];
 	if (first < '0' || first > '9') /* does not begin with a number */
