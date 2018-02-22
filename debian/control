@@ -7,13 +7,19 @@ Standards-Version: 3.9.8
 Homepage: http://opensky-network.org
 
 Package: opensky-feeder
-Conflicts: opensky-feeder-donated
+Conflicts: opensky-feeder-donated, opensky-feeder-kit
 Architecture: any
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, adduser (>= 3.11)
 Description: Feeds ADS-B frames received from dump1090 into the OpenSky Network
 
 Package: opensky-feeder-donated
-Conflicts: opensky-feeder
+Conflicts: opensky-feeder, opensky-feeder-kit
 Architecture: any
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, adduser (>= 3.11), rcc
+Description: Feeds ADS-B frames received from dump1090 into the OpenSky Network
+
+Package: opensky-feeder-kit
+Conflicts: opensky-feeder, opensky-feeder-donated
+Architecture: any
+Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, adduser (>= 3.11)
 Description: Feeds ADS-B frames received from dump1090 into the OpenSky Network

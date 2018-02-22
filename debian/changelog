@@ -1,3 +1,10 @@
+openskyd (2.1.6-1) stable; urgency=medium
+
+  * Follow symlinks in configuration directories
+  * Send new device type identifier for OpenSky Kit
+
+ -- SeRo Systems GmbH <debian@sero-systems.de>  Thu, 22 Feb 2018 20:56:47 +0100
+
 openskyd (2.1.4-3) stable; urgency=medium
 
   * Support for RaspberryPi 1

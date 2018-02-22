@@ -12,7 +12,7 @@ export DEB_CFLAGS_MAINT_APPEND  = -Wall -Werror -O3 -DNDEBUG
 override_dh_auto_configure:
 	dh_auto_configure -- --prefix=/usr --sysconfdir=/etc/openskyd \
 		--localstatedir=/var/lib/openskyd --enable-silent-rules \
-		--enable-dump1090 --enable-dump1090-rshell \
+		--enable-dump1090 --enable-dump1090-donated --enable-dump1090-kit \
 		--without-systemd --without-pacman --without-check
 
 override_dh_auto_install:
