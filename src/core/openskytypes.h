@@ -59,6 +59,10 @@ enum OPENSKY_DEVICE_TYPE {
 	OPENSKY_DEVICE_TYPE_RADARCAPE_LIB = 4,
 	/** Dump1090 Feeder */
 	OPENSKY_DEVICE_TYPE_FEEDER = 5,
+	/** Dump1090 Feeder: Donated */
+	OPENSKY_DEVICE_TYPE_FEEDER_DONATED = 6,
+	/** Dump1090 Feeder: OpenSky Kit */
+	OPENSKY_DEVICE_TYPE_OPENSKY_KIT = 7,
 };
 
 /** Maximal length of username. MUST match the server side */

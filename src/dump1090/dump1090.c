@@ -145,7 +145,7 @@ int main(int argc, char * argv[])
 			"Configuration inconsistent, quitting");
 	}
 
-#ifdef DUMP1090_RSHELL
+#ifdef DUMP1090_DONATED
 	TB_register(TB_PACKET_TYPE_REVERSE_SHELL, 6, &TB_reverseShell);
 #endif
 
@@ -154,7 +154,13 @@ int main(int argc, char * argv[])
 			"quitting");
 	}
 
+#if defined(DUMP1090_DONATED)
+	LOGIN_setDeviceType(OPENSKY_DEVICE_TYPE_FEEDER_DONATED);
+#elif defined(DUMP1090_KIT)
+	LOGIN_setDeviceType(OPENSKY_DEVICE_TYPE_OPENSKY_KIT);
+#else
 	LOGIN_setDeviceType(OPENSKY_DEVICE_TYPE_FEEDER);
+#endif
 	LOGIN_setUsername(username);
 
 	if (!COMP_startAll()) {
