@@ -12,14 +12,17 @@ if DUMP1090_KIT
 bin_PROGRAMS += openskyd-dump1090-kit
 endif
 
-openskyd_dump1090_SOURCES = dump1090.c req-serial.h req-serial.c \
+common_src = dump1090.c req-serial.h req-serial.c \
 	position.h position.c \
 	../radarcape/rc-parser.c ../radarcape/network.c
+
+openskyd_dump1090_SOURCES = $(common_src) \
+	devtype.h devtype.c
 	
-openskyd_dump1090_donated_SOURCES = $(openskyd_dump1090_SOURCES) \
+openskyd_dump1090_donated_SOURCES = $(common_src) \
 	../radarcape/tb-rshell.c
 	
-openskyd_dump1090_kit_SOURCES = $(openskyd_dump1090_SOURCES)
+openskyd_dump1090_kit_SOURCES = $(common_src)
 
 # compiler libs
 openskyd_dump1090_LIBS = @PTHREAD_LIBS@

@@ -63,6 +63,8 @@ enum OPENSKY_DEVICE_TYPE {
 	OPENSKY_DEVICE_TYPE_FEEDER_DONATED = 6,
 	/** Dump1090 Feeder: OpenSky Kit */
 	OPENSKY_DEVICE_TYPE_OPENSKY_KIT = 7,
+	/** Dump1090 Feeder: HPTOA branch */
+	OPENSKY_DEVICE_TYPE_FEEDER_HPTOA = 8,
 };
 
 /** Maximal length of username. MUST match the server side */

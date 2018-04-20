@@ -38,6 +38,7 @@
 #include "util/port/socket.h"
 #include "req-serial.h"
 #include "position.h"
+#include "devtype.h"
 
 /** Component: Prefix */
 static const char PFX[] = "MAIN";
@@ -120,6 +121,9 @@ int main(int argc, char * argv[])
 	COMP_register(&STAT_comp);
 	COMP_register(&SERIAL_comp);
 	COMP_register(&GPS_comp);
+#if !defined(DUMP1090_DONATED) && !defined(DUMP1090_KIT)
+	COMP_register(&DEVTYPE_comp);
+#endif
 
 	COMP_fixup();
 
@@ -159,7 +163,7 @@ int main(int argc, char * argv[])
 #elif defined(DUMP1090_KIT)
 	LOGIN_setDeviceType(OPENSKY_DEVICE_TYPE_OPENSKY_KIT);
 #else
-	LOGIN_setDeviceType(OPENSKY_DEVICE_TYPE_FEEDER);
+	LOGIN_setDeviceType(DEVTYPE_getDeviceType());
 #endif
 	LOGIN_setUsername(username);
 
