@@ -1,3 +1,9 @@
+openskyd (2.1.7-1) stable; urgency=medium
+
+  * Support for hptoa branch of dump1090
+
+ -- SeRo Systems GmbH <debian@sero-systems.de>  Mon, 23 Jul 2018 22:57:18 +0200
+
 openskyd (2.1.6-1) stable; urgency=medium
 
   * Follow symlinks in configuration directories
