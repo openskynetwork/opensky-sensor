@@ -1,5 +1,5 @@
 dnl initialize autoconf
-AC_INIT(openskyd, 2.1.6)
+AC_INIT(openskyd, 2.1.7)
 
 dnl put autotools files into config subdirectory
 AC_CONFIG_AUX_DIR([build-aux])
