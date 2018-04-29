@@ -53,17 +53,19 @@ case "$1" in
 		HOST="localhost"
 	fi
 
-	echo "[GPS]" > $DAEMON_HOME/conf.d/10-debconf.conf
-	echo "Latitude=$LAT" >> $DAEMON_HOME/conf.d/10-debconf.conf
-	echo "Longitude=$LONG" >> $DAEMON_HOME/conf.d/10-debconf.conf
-	echo "Altitude=$ALT" >> $DAEMON_HOME/conf.d/10-debconf.conf
-	echo >> $DAEMON_HOME/conf.d/10-debconf.conf
-	echo "[IDENT]" >> $DAEMON_HOME/conf.d/10-debconf.conf
-	echo "Username=$USER" >> $DAEMON_HOME/conf.d/10-debconf.conf
-	echo >> $DAEMON_HOME/conf.d/10-debconf.conf
-	echo "[INPUT]" >> $DAEMON_HOME/conf.d/10-debconf.conf
-	echo "Host=$HOST" >> $DAEMON_HOME/conf.d/10-debconf.conf
-	echo "Port=$PORT" >> $DAEMON_HOME/conf.d/10-debconf.conf
+	cat > $DAEMON_HOME/conf.d/10-debconf.conf <<EOF
+[GPS]
+Latitude=$LAT
+Longitude=$LONG
+Altitude=$ALT
+
+[IDENT]
+Username=$USER
+
+[INPUT]
+Host=$HOST
+Port=$PORT
+EOF
 	
 	if [ -n "$SERIAL" ]; then
 		echo >> $DAEMON_HOME/conf.d/10-debconf.conf
