@@ -28,6 +28,14 @@ Template: openskyd/altitudeformat
 Type: error
 Description: Altitude must be given as number in meters above sealevel
 
+Template: openskyd/dump1090branch
+Type: select
+Choices: default, hptoa
+Description: Dump1090 branch on this device:
+ .
+ Select "hptoa" if you are using the "high precision time of arrival" branch (https://github.com/openskynetwork/dump1090-hptoa).
+ For any other branch (e.g. mutability, FlightAware, ...) select "default".
+
 Template: openskyd/username
 Type: string
 Description: OpenSky Network Username:

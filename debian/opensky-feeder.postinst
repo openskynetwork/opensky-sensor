@@ -33,6 +33,7 @@ case "$1" in
 	LAT=""
 	LONG=""
 	ALT=""
+	DEVTYPE=""
 	USER=""
 	SERIAL=""
 	PORT=""
@@ -40,6 +41,7 @@ case "$1" in
 	db_get openskyd/latitude && LAT="$RET"
 	db_get openskyd/longitude && LONG="$RET"
 	db_get openskyd/altitude && ALT="$RET"
+	db_get openskyd/dump1090branch && DEVTYPE="$RET"
 	db_get openskyd/username && USER="$RET"
 	db_get openskyd/serial && SERIAL="$RET"
 	db_get openskyd/port && PORT="$RET"
@@ -58,6 +60,9 @@ case "$1" in
 Latitude=$LAT
 Longitude=$LONG
 Altitude=$ALT
+
+[DEVICE]
+Type=$DEVTYPE
 
 [IDENT]
 Username=$USER
