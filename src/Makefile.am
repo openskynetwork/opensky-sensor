@@ -1,2 +1,2 @@
 
-SUBDIRS = core util trimble radarcape dump1090 test
+SUBDIRS = core util trimble radarcape dump1090 gplib test

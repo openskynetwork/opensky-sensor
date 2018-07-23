@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libopensky-c++
+Description: OpenSky shared C++ library.
+Version: @VERSION@
+
+Libs: -L${libdir} -lopensky-c++ -pthread
+Cflags: -I${includedir}

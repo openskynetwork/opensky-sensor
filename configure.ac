@@ -190,7 +190,7 @@ AC_ARG_ENABLE([radarcape-library],
   [Build library for rcd integration @<:@no@:>@])],
   [case "${enableval}" in
     yes|no) ;;
-    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-library]) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-radarcape-library]) ;;
    esac], [enableval=no])
 AM_CONDITIONAL([RADARCAPE_LIBRARY], [test x$enableval = xyes])
 AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 1],
@@ -206,6 +206,28 @@ AC_ARG_ENABLE([radarcape-library-examples],
 AM_CONDITIONAL([RADARCAPE_LIBRARY_EXAMPLES], [test x$enableval = xyes])
 AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 1],
 	[AC_MSG_ERROR([Cannot build radarcape binaries with mingw])])
+
+AC_ARG_ENABLE([gp-library],
+  [AS_HELP_STRING([--enable-gp-library],
+  [Build general purpose library for interaction with other programs @<:@no@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-gp-library]) ;;
+   esac], [enableval=no])
+AM_CONDITIONAL([GP_LIBRARY], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 1],
+	[AC_MSG_ERROR([Cannot build gp binaries with mingw])])
+
+AC_ARG_ENABLE([gp-library-examples],
+  [AS_HELP_STRING([--enable-gp-library-examples],
+    [Build general purpose library examples @<:@no@:>@])],
+  [case "${enableval}" in
+    yes|no) ;;
+    *)  AC_MSG_ERROR([bad value ${enableval} for --enable-gp-library-examples]) ;;
+   esac], [enableval=false])
+AM_CONDITIONAL([GP_LIBRARY_EXAMPLES], [test x$enableval = xyes])
+AS_IF([test x$enableval = xyes -a $HOST_IS_MINGW = 1],
+	[AC_MSG_ERROR([Cannot build library example binaries with mingw])])
 
 AC_ARG_ENABLE([dump1090],
   [AS_HELP_STRING([--enable-dump1090],
@@ -290,7 +312,9 @@ AS_IF([test x"$with_pthreadCancellationPoints" != x"no"],
   [AC_DEFINE([PTHREAD_CANCELLATION_POINTS], [1],
   [Assume pthread has working cancellation points])])
 
+AC_CONFIG_FILES([src/gplib/libopensky-c++.pc])
+
 dnl output directive
 AC_OUTPUT([Makefile src/Makefile src/core/Makefile src/util/Makefile
 	src/trimble/Makefile src/radarcape/Makefile src/radarcape/lib/Makefile
-	src/dump1090/Makefile src/test/Makefile])
+	src/dump1090/Makefile src/gplib/Makefile src/test/Makefile])
