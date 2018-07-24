@@ -23,3 +23,15 @@ Conflicts: opensky-feeder, opensky-feeder-donated
 Architecture: any
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, adduser (>= 3.11)
 Description: Feeds ADS-B frames received from dump1090 into the OpenSky Network
+
+Package: libopensky-c++1
+Section: libs
+Architecture: any
+Depends: ${misc:Depends}
+Description: Library to feed ADS-B frames into the OpenSky Network
+
+Package: libopensky-c++-dev
+Section: libdevel
+Architecture: any
+Depends: libopensky-c++1 (= ${binary:Version})
+Description: Library to feed ADS-B frames into the OpenSky Network (development files)
